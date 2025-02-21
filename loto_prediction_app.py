@@ -1,69 +1,97 @@
 import streamlit as st
-import pandas as pd
-import numpy as np
 from PIL import Image
+import os
+import pandas as pd
 
-# 📸 ヘッダー画像の最適表示
 def display_header():
-    header_image = Image.open("ロト・ナンバーズ AIで予想.png")
+    """
+    ✅ ヘッダー画像を表示（PC・スマホ両方に対応した最適化表示）
+    """
+    image_path = os.path.join(os.path.dirname(__file__), "header.png")
+    header_image = Image.open(image_path)
     st.image(header_image, use_column_width=True)
 
-# 📊 ロトデータのランキング表作成
-def create_ranking_table(df, title):
-    df_sorted = df.value_counts().reset_index()
-    df_sorted.columns = ["数字", "出現回数"]
-    df_sorted.index += 1
+def load_data(file_path):
+    """
+    ✅ CSVファイルからデータを読み込みDataFrameを返す
+    """
+    return pd.read_csv(file_path)
+
+def display_ranking(df, title):
+    """
+    ✅ ランキング表を表示
+    """
     st.subheader(title)
-    st.table(df_sorted)
+    st.dataframe(df)
 
-# 🧩 A・B・C・Dグループ分け
-def group_display(group_dict):
-    for group, numbers in group_dict.items():
-        st.write(f"### {group} グループ: {', '.join(map(str, numbers))}")
+def group_by_frequency(df, title):
+    """
+    ✅ 出現率上位からA・B・C・Dグループに分割して表示
+    """
+    st.subheader(title)
+    total_numbers = len(df)
+    group_size = total_numbers // 4
+    groups = ['A', 'B', 'C', 'D']
+    for i, group in enumerate(groups):
+        start = i * group_size
+        end = None if i == 3 else (i + 1) * group_size
+        st.write(f"### グループ {group}")
+        st.dataframe(df.iloc[start:end])
 
-# 🚀 メインアプリ
 def main():
+    """
+    ✅ Streamlitアプリのメイン関数
+    """
     st.set_page_config(page_title="ロト・ナンバーズ AI予想", layout="wide")
-    
     display_header()
-    st.title("✨ ロト・ナンバーズ AI予想サイト ✨")
 
-    # 📂 CSVデータ読み込み
-    loto6_df = pd.read_csv("data/loto6.csv")
-    loto7_df = pd.read_csv("data/loto7.csv")
-    mini_loto_df = pd.read_csv("data/mini_loto.csv")
-    numbers3_df = pd.read_csv("data/numbers3.csv")
-    numbers4_df = pd.read_csv("data/numbers4.csv")
+    st.title("ロト・ナンバーズ AI予想サイト")
 
-    # 📈 ランキング表
-    st.header("🔢 よく出ている数字ランキング")
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        create_ranking_table(loto6_df, "ロト6 直近24回")
-    with col2:
-        create_ranking_table(loto7_df, "ロト7 直近50回")
-    with col3:
-        create_ranking_table(mini_loto_df, "ミニロト 全回")
+    # ✅ データの読み込み
+    loto6_24 = load_data("data/loto6_24.csv")
+    loto6_50 = load_data("data/loto6_50.csv")
+    loto6_all = load_data("data/loto6_all.csv")
 
-    # 🎯 ナンバーズランキング
-    st.header("🎲 ナンバーズランキング")
-    col4, col5 = st.columns(2)
-    with col4:
-        create_ranking_table(numbers3_df, "ナンバーズ3 直近24回")
-    with col5:
-        create_ranking_table(numbers4_df, "ナンバーズ4 直近50回")
+    loto7_24 = load_data("data/loto7_24.csv")
+    loto7_50 = load_data("data/loto7_50.csv")
+    loto7_all = load_data("data/loto7_all.csv")
 
-    # 🧮 A・B・C・D グループ分け
-    st.header("🧩 ロト6・ロト7・ミニロト 出現率グループ分け")
-    group_dict = {
-        "A": [15, 18, 19, 23, 9, 34, 4, 8, 11, 30],
-        "B": [12, 31, 1, 22, 29, 36, 3, 13, 14],
-        "C": [7, 16, 20, 25, 28, 35],
-        "D": [2, 5, 6, 10, 17, 21, 24, 26, 27, 32, 33, 37]
-    }
-    group_display(group_dict)
+    mini_24 = load_data("data/mini_24.csv")
+    mini_50 = load_data("data/mini_50.csv")
+    mini_all = load_data("data/mini_all.csv")
 
-    st.success("✅ サイトが正常に更新されました！ 🎉")
+    numbers3_24 = load_data("data/numbers3_24.csv")
+    numbers3_50 = load_data("data/numbers3_50.csv")
+
+    numbers4_24 = load_data("data/numbers4_24.csv")
+    numbers4_50 = load_data("data/numbers4_50.csv")
+
+    # ✅ ランキング表表示
+    st.header("ロト6・ロト7・ミニロト ランキング表")
+    display_ranking(loto6_24, "ロト6: 直近24回")
+    display_ranking(loto6_50, "ロト6: 直近50回")
+    display_ranking(loto6_all, "ロト6: 全回")
+
+    display_ranking(loto7_24, "ロト7: 直近24回")
+    display_ranking(loto7_50, "ロト7: 直近50回")
+    display_ranking(loto7_all, "ロト7: 全回")
+
+    display_ranking(mini_24, "ミニロト: 直近24回")
+    display_ranking(mini_50, "ミニロト: 直近50回")
+    display_ranking(mini_all, "ミニロト: 全回")
+
+    st.header("ナンバーズ3・ナンバーズ4 ランキング表")
+    display_ranking(numbers3_24, "ナンバーズ3: 直近24回")
+    display_ranking(numbers3_50, "ナンバーズ3: 直近50回")
+
+    display_ranking(numbers4_24, "ナンバーズ4: 直近24回")
+    display_ranking(numbers4_50, "ナンバーズ4: 直近50回")
+
+    # ✅ 出現率グループ分け表示
+    st.header("ロト6・ロト7・ミニロト 出現率グループ分け")
+    group_by_frequency(loto6_24, "ロト6: 出現率グループ (直近24回)")
+    group_by_frequency(loto7_24, "ロト7: 出現率グループ (直近24回)")
+    group_by_frequency(mini_24, "ミニロト: 出現率グループ (直近24回)")
 
 if __name__ == "__main__":
     main()
