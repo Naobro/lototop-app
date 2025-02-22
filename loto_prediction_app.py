@@ -3,12 +3,15 @@ import pandas as pd
 import os
 from PIL import Image
 
-# ✅ データ読み込み関数
+# ✅ データ読み込み関数 (エンコーディング対応)
 def load_data(filename):
     data_folder = os.path.join(os.path.dirname(__file__), 'data')
     file_path = os.path.join(data_folder, filename)
     if os.path.exists(file_path):
-        return pd.read_csv(file_path)
+        try:
+            return pd.read_csv(file_path, encoding='utf-8')  # ✅ UTF-8で読み込み
+        except UnicodeDecodeError:
+            return pd.read_csv(file_path, encoding='cp932')  # ✅ CP932で再試行
     else:
         st.error(f"❌ データファイルが見つかりません: {file_path}")
         return None
@@ -18,7 +21,7 @@ def display_header():
     image_path = os.path.join(os.path.dirname(__file__), "header.png")
     if os.path.exists(image_path):
         header_image = Image.open(image_path)
-        st.image(header_image, use_container_width=True)
+        st.image(header_image, use_container_width=True)  # ✅ use_container_widthに修正
     else:
         st.warning(f"⚠️ ヘッダー画像が見つかりません: {image_path}")
 
@@ -51,8 +54,4 @@ def main():
     st.success("✅ ページが正常に読み込まれました！")
 
 if __name__ == "__main__":
-    main()def load_latest_data(file_path):
-    try:
-        return pd.read_csv(file_path, encoding='utf-8')  # ✅ UTF-8指定で読み込み
-    except UnicodeDecodeError:
-        return pd.read_csv(file_path, encoding='cp932')  # ✅ CP932で再試行
+    main()
