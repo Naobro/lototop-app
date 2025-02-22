@@ -51,4 +51,8 @@ def main():
     st.success("✅ ページが正常に読み込まれました！")
 
 if __name__ == "__main__":
-    main()
+    main()def load_latest_data(file_path):
+    try:
+        return pd.read_csv(file_path, encoding='utf-8')  # ✅ UTF-8指定で読み込み
+    except UnicodeDecodeError:
+        return pd.read_csv(file_path, encoding='cp932')  # ✅ CP932で再試行
