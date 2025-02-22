@@ -1,64 +1,86 @@
 import streamlit as st
 import pandas as pd
-from PIL import Image
 import os
-
+from PIL import Image
 
 def display_header():
-    # ✅ 画像のパスを動的に取得
     image_path = os.path.join(os.path.dirname(__file__), "header.png")
-    try:
-        header_image = Image.open(image_path)
-        st.image(header_image, use_container_width=True)
-    except FileNotFoundError:
-        st.error(f"ヘッダー画像が見つかりません: {image_path}")
-
+    header_image = Image.open(image_path)
+    st.image(header_image, use_container_width=True)
 
 def load_data(file_path):
-    # ✅ CSVファイルの読み込みを行い、ファイルが存在しない場合にエラーを表示
-    try:
+    if os.path.exists(file_path):
         return pd.read_csv(file_path)
-    except FileNotFoundError:
-        st.error(f"データファイルが見つかりません: {file_path}")
+    else:
+        st.error(f"ファイルが見つかりません: {file_path}")
         return pd.DataFrame()
 
+def save_updated_data(file_path, new_data):
+    new_data.to_csv(file_path, index=False)
+    st.success(f"データを正常に更新しました: {file_path}")
 
-def display_ranking(df, title):
-    # ✅ 出現回数ランキングを表示
-    if df.empty:
-        st.warning(f"{title} のデータがありません。")
+def update_data_section(title, file_path):
+    st.subheader(title)
+    data = load_data(file_path)
+    if not data.empty:
+        st.dataframe(data)
+        uploaded_file = st.file_uploader(f"最新の当選番号ファイルをアップロード ({title})", type="csv", key=title)
+        if uploaded_file is not None:
+            new_data = pd.read_csv(uploaded_file)
+            save_updated_data(file_path, new_data)
+            st.experimental_rerun()
+
+def show_ranking(data, title):
+    st.subheader(f"{title} - よく出ている数字ランキング")
+    if not data.empty:
+        numbers = data.values.flatten()
+        numbers = numbers[~pd.isnull(numbers)]
+        numbers = [int(x) for x in numbers if str(x).isdigit()]
+        df = pd.Series(numbers).value_counts().reset_index()
+        df.columns = ['数字', '出現回数']
+        df['順位'] = df['出現回数'].rank(method='min', ascending=False).astype(int)
+        df = df.sort_values(by='順位')
+        st.dataframe(df[['順位', '出現回数', '数字']])
     else:
-        st.subheader(title)
-        ranking = (
-            df.apply(pd.Series.value_counts)
-            .sum(axis=1)
-            .reset_index()
-            .rename(columns={"index": "数字", 0: "出現回数"})
-            .sort_values(by="出現回数", ascending=False)
-            .reset_index(drop=True)
-        )
-        ranking.index += 1
-        st.dataframe(ranking)
-
+        st.info("データが見つかりませんでした。")
 
 def main():
-    st.set_page_config(page_title="ロト・ナンバーズAI予想", layout="wide")
+    st.set_page_config(page_title="ロト・ナンバーズ AI予想", layout="wide")
     display_header()
 
-    st.title("✨ ロト・ナンバーズ AI予想サイト ✨")
+    st.title("ロト・ナンバーズ AI予想サイト")
+    st.markdown("""
+        **機能一覧**:
+        - ✅ ロト6・ロト7・ミニロトの直近24回・50回・全回データ分析
+        - ✅ ナンバーズ3・ナンバーズ4の1桁～4桁ランキング
+        - ✅ データアップロードによる最新結果の自動反映
+    """)
 
-    # ✅ CSVデータの読み込み
-    loto6_24 = load_data(os.path.join("data", "loto6_24.csv"))
-    loto7_24 = load_data(os.path.join("data", "loto7_24.csv"))
-    miniloto_24 = load_data(os.path.join("data", "miniloto_24.csv"))
+    # データ更新セクション
+    update_data_section("ロト6 直近24回データ", "data/loto6_24.csv")
+    update_data_section("ロト6 直近50回データ", "data/loto6_50.csv")
+    update_data_section("ロト7 直近24回データ", "data/loto7_24.csv")
+    update_data_section("ロト7 直近50回データ", "data/loto7_50.csv")
+    update_data_section("ミニロト 直近24回データ", "data/miniloto_24.csv")
+    update_data_section("ミニロト 直近50回データ", "data/miniloto_50.csv")
 
-    # ✅ ランキング表示
-    display_ranking(loto6_24, "🔢 ロト6 直近24回のランキング")
-    display_ranking(loto7_24, "🔢 ロト7 直近24回のランキング")
-    display_ranking(miniloto_24, "🔢 ミニロト 直近24回のランキング")
-
-    st.success("✅ ページが正常に読み込まれました！")
-
+    # ランキング表示
+    st.header("📊 ランキング表示")
+    show_ranking(load_data("data/loto6_24.csv"), "ロト6 直近24回")
+    show_ranking(load_data("data/loto6_50.csv"), "ロト6 直近50回")
+    show_ranking(load_data("data/loto7_24.csv"), "ロト7 直近24回")
+    show_ranking(load_data("data/loto7_50.csv"), "ロト7 直近50回")
+    show_ranking(load_data("data/miniloto_24.csv"), "ミニロト 直近24回")
+    show_ranking(load_data("data/miniloto_50.csv"), "ミニロト 直近50回")
 
 if __name__ == "__main__":
     main()
+import pandas as pd
+
+def load_latest_data(file_path, num_rows=24):
+    """📊 指定されたCSVファイルから最新のデータを取得します。"""
+    df = pd.read_csv(file_path)
+    # 最新データが一番下にある場合、下から指定した行数を取得
+    latest_data = df.tail(num_rows).reset_index(drop=True)
+    return latest_data
+loto6_24 = load_latest_data("data/loto6_50.csv", num_rows=24)
