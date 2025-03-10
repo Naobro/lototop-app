@@ -1,3 +1,11 @@
+import ssl
+import pandas as pd
+
+# SSL証明書の検証を無効にする
+ssl._create_default_https_context = ssl._create_unverified_context
+
+# CSVを読み込む
+df = pd.read_csv("https://raw.githubusercontent.com/Naobro/lototop-app/main/data/loto7_50.csv")
 import pandas as pd
 import random
 import streamlit as st
@@ -10,7 +18,7 @@ import re
 st.title("ロト7 AI予想サイト")
 
 # **予測結果の表示（例: 10件の予測を生成）**
-df = pd.read_csv("/Users/naokinishiyama/loto-prediction-app/data/loto7_50.csv")  # dfを最初に読み込む
+df = pd.read_csv("https://raw.githubusercontent.com/Naobro/lototop-app/main/data/loto7_50.csv")  # dfを最初に読み込む
 predictions = generate_loto7_prediction(df, 10)  # dfを引数として渡す
 
 # 予測結果の表示
@@ -93,9 +101,9 @@ def generate_loto7_table(latest_csv, prizes_csv, carryover_csv):
 
 # **最新の当選番号**を表示
 table = generate_loto7_table(
-    "/Users/naokinishiyama/loto-prediction-app/data/loto7_latest.csv",
-    "/Users/naokinishiyama/loto-prediction-app/data/loto7_prizes.csv",
-    "/Users/naokinishiyama/loto-prediction-app/data/loto7_carryover.csv"
+    "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/loto7_latest.csv",
+    "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/loto7_prizes.csv",
+    "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/loto7_carryover.csv"
 )
 st.markdown(table, unsafe_allow_html=True)
 
@@ -123,7 +131,7 @@ def generate_recent_loto7_table(csv_path):
         st.write(f"エラーが発生しました: {e}")
         st.write(f"エラー詳細: {e.__class__}")
 
-recent_csv_path = "/Users/naokinishiyama/loto-prediction-app/data/loto7_50.csv"
+recent_csv_path = "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/loto7_50.csv"
 generate_recent_loto7_table(recent_csv_path)
 
 # **③ ランキング**を表示
@@ -150,7 +158,7 @@ def generate_ranking_table(csv_path):
 
     st.markdown(ranking_html, unsafe_allow_html=True)
 
-ranking_csv_path = "/Users/naokinishiyama/loto-prediction-app/data/loto7_50.csv"
+ranking_csv_path = "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/loto7_50.csv"
 generate_ranking_table(ranking_csv_path)
 
 # **④ 分析**セクション
@@ -172,7 +180,7 @@ def analyze_number_patterns(csv_path):
     st.write(pattern_counts)
 
 # CSVファイルのパスを指定して関数を呼び出し
-analyze_number_patterns("/Users/naokinishiyama/loto-prediction-app/data/loto7_50.csv")
+analyze_number_patterns("https://raw.githubusercontent.com/Naobro/lototop-app/main/data/loto7_50.csv")
 
 # **⑤ 各位の出現回数TOP5**
 st.header("各位の出現回数TOP5")
@@ -271,7 +279,7 @@ def get_top3_numbers_by_position(df):
     st.table(top3_df)
 
 # データの読み込み
-df = pd.read_csv("/Users/naokinishiyama/loto-prediction-app/data/loto7_50.csv")
+df = pd.read_csv("https://raw.githubusercontent.com/Naobro/lototop-app/main/data/loto7_50.csv")
 
 # 出現回数TOP5を表示
 get_top5_numbers(df)
@@ -290,3 +298,11 @@ prediction_df = pd.DataFrame(predictions, columns=["第1数字", "第2数字", "
 
 # テーブルとして表示
 st.table(prediction_df)
+import ssl
+import pandas as pd
+
+# SSL証明書の検証を無効にする
+ssl._create_default_https_context = ssl._create_unverified_context
+
+# CSVを読み込む
+df = pd.read_csv("https://raw.githubusercontent.com/Naobro/lototop-app/main/data/loto7_50.csv")

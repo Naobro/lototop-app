@@ -82,9 +82,9 @@ def generate_loto6_table(latest_csv, prizes_csv, carryover_csv):
 
 # **最新の当選番号**を表示
 table = generate_loto6_table(
-    "/Users/naokinishiyama/loto-prediction-app/data/loto6_latest.csv",
-    "/Users/naokinishiyama/loto-prediction-app/data/loto6_prizes.csv",
-    "/Users/naokinishiyama/loto-prediction-app/data/loto6_carryover.csv"
+    "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/loto6_latest.csv",
+    "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/loto6_prizes.csv",
+    "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/loto6_carryover.csv"
 )
 st.markdown(table, unsafe_allow_html=True)
 
@@ -112,7 +112,7 @@ def generate_recent_loto6_table(csv_path):
         st.write(f"エラーが発生しました: {e}")
         st.write(f"エラー詳細: {e.__class__}")
 
-recent_csv_path = "/Users/naokinishiyama/loto-prediction-app/data/loto6_50.csv"
+recent_csv_path = "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/loto6_50.csv"
 generate_recent_loto6_table(recent_csv_path)
 
 # **③ ランキング**を表示
@@ -139,7 +139,7 @@ def generate_ranking_table(csv_path):
 
     st.markdown(ranking_html, unsafe_allow_html=True)
 
-ranking_csv_path = "/Users/naokinishiyama/loto-prediction-app/data/loto6_50.csv"
+ranking_csv_path = "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/loto6_50.csv"
 generate_ranking_table(ranking_csv_path)
 
 # **④ 分析**セクション
@@ -161,7 +161,7 @@ def analyze_number_patterns(csv_path):
     st.write(pattern_counts)
 
 # CSVファイルのパスを指定して関数を呼び出し
-analyze_number_patterns("/Users/naokinishiyama/loto-prediction-app/data/loto6_50.csv")
+analyze_number_patterns("https://raw.githubusercontent.com/Naobro/lototop-app/main/data/loto6_50.csv")
 
 # **⑤ 各位の出現回数TOP5**
 st.header("各位の出現回数TOP5")
@@ -252,7 +252,7 @@ def get_top3_numbers_by_position(df):
     st.table(top3_df)
 
 # データの読み込み
-df = pd.read_csv("/Users/naokinishiyama/loto-prediction-app/data/loto6_50.csv")
+df = pd.read_csv("https://raw.githubusercontent.com/Naobro/lototop-app/main/data/loto6_50.csv")
 
 # 出現回数TOP5を表示
 get_top5_numbers(df)
@@ -263,7 +263,7 @@ import pandas as pd
 import streamlit as st
 
 # CSVファイルを読み込む
-df = pd.read_csv("/Users/naokinishiyama/loto-prediction-app/data/loto6_50.csv")
+df = pd.read_csv("https://raw.githubusercontent.com/Naobro/lototop-app/main/data/loto6_50.csv")
 
 # A数字とB数字の関数
 def generate_AB_numbers(df):

@@ -6,7 +6,7 @@ from miniloto_predictions import generate_miniloto_prediction  # 予測アルゴ
 st.title("ミニロト AI予想サイト")
 
 # CSVファイルのパス
-csv_path = "/Users/naokinishiyama/loto-prediction-app/data/miniloto_50.csv"
+csv_path = "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/miniloto_50.csv"
 df = pd.read_csv(csv_path)
 
 # **① 最新の当選番号**を表示
@@ -97,8 +97,8 @@ def generate_miniloto_table(latest_csv, prizes_csv):
 
 # **最新の当選番号**を表示
 table = generate_miniloto_table(
-    "/Users/naokinishiyama/loto-prediction-app/data/miniloto_latest.csv",
-    "/Users/naokinishiyama/loto-prediction-app/data/miniloto_prizes.csv"
+    "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/miniloto_latest.csv",
+    "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/miniloto_prizes.csv"
 )
 st.markdown(table, unsafe_allow_html=True)
 
@@ -139,7 +139,7 @@ def generate_recent_miniloto_table(csv_path):
         st.write(f"エラー詳細: {e.__class__}")
 
 # CSVファイルのパスを指定
-recent_csv_path = "/Users/naokinishiyama/loto-prediction-app/data/miniloto_50.csv"
+recent_csv_path = "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/miniloto_50.csv"
 generate_recent_miniloto_table(recent_csv_path)
 
 import pandas as pd
@@ -174,7 +174,7 @@ def generate_ranking_table(csv_path):
     st.markdown(ranking_html, unsafe_allow_html=True)
 
 # ランキング表示
-ranking_csv_path = "/Users/naokinishiyama/loto-prediction-app/data/miniloto_50.csv"
+ranking_csv_path = "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/miniloto_50.csv"
 generate_ranking_table(ranking_csv_path)
 
 import pandas as pd
@@ -200,7 +200,7 @@ def analyze_number_patterns(csv_path):
     st.write(pattern_counts)
 
 # CSVファイルのパスを指定して関数を呼び出し
-analyze_number_patterns("/Users/naokinishiyama/loto-prediction-app/data/miniloto_50.csv")
+analyze_number_patterns("https://raw.githubusercontent.com/Naobro/lototop-app/main/data/miniloto_50.csv")
 
 # **⑤ 予測結果**
 st.header("⑤ 予想セクション")

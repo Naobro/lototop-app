@@ -53,7 +53,7 @@ def scrape_miniloto_latest():
                 prize_data.append([grade, winners, amount])
 
         # データ保存パス
-        data_dir = "/Users/naokinishiyama/loto-prediction-app/data"
+        data_dir = "https://raw.githubusercontent.com/Naobro/lototop-app/main/data"
         os.makedirs(data_dir, exist_ok=True)
 
         # 最新当選番号CSV保存（上書きモード）

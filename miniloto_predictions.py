@@ -86,7 +86,7 @@ st.header("⑤ 予想")
 
 # セッション状態を使用して予想結果を保存
 if 'predictions' not in st.session_state:
-    st.session_state.predictions = generate_miniloto_prediction(pd.read_csv("/Users/naokinishiyama/loto-prediction-app/data/miniloto_50.csv"), prediction_count=10)
+    st.session_state.predictions = generate_miniloto_prediction(pd.read_csv("https://raw.githubusercontent.com/Naobro/lototop-app/main/data/miniloto_50.csv"), prediction_count=10)
 
 # 予想を表示
 display_predictions(st.session_state.predictions)

@@ -87,7 +87,7 @@ st.header("⑤ 予想")
 
 # セッション状態を使用して予想結果を保存
 if 'predictions' not in st.session_state:
-    st.session_state.predictions = generate_loto6_prediction(pd.read_csv("/Users/naokinishiyama/loto-prediction-app/data/loto6_50.csv"), prediction_count=10)
+    st.session_state.predictions = generate_loto6_prediction(pd.read_csv("https://raw.githubusercontent.com/Naobro/lototop-app/main/data/loto6_50.csv"), prediction_count=10)
 
 # 予想を表示
 display_predictions(st.session_state.predictions)
@@ -95,7 +95,7 @@ display_predictions(st.session_state.predictions)
 # **⑥ 検証**
 st.header("⑥ 検証")
 # 実際の当選番号と一致する予想数字を表示
-actual_numbers = get_previous_numbers(pd.read_csv("/Users/naokinishiyama/loto-prediction-app/data/loto6_50.csv"))
+actual_numbers = get_previous_numbers(pd.read_csv("https://raw.githubusercontent.com/Naobro/lototop-app/main/data/loto6_50.csv"))
 matched_predictions = []
 
 for prediction in st.session_state.predictions:
