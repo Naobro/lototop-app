@@ -1,7 +1,6 @@
 import streamlit as st
-import requests
 
-# ヘッダー画像のパス
+# ヘッダー画像のURL
 header_image_url = "https://raw.githubusercontent.com/Naobro/lototop-app/main/header.png"
 
 # ヘッダー画像を表示
@@ -14,10 +13,14 @@ st.markdown("""
 各ページでは、予想結果、ランキング、分析結果、過去の当選実績などを確認できます。
 """)
 
-import streamlit as st
-import os
-
-import streamlit as st
+# 各ページへのリンクを表示する関数
+def top_page():
+    st.write("ここにトップページの内容を表示します。")
+    st.markdown("[ロト6ページへ](https://raw.githubusercontent.com/Naobro/lototop-app/main/pages/loto6_top.py)")  # ロト6ページへのリンク
+    st.markdown("[ロト7ページへ](https://raw.githubusercontent.com/Naobro/lototop-app/main/pages/loto7_top.py)")  # ロト7ページへのリンク
+    st.markdown("[ミニロトページへ](https://raw.githubusercontent.com/Naobro/lototop-app/main/pages/miniloto_top.py)")  # ミニロトページへのリンク
+    st.markdown("[ナンバーズ3ページへ](https://raw.githubusercontent.com/Naobro/lototop-app/main/pages/numbers3_top.py)")  # ナンバーズ3ページへのリンク
+    st.markdown("[ナンバーズ4ページへ](https://raw.githubusercontent.com/Naobro/lototop-app/main/pages/numbers4_top.py)")  # ナンバーズ4ページへのリンク
 
 # ページを選択するドロップダウンメニュー
 def page_selector():
@@ -28,22 +31,23 @@ def page_selector():
         top_page()
     elif page == "ロト6ページ":
         st.write("ロト6予想の詳細ページへリンクします。")
-        st.markdown("[ロト6ページへ](pages/loto6_top.py)")
+        st.markdown("[ロト6ページへ](https://raw.githubusercontent.com/Naobro/lototop-app/main/pages/loto6_top.py)")
     elif page == "ロト7ページ":
         st.write("ロト7予想の詳細ページへリンクします。")
-        st.markdown("[ロト7ページへ](pages/loto7_top.py)")
+        st.markdown("[ロト7ページへ](https://raw.githubusercontent.com/Naobro/lototop-app/main/pages/loto7_top.py)")
     elif page == "ミニロトページ":
         st.write("ミニロト予想の詳細ページへリンクします。")
-        st.markdown("[ミニロトページへ](pages/miniloto_top.py)")
+        st.markdown("[ミニロトページへ](https://raw.githubusercontent.com/Naobro/lototop-app/main/pages/miniloto_top.py)")
     elif page == "ナンバーズ3ページ":
         st.write("ナンバーズ3予想の詳細ページへリンクします。")
-        st.markdown("[ナンバーズ3ページへ](pages/numbers3_top.py)")
+        st.markdown("[ナンバーズ3ページへ](https://raw.githubusercontent.com/Naobro/lototop-app/main/pages/numbers3_top.py)")
     elif page == "ナンバーズ4ページ":
         st.write("ナンバーズ4予想の詳細ページへリンクします。")
-        st.markdown("[ナンバーズ4ページへ](pages/numbers4_top.py)")
+        st.markdown("[ナンバーズ4ページへ](https://raw.githubusercontent.com/Naobro/lototop-app/main/pages/numbers4_top.py)")
 
 # 実行する
 page_selector()
+
 # その他のリンク
 st.header("その他のセクション")
 st.markdown("""
