@@ -2,7 +2,15 @@ import pandas as pd
 import random
 import streamlit as st
 from loto6_predictions import generate_loto6_prediction  # 予測アルゴリズムのインポート
+import streamlit as st
 
+def display_loto6():
+    st.title("ロト6 AI予想")
+    st.write("ここではロト6の予想結果や分析が表示されます。")
+    # ロト6に関連する内容を表示するコードを追加
+
+# 実行する
+display_loto6()
 # **ページのタイトル**
 st.title("ロト6 AI予想サイト")
 
