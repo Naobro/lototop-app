@@ -9,7 +9,7 @@ import streamlit as st
 import os
 
 # ヘッダー画像のパス
-header_image_path = "/Users/naokinishiyama/loto-prediction-app/header.png"
+header_image_path = "https://raw.githubusercontent.com/Naobro/lototop-app/header.png"
 
 # 画像ファイルが存在するか確認
 if os.path.exists(header_image_path):
