@@ -28,11 +28,11 @@ import streamlit as st
 def top_page():
     st.title("AI宝くじ分析・予想サイト")
     st.write("ここにトップページの内容を表示します。")
-    st.markdown("[ロト6ページへ](https://github.com/Naobro/lototop-app/blob/main/loto6_top.py)")  # ロト6ページへのリンク
-    st.markdown("[ロト7ページへ](https://github.com/Naobro/lototop-app/blob/main/loto7_top.py)")  # ロト7ページへのリンク
-    st.markdown("[ミニロトページへ](https://github.com/Naobro/lototop-app/blob/main/miniloto_top.py)")  # ミニロトページへのリンク
-    st.markdown("[ナンバーズ3ページへ](https://github.com/Naobro/lototop-app/blob/main/numbers3_top.py)")  # ナンバーズ3ページへのリンク
-    st.markdown("[ナンバーズ4ページへ](https://github.com/Naobro/lototop-app/blob/main/numbers4_top.py)")  # ナンバーズ4ページへのリンク
+    st.markdown("[ロト6ページへ](https://raw.githubusercontent.com/Naobro/lototop-app/main/loto6_top.py)")  # ロト6ページへのリンク
+    st.markdown("[ロト7ページへ](https://raw.githubusercontent.com/Naobro/lototop-app/main/loto7_top.py)")  # ロト7ページへのリンク
+    st.markdown("[ミニロトページへ](https://raw.githubusercontent.com/Naobro/lototop-app/main/miniloto_top.py)")  # ミニロトページへのリンク
+    st.markdown("[ナンバーズ3ページへ](https://raw.githubusercontent.com/Naobro/lototop-app/main/numbers3_top.py)")  # ナンバーズ3ページへのリンク
+    st.markdown("[ナンバーズ4ページへ](https://raw.githubusercontent.com/Naobro/lototop-app/main/numbers4_top.py)")  # ナンバーズ4ページへのリンク
 
 # ページを選択するドロップダウンメニュー
 def page_selector():
