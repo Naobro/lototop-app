@@ -19,12 +19,6 @@ import os
 
 import streamlit as st
 
-def top_page():
-    st.title("AI宝くじ分析・予想サイト")
-    st.write("ここにトップページの内容を表示します。")
-    st.markdown("[ロト6ページへ](pages/loto6_top.py)")  # ロト6ページへのリンク
-    st.markdown("[ロト7ページへ](pages/loto7_top.py)")  # ロト7ページへのリンク
-
 # ページを選択するドロップダウンメニュー
 def page_selector():
     page = st.selectbox("どのページを表示しますか?", 
