@@ -1,3 +1,12 @@
+# topapp.py
+
+import streamlit as st
+
+def display_top():
+    st.title("ロト予想アプリ")
+    st.write("ここにTOPページの内容を表示")
+    # 必要に応じてTOPページの詳細を追加
+
 import streamlit as st
 
 def display_top():
