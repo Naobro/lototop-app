@@ -2,12 +2,6 @@ import pandas as pd
 import random
 import streamlit as st
 from loto6_predictions import generate_loto6_prediction  # 予測アルゴリズムのインポート
-import streamlit as st
-from TOP import display_top  # TOP.pyから関数をインポート
-
-# StreamlitでTOPページを表示
-st.title("ロト予想アプリ")
-display_top()  # TOP.pyにある関数を呼び出す
 
 # **ページのタイトル**
 st.title("ロト6 AI予想サイト")

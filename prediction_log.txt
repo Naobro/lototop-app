@@ -1,0 +1,29 @@
+bash: 5: command not found
+Traceback (most recent call last):
+  File "/Users/naokinishiyama/loto-prediction-app/loto_prediction_app.py", line 1, in <module>
+    import pandas as pd
+ModuleNotFoundError: No module named 'pandas'
+Traceback (most recent call last):
+  File "/Users/naokinishiyama/loto-prediction-app/loto_prediction_app.py", line 1, in <module>
+    import pandas as pd
+ModuleNotFoundError: No module named 'pandas'
+Traceback (most recent call last):
+  File "/Users/naokinishiyama/loto-prediction-app/loto_prediction_app.py", line 2, in <module>
+    import pandas as pd
+ModuleNotFoundError: No module named 'pandas'
+Traceback (most recent call last):
+  File "/Users/naokinishiyama/loto-prediction-app/loto_prediction_app.py", line 1, in <module>
+    import pandas as pd
+ModuleNotFoundError: No module named 'pandas'
+Traceback (most recent call last):
+  File "/Users/naokinishiyama/loto-prediction-app/loto_prediction_app.py", line 1, in <module>
+    import pandas as pd
+ModuleNotFoundError: No module named 'pandas'
+Traceback (most recent call last):
+  File "/Users/naokinishiyama/loto-prediction-app/loto_prediction_app.py", line 1, in <module>
+    import pandas as pd
+ModuleNotFoundError: No module named 'pandas'
+Traceback (most recent call last):
+  File "/Users/naokinishiyama/loto-prediction-app/loto_prediction_app.py", line 1, in <module>
+    import pandas as pd
+ModuleNotFoundError: No module named 'pandas'

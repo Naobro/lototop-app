@@ -1,22 +1,27 @@
 import pandas as pd
 import random
 import streamlit as st
-from loto6_predictions import generate_loto6_prediction  # 予測アルゴリズムのインポート
-import streamlit as st
-from TOP import display_top  # TOP.pyから関数をインポート
-
-# StreamlitでTOPページを表示
-st.title("ロト予想アプリ")
-display_top()  # TOP.pyにある関数を呼び出す
+from loto7_predictions import generate_loto7_prediction  # ロト7の予測アルゴリズムをインポート
+import requests
+from bs4 import BeautifulSoup
+import re
 
 # **ページのタイトル**
-st.title("ロト6 AI予想サイト")
+st.title("ロト7 AI予想サイト")
+
+# **予測結果の表示（例: 10件の予測を生成）**
+df = pd.read_csv("/Users/naokinishiyama/loto-prediction-app/data/loto7_50.csv")  # dfを最初に読み込む
+predictions = generate_loto7_prediction(df, 10)  # dfを引数として渡す
+
+# 予測結果の表示
+for i, prediction in enumerate(predictions, 1):
+    print(f"予測{i}: {prediction}")
 
 # **① 最新の当選番号**を表示
 st.header("①最新の当選番号")
 
 # **最新の当選番号テーブルを生成**
-def generate_loto6_table(latest_csv, prizes_csv, carryover_csv):
+def generate_loto7_table(latest_csv, prizes_csv, carryover_csv):
     try:
         # 最新の抽選結果を読み込む
         df_latest = pd.read_csv(latest_csv)
@@ -87,17 +92,17 @@ def generate_loto6_table(latest_csv, prizes_csv, carryover_csv):
         return f"エラーが発生しました: {e}"
 
 # **最新の当選番号**を表示
-table = generate_loto6_table(
-    "/Users/naokinishiyama/loto-prediction-app/data/loto6_latest.csv",
-    "/Users/naokinishiyama/loto-prediction-app/data/loto6_prizes.csv",
-    "/Users/naokinishiyama/loto-prediction-app/data/loto6_carryover.csv"
+table = generate_loto7_table(
+    "/Users/naokinishiyama/loto-prediction-app/data/loto7_latest.csv",
+    "/Users/naokinishiyama/loto-prediction-app/data/loto7_prizes.csv",
+    "/Users/naokinishiyama/loto-prediction-app/data/loto7_carryover.csv"
 )
 st.markdown(table, unsafe_allow_html=True)
 
 # **② 直近24回の当選番号**を表示
 st.header("② 直近24回の当選番号")
 
-def generate_recent_loto6_table(csv_path):
+def generate_recent_loto7_table(csv_path):
     try:
         df = pd.read_csv(csv_path)
         df = df.fillna("未定義")
@@ -106,10 +111,10 @@ def generate_recent_loto6_table(csv_path):
         df_recent = df.tail(24).sort_values(by="日付", ascending=False)
 
         table_html = "<table border='1' style='width: 100%; border-collapse: collapse; text-align: right;'>"
-        table_html += "<thead><tr><th>抽選日</th><th>第1数字</th><th>第2数字</th><th>第3数字</th><th>第4数字</th><th>第5数字</th><th>第6数字</th></tr></thead><tbody>"
+        table_html += "<thead><tr><th>抽選日</th><th>第1数字</th><th>第2数字</th><th>第3数字</th><th>第4数字</th><th>第5数字</th><th>第6数字</th><th>第7数字</th></tr></thead><tbody>"
 
         for _, row in df_recent.iterrows():
-            table_html += f"<tr><td>{row['日付'].strftime('%Y-%m-%d')}</td><td>{row['第1数字']}</td><td>{row['第2数字']}</td><td>{row['第3数字']}</td><td>{row['第4数字']}</td><td>{row['第5数字']}</td><td>{row['第6数字']}</td></tr>"
+            table_html += f"<tr><td>{row['日付'].strftime('%Y-%m-%d')}</td><td>{row['第1数字']}</td><td>{row['第2数字']}</td><td>{row['第3数字']}</td><td>{row['第4数字']}</td><td>{row['第5数字']}</td><td>{row['第6数字']}</td><td>{row['第7数字']}</td></tr>"
 
         table_html += "</tbody></table>"
 
@@ -118,14 +123,14 @@ def generate_recent_loto6_table(csv_path):
         st.write(f"エラーが発生しました: {e}")
         st.write(f"エラー詳細: {e.__class__}")
 
-recent_csv_path = "/Users/naokinishiyama/loto-prediction-app/data/loto6_50.csv"
-generate_recent_loto6_table(recent_csv_path)
+recent_csv_path = "/Users/naokinishiyama/loto-prediction-app/data/loto7_50.csv"
+generate_recent_loto7_table(recent_csv_path)
 
 # **③ ランキング**を表示
 st.header("③ 直近24回　出現回数　ランキング")
 def generate_ranking_table(csv_path):
     df = pd.read_csv(csv_path)
-    numbers = df[['第1数字', '第2数字', '第3数字', '第4数字', '第5数字', '第6数字']].values.flatten()
+    numbers = df[['第1数字', '第2数字', '第3数字', '第4数字', '第5数字', '第6数字', '第7数字']].values.flatten()
 
     number_counts = pd.Series(numbers).value_counts().sort_values(ascending=False)
 
@@ -145,7 +150,7 @@ def generate_ranking_table(csv_path):
 
     st.markdown(ranking_html, unsafe_allow_html=True)
 
-ranking_csv_path = "/Users/naokinishiyama/loto-prediction-app/data/loto6_50.csv"
+ranking_csv_path = "/Users/naokinishiyama/loto-prediction-app/data/loto7_50.csv"
 generate_ranking_table(ranking_csv_path)
 
 # **④ 分析**セクション
@@ -156,18 +161,18 @@ def analyze_number_patterns(csv_path):
     df = pd.read_csv(csv_path)
 
     # パターンを取得 (1-9は1、10-19は10...に分類)
-    patterns = df[['第1数字', '第2数字', '第3数字', '第4数字', '第5数字', '第6数字']].apply(
+    patterns = df[['第1数字', '第2数字', '第3数字', '第4数字', '第5数字', '第6数字', '第7数字']].apply(
         lambda x: '-'.join([str((int(num) - 1) // 10 * 10 + 1) if 1 <= int(num) <= 9 else str((int(num) // 10) * 10) for num in sorted(x)]), axis=1)
 
     # パターンごとの出現回数をカウント
     pattern_counts = patterns.value_counts().reset_index()
     pattern_counts.columns = ['パターン', '出現回数']
 
-    st.write("出現したパターンとその回数:1→1〜9,10→10〜19,20→20〜29,30→30〜39,40→40〜43,")
+    st.write("出現したパターンとその回数:1→1〜9,10→10〜19,20→20〜29,30→30〜37,")
     st.write(pattern_counts)
 
 # CSVファイルのパスを指定して関数を呼び出し
-analyze_number_patterns("/Users/naokinishiyama/loto-prediction-app/data/loto6_50.csv")
+analyze_number_patterns("/Users/naokinishiyama/loto-prediction-app/data/loto7_50.csv")
 
 # **⑤ 各位の出現回数TOP5**
 st.header("各位の出現回数TOP5")
@@ -176,11 +181,11 @@ def get_top5_numbers(df):
     number_groups = {'1': [], '10': [], '20': [], '30': []}
 
     # 直近24回分の数字を取得して各位に分類
-    for i in range(1, 7):
+    for i in range(1, 8):  # ロト7は7つの数字がある
         number_groups['1'].extend(df[f'第{i}数字'][df[f'第{i}数字'].between(1, 9)].values)
         number_groups['10'].extend(df[f'第{i}数字'][df[f'第{i}数字'].between(10, 19)].values)
         number_groups['20'].extend(df[f'第{i}数字'][df[f'第{i}数字'].between(20, 29)].values)
-        number_groups['30'].extend(df[f'第{i}数字'][df[f'第{i}数字'].between(30, 43)].values)
+        number_groups['30'].extend(df[f'第{i}数字'][df[f'第{i}数字'].between(30, 37)].values)  # ロト7の範囲
 
     # 各位のTOP5を計算
     top5_1 = pd.Series(number_groups['1']).value_counts()
@@ -200,6 +205,7 @@ def get_top5_numbers(df):
     st.write(top5_df)
 
 # **⑥ 各数字の出現回数TOP3**
+st.header("各数字の出現回数TOP3")
 def get_top3_numbers_by_position(df):
     results = {
         '順位': ['1位', '2位', '3位'],
@@ -208,11 +214,12 @@ def get_top3_numbers_by_position(df):
         '第3数字': [],
         '第4数字': [],
         '第5数字': [],
-        '第6数字': []
+        '第6数字': [],
+        '第7数字': []  # 第7数字を追加
     }
 
-    # 各位（第1数字から第6数字まで）のループ
-    for i in range(1, 7):
+    # 各位（第1数字から第7数字まで）のループ
+    for i in range(1, 8):  # 第7数字まで対応
         col_name = f'第{i}数字'
         
         # 出現回数をカウント
@@ -241,11 +248,17 @@ def get_top3_numbers_by_position(df):
 
         # 最後の順位も追加
         if same_rank_numbers:
-            results[f'第{i}数字'].append(f"{', '.join(map(str, same_rank_numbers))} ({prev_count}回)")
+            results[f'第{i}数字'].append(f"{', '.join(map(str, same_rank_numbers))} ({prev_count}回)")  # 正しく閉じる
 
         # 空のセルは空欄にする
         while len(results[f'第{i}数字']) < 3:
             results[f'第{i}数字'].append("")
+
+    # ここでリストの長さが一致しているか確認
+    max_length = max(len(v) for v in results.values())
+    for key in results:
+        while len(results[key]) < max_length:
+            results[key].append("")
 
     # 結果をデータフレームに変換
     top3_df = pd.DataFrame(results)
@@ -254,58 +267,26 @@ def get_top3_numbers_by_position(df):
     top3_df.index = [''] * len(top3_df)
     
     # テーブルを表示
-    st.header("第1数字〜第6数字　各数字の出現回数TOP3")
+    st.header("第1数字〜第7数字　各数字の出現回数TOP3")
     st.table(top3_df)
 
 # データの読み込み
-df = pd.read_csv("/Users/naokinishiyama/loto-prediction-app/data/loto6_50.csv")
+df = pd.read_csv("/Users/naokinishiyama/loto-prediction-app/data/loto7_50.csv")
 
 # 出現回数TOP5を表示
 get_top5_numbers(df)
 
 # 出現回数TOP3を表示
 get_top3_numbers_by_position(df)
-import pandas as pd
-import streamlit as st
-
-# CSVファイルを読み込む
-df = pd.read_csv("/Users/naokinishiyama/loto-prediction-app/data/loto6_50.csv")
-
-# A数字とB数字の関数
-def generate_AB_numbers(df):
-    # A数字: 直近24回で出現回数3〜4回の数字を抽出
-    number_groups = df[['第1数字', '第2数字', '第3数字', '第4数字', '第5数字', '第6数字']].values.flatten()
-    number_counts = pd.Series(number_groups).value_counts()
-    A_numbers = number_counts[(number_counts >= 3) & (number_counts <= 4)].index.tolist()
-
-    # B数字: 直近24回で出現回数5回以上の数字を抽出
-    B_numbers = number_counts[number_counts >= 5].index.tolist()
-
-    # A数字とB数字を横並びにして表示するためのDataFrameを作成
-    AB_numbers_df = pd.DataFrame({
-        'A数字　出現回数3〜4回': [', '.join(map(str, A_numbers))],
-        'B数字　出現回数5回以上': [', '.join(map(str, B_numbers))]
-    })
-
-    # 横並びにして表示
-    st.write("A数字とB数字:")
-    st.table(AB_numbers_df)
-
-# A数字とB数字のテーブルを表示
-generate_AB_numbers(df)
-
-# **⑩ 予測結果**
-st.header("⑤ 予想セクション")
-st.write("予想アルゴリズム　A数字、B数字を中心にAI予想:")
 
 # **⑤ 予想数の選択**
 prediction_count = st.selectbox("予想数", [10, 30, 100, 300], index=0)
 
 # 予測アルゴリズムを呼び出す
-predictions = generate_loto6_prediction(df, prediction_count)
+predictions = generate_loto7_prediction(df, prediction_count)
 
 # 予測結果を表示
-prediction_df = pd.DataFrame(predictions, columns=["第1数字", "第2数字", "第3数字", "第4数字", "第5数字", "第6数字"])
+prediction_df = pd.DataFrame(predictions, columns=["第1数字", "第2数字", "第3数字", "第4数字", "第5数字", "第6数字","第7数字"])
 
 # テーブルとして表示
 st.table(prediction_df)
