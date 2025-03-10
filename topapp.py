@@ -6,6 +6,19 @@ def display_top():
     st.title("ロト予想アプリ")
     st.write("ここにTOPページの内容を表示")
     # 必要に応じてTOPページの詳細を追加
+import streamlit as st
+import requests
+
+# GitHub から Python ファイルを読み込む
+url = "https://raw.githubusercontent.com/Naobro/lototop-app/main/loto6_top.py"
+response = requests.get(url)
+
+# ファイルが正しく読み込めた場合
+if response.status_code == 200:
+    code = response.text
+    st.code(code, language='python')  # Streamlit でコードを表示
+else:
+    st.error("ページが見つかりません")
 
 import streamlit as st
 
