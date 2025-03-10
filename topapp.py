@@ -9,23 +9,11 @@ def display_top():
 
 import streamlit as st
 
-def display_top():
-    st.title("ロト予想アプリ")
-    st.write("ここにTOPページの内容を表示")
-    # さらにTOPページの詳細なコードを追加します
-
-import streamlit as st
-import os
-
 # ヘッダー画像のパス
-header_image_path = "https://raw.githubusercontent.com/Naobro/lototop-app/main/header.pn"
+header_image_path = "https://raw.githubusercontent.com/Naobro/lototop-app/main/header.png"  # 正しいURLに修正
 
-# 画像ファイルが存在するか確認
-if os.path.exists(header_image_path):
-    st.image(header_image_path, use_container_width=True)  # use_container_widthを使用して画像を表示
-else:
-    st.error("ヘッダー画像が見つかりません。ファイルパスを確認してください。")
-
+# ヘッダー画像を表示
+st.image(header_image_path, use_container_width=True)
 
 # サイトタイトルと紹介文
 st.title("AI宝くじ分析・予想サイト")
@@ -37,11 +25,11 @@ st.markdown("""
 # サイトのリンク
 st.header("各宝くじページへのリンク")
 st.markdown("""
-- [ロト6](#ロト6ページリンク)
-- [ロト7](#ロト7ページリンク)
-- [ミニロト（作成中）](#ミニロトページリンク)
-- [ナンバーズ3](#ナンバーズ3ページリンク)
-- [ナンバーズ4](#ナンバーズ4ページリンク)
+- [ロト6](loto6_top.py)
+- [ロト7](loto7_top.py)
+- [ミニロト（作成中）](miniloto_top.py)
+- [ナンバーズ3](numbers3_top.py)
+- [ナンバーズ4](numbers4_top.py)
 """)
 
 # その他のリンク
