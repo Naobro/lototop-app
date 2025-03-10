@@ -14,38 +14,43 @@ st.markdown("""
 各ページでは、予想結果、ランキング、分析結果、過去の当選実績などを確認できます。
 """)
 
-# トップページ
+import streamlit as st
+import os
+
+# サイトの紹介ページ（トップページ）
 def top_page():
     st.title("AI宝くじ分析・予想サイト")
     st.write("ここにトップページの内容を表示します。")
-    st.markdown("[ロト6ページへ](https://lototop-app-zfebrbauzjnzktogtf3sqm.streamlit.app/?page=loto6)")  # ロト6ページへのリンク
-    st.markdown("[ロト7ページへ](https://lototop-app-zfebrbauzjnzktogtf3sqm.streamlit.app/?page=loto7)")  # ロト7ページへのリンク
-    st.markdown("[ミニロトページへ](https://lototop-app-zfebrbauzjnzktogtf3sqm.streamlit.app/?page=miniloto)")  # ミニロトページへのリンク
-    st.markdown("[ナンバーズ3ページへ](https://lototop-app-zfebrbauzjnzktogtf3sqm.streamlit.app/?page=numbers3)")  # ナンバーズ3ページへのリンク
-    st.markdown("[ナンバーズ4ページへ](https://lototop-app-zfebrbauzjnzktogtf3sqm.streamlit.app/?page=numbers4)")  # ナンバーズ4ページへのリンク
+    
+    # 各ページへのリンク
+    st.markdown("[ロト6ページへ](loto6_top.py)")  # ロト6ページへのリンク
+    st.markdown("[ロト7ページへ](loto7_top.py)")  # ロト7ページへのリンク
+    st.markdown("[ミニロトページへ](miniloto_top.py)")  # ミニロトページへのリンク
+    st.markdown("[ナンバーズ3ページへ](numbers3_top.py)")  # ナンバーズ3ページへのリンク
+    st.markdown("[ナンバーズ4ページへ](numbers4_top.py)")  # ナンバーズ4ページへのリンク
 
-# ドロップダウンメニューを使ってページを選択
+# ドロップダウンメニューでページを選択する
 def page_selector():
-    page = st.selectbox("どのページを表示しますか？", 
+    page = st.selectbox("どのページを表示しますか?", 
                         ["トップページ", "ロト6ページ", "ロト7ページ", "ミニロトページ", "ナンバーズ3ページ", "ナンバーズ4ページ"])
 
     if page == "トップページ":
         top_page()
     elif page == "ロト6ページ":
         st.write("ロト6予想の詳細ページへリンクします。")
-        st.markdown("[ロト6ページへ](https://lototop-app-zfebrbauzjnzktogtf3sqm.streamlit.app/?page=loto6)")
+        st.markdown("[ロト6ページへ](loto6_top.py)")  # `loto6_top.py`ファイルのリンク
     elif page == "ロト7ページ":
         st.write("ロト7予想の詳細ページへリンクします。")
-        st.markdown("[ロト7ページへ](https://lototop-app-zfebrbauzjnzktogtf3sqm.streamlit.app/?page=loto7)")
+        st.markdown("[ロト7ページへ](loto7_top.py)")  # `loto7_top.py`ファイルのリンク
     elif page == "ミニロトページ":
         st.write("ミニロト予想の詳細ページへリンクします。")
-        st.markdown("[ミニロトページへ](https://lototop-app-zfebrbauzjnzktogtf3sqm.streamlit.app/?page=miniloto)")
+        st.markdown("[ミニロトページへ](miniloto_top.py)")  # `miniloto_top.py`ファイルのリンク
     elif page == "ナンバーズ3ページ":
         st.write("ナンバーズ3予想の詳細ページへリンクします。")
-        st.markdown("[ナンバーズ3ページへ](https://lototop-app-zfebrbauzjnzktogtf3sqm.streamlit.app/?page=numbers3)")
+        st.markdown("[ナンバーズ3ページへ](numbers3_top.py)")  # `numbers3_top.py`ファイルのリンク
     elif page == "ナンバーズ4ページ":
         st.write("ナンバーズ4予想の詳細ページへリンクします。")
-        st.markdown("[ナンバーズ4ページへ](https://lototop-app-zfebrbauzjnzktogtf3sqm.streamlit.app/?page=numbers4)")
+        st.markdown("[ナンバーズ4ページへ](numbers4_top.py)")  # `numbers4_top.py`ファイルのリンク
 
 # 実行する
 page_selector()
