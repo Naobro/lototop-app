@@ -17,19 +17,15 @@ st.markdown("""
 import streamlit as st
 import os
 
-# サイトの紹介ページ（トップページ）
+import streamlit as st
+
 def top_page():
     st.title("AI宝くじ分析・予想サイト")
     st.write("ここにトップページの内容を表示します。")
-    
-    # 各ページへのリンク
-    st.markdown("[ロト6ページへ](loto6_top.py)")  # ロト6ページへのリンク
-    st.markdown("[ロト7ページへ](loto7_top.py)")  # ロト7ページへのリンク
-    st.markdown("[ミニロトページへ](miniloto_top.py)")  # ミニロトページへのリンク
-    st.markdown("[ナンバーズ3ページへ](numbers3_top.py)")  # ナンバーズ3ページへのリンク
-    st.markdown("[ナンバーズ4ページへ](numbers4_top.py)")  # ナンバーズ4ページへのリンク
+    st.markdown("[ロト6ページへ](pages/loto6_top.py)")  # ロト6ページへのリンク
+    st.markdown("[ロト7ページへ](pages/loto7_top.py)")  # ロト7ページへのリンク
 
-# ドロップダウンメニューでページを選択する
+# ページを選択するドロップダウンメニュー
 def page_selector():
     page = st.selectbox("どのページを表示しますか?", 
                         ["トップページ", "ロト6ページ", "ロト7ページ", "ミニロトページ", "ナンバーズ3ページ", "ナンバーズ4ページ"])
@@ -38,23 +34,22 @@ def page_selector():
         top_page()
     elif page == "ロト6ページ":
         st.write("ロト6予想の詳細ページへリンクします。")
-        st.markdown("[ロト6ページへ](loto6_top.py)")  # `loto6_top.py`ファイルのリンク
+        st.markdown("[ロト6ページへ](pages/loto6_top.py)")
     elif page == "ロト7ページ":
         st.write("ロト7予想の詳細ページへリンクします。")
-        st.markdown("[ロト7ページへ](loto7_top.py)")  # `loto7_top.py`ファイルのリンク
+        st.markdown("[ロト7ページへ](pages/loto7_top.py)")
     elif page == "ミニロトページ":
         st.write("ミニロト予想の詳細ページへリンクします。")
-        st.markdown("[ミニロトページへ](miniloto_top.py)")  # `miniloto_top.py`ファイルのリンク
+        st.markdown("[ミニロトページへ](pages/miniloto_top.py)")
     elif page == "ナンバーズ3ページ":
         st.write("ナンバーズ3予想の詳細ページへリンクします。")
-        st.markdown("[ナンバーズ3ページへ](numbers3_top.py)")  # `numbers3_top.py`ファイルのリンク
+        st.markdown("[ナンバーズ3ページへ](pages/numbers3_top.py)")
     elif page == "ナンバーズ4ページ":
         st.write("ナンバーズ4予想の詳細ページへリンクします。")
-        st.markdown("[ナンバーズ4ページへ](numbers4_top.py)")  # `numbers4_top.py`ファイルのリンク
+        st.markdown("[ナンバーズ4ページへ](pages/numbers4_top.py)")
 
 # 実行する
 page_selector()
-
 # その他のリンク
 st.header("その他のセクション")
 st.markdown("""
