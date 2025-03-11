@@ -1,11 +1,5 @@
 import streamlit as st
 
-# ヘッダー画像のURL
-header_image_url = "https://raw.githubusercontent.com/Naobro/lototop-app/main/header.png"  # 画像のURLを確認
-
-# ヘッダー画像を表示
-st.image(header_image_url, use_container_width=True)
-
 # サイトタイトルと紹介文
 st.title("AI宝くじ分析・予想サイト")
 st.markdown("""
@@ -13,8 +7,9 @@ st.markdown("""
 各ページでは、予想結果、ランキング、分析結果、過去の当選実績などを確認できます。
 """)
 
-# ページを選択するドロップダウンメニュー
+# メインページで選ぶリンク
 def page_selector():
+    # プルダウンメニューでページを選択
     page = st.selectbox("どのページを表示しますか?", 
                         ["ロト6ページ", "ロト7ページ", "ミニロトページ", "ナンバーズ3ページ", "ナンバーズ4ページ"])
 
@@ -49,18 +44,6 @@ def display_numbers3_page():
 def display_numbers4_page():
     st.title("ナンバーズ4 AI予想")
     st.write("ナンバーズ4予想ページの詳細内容をここに表示します。")
-
-# トップページ
-def top_page():
-    st.title("AI宝くじ分析・予想サイト")
-    st.write("ここにトップページの内容を表示します。")
-    
-    # ページリンク（Streamlit内のリンク）
-    st.markdown("[ロト6ページへ](#ロト6ページ)")  # ロト6ページへのリンク
-    st.markdown("[ロト7ページへ](#ロト7ページ)")  # ロト7ページへのリンク
-    st.markdown("[ミニロトページへ](#ミニロトページ)")  # ミニロトページへのリンク
-    st.markdown("[ナンバーズ3ページへ](#ナンバーズ3ページ)")  # ナンバーズ3ページへのリンク
-    st.markdown("[ナンバーズ4ページへ](#ナンバーズ4ページ)")  # ナンバーズ4ページへのリンク
 
 # 実行する
 page_selector()
