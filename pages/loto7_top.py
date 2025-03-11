@@ -1,15 +1,18 @@
-# pages/loto7_top.py
-
 import streamlit as st
 
-def display_loto7():
-    st.title("ロト7 AI予想")
-    st.write("ロト7予想ページの詳細内容をここに表示します。")
-    # ここにロト7に関連する内容を追加
+def show_page():
+    st.title("ロト7 - 当選予想ページ")
+    # ロト7に関連するコンテンツをここに追加
+    st.write("ここにロト7の予想結果が表示されます")
+    # ロト7の予想結果や分析などをここに追加
+    import ssl
+import pandas as pd
 
-# 実行する
-display_loto7()
-import ssl
+# SSL証明書の検証を無効にする
+ssl._create_default_https_context = ssl._create_unverified_context
+
+# CSVを読み込む
+df = pd.read_csv("https://raw.githubusercontent.com/Naobro/lototop-app/main/data/loto7_50.csv")
 import pandas as pd
 import random
 import streamlit as st
@@ -302,3 +305,11 @@ prediction_df = pd.DataFrame(predictions, columns=["第1数字", "第2数字", "
 
 # テーブルとして表示
 st.table(prediction_df)
+import ssl
+import pandas as pd
+
+# SSL証明書の検証を無効にする
+ssl._create_default_https_context = ssl._create_unverified_context
+
+# CSVを読み込む
+df = pd.read_csv("https://raw.githubusercontent.com/Naobro/lototop-app/main/data/loto7_50.csv")
