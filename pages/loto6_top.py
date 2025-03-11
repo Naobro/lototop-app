@@ -308,12 +308,17 @@ st.table(prediction_df)
 import streamlit as st
 import pandas as pd
 
-def run():
-    # ここに元々のコードをそのまま記載
-    st.title("ロト6 AI予想サイト")
+# pages/loto6_top.py
 
+import streamlit as st
+import pandas as pd
+
+# run() メソッドを追加
+def run():
+    st.title("ロト6 AI予想サイト")
+    
     # **① 最新の当選番号**を表示
-    st.header("①最新の当選番号")
+    st.header("① 最新の当選番号")
 
     # **最新の当選番号テーブルを生成**
     def generate_loto6_table(latest_csv, prizes_csv, carryover_csv):
