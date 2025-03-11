@@ -298,4 +298,3 @@ prediction_df = pd.DataFrame(predictions, columns=["第1数字", "第2数字", "
 
 # テーブルとして表示
 st.table(prediction_df)
-
