@@ -90,3 +90,14 @@ if 'predictions' not in st.session_state:
 
 # 予想を表示
 display_predictions(st.session_state.predictions)
+# 予測アルゴリズムが返すデータがリストのリスト（各リストは予測の数字のセット）であることを確認
+predictions = generate_miniloto_prediction(df, prediction_count)
+
+# predictions の確認
+print(predictions)  # デバッグ用に追加
+
+# 正しい形式であれば DataFrame に変換
+prediction_df = pd.DataFrame(predictions, columns=["第1数字", "第2数字", "第3数字", "第4数字", "第5数字"])
+
+# テーブル表示
+st.table(prediction_df)
