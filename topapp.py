@@ -33,9 +33,14 @@ def display_page(page_name):
     try:
         # ページをインポートして表示
         page = importlib.import_module(page_name)
-        page.run()  # 各ページの run() 関数を呼び出す
+        if hasattr(page, 'run'):
+            page.run()  # 各ページの run() 関数を呼び出す
+        else:
+            st.error(f"{page_name} に 'run' メソッドが見つかりません。")
     except ModuleNotFoundError:
         st.error(f"{page_name} が見つかりませんでした。")
+    except Exception as e:
+        st.error(f"予期しないエラーが発生しました: {str(e)}")
 
 # 実行する
 page_selector()
