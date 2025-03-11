@@ -53,11 +53,11 @@ def generate_miniloto_prediction(df, prediction_count=10):
     other_numbers = get_other_numbers(multiple_occurrences, previous_numbers)
 
     column_ranges = {
-        1: list(range(1, 10)),    # 一列目 (1〜9)
-        2: list(range(10, 19)),   # 二列目 (10〜18)
-        3: list(range(19, 22)),   # 三列目 (19〜21)
-        4: list(range(22, 28)),   # 四列目 (22〜27)
-        5: list(range(28, 32))    # 五列目 (28〜31)
+        1: list(range(1, 10)),    # 一列目 (1〜14)
+        2: list(range(10, 19)),   # 二列目 (2〜21)
+        3: list(range(19, 22)),   # 三列目 (6〜26)
+        4: list(range(22, 28)),   # 四列目 (10〜30)
+        5: list(range(28, 32))    # 五列目 (18〜31)
     }
 
     predictions = []
@@ -84,17 +84,21 @@ def display_predictions(predictions):
 # **予想アルゴリズム**
 st.header("⑤ 予想")
 
+# データの読み込み
+df = pd.read_csv("https://raw.githubusercontent.com/Naobro/lototop-app/main/data/miniloto_50.csv")
+
 # セッション状態を使用して予想結果を保存
 if 'predictions' not in st.session_state:
-    st.session_state.predictions = generate_miniloto_prediction(pd.read_csv("https://raw.githubusercontent.com/Naobro/lototop-app/main/data/miniloto_50.csv"), prediction_count=10)
+    st.session_state.predictions = generate_miniloto_prediction(df, prediction_count=10)
 
 # 予想を表示
 display_predictions(st.session_state.predictions)
+
 # 予測アルゴリズムが返すデータがリストのリスト（各リストは予測の数字のセット）であることを確認
-predictions = generate_miniloto_prediction(df, prediction_count)
+predictions = generate_miniloto_prediction(df, prediction_count=10)
 
 # predictions の確認
-print(predictions)  # デバッグ用に追加
+st.write(predictions)  # デバッグ用に追加
 
 # 正しい形式であれば DataFrame に変換
 prediction_df = pd.DataFrame(predictions, columns=["第1数字", "第2数字", "第3数字", "第4数字", "第5数字"])
