@@ -1,3 +1,14 @@
+# pages/loto7_top.py
+
+import streamlit as st
+
+def display_loto7():
+    st.title("ロト7 AI予想")
+    st.write("ロト7予想ページの詳細内容をここに表示します。")
+    # ここにロト7に関連する内容を追加
+
+# 実行する
+display_loto7()
 import ssl
 import pandas as pd
 import random
