@@ -328,7 +328,19 @@ def run():
     st.header("④ 分析セクション")
     analyze_number_patterns("https://raw.githubusercontent.com/Naobro/lototop-app/main/data/loto6_50.csv")
 
-    # **⑤ 予測セクション**
+    # **⑤ 各位の出現回数TOP5**
+    st.header("各位の出現回数TOP5")
+    get_top5_numbers(pd.read_csv("https://raw.githubusercontent.com/Naobro/lototop-app/main/data/loto6_50.csv"))
+
+    # **⑥ 各数字の出現回数TOP3**
+    st.header("各数字の出現回数TOP3")
+    get_top3_numbers_by_position(pd.read_csv("https://raw.githubusercontent.com/Naobro/lototop-app/main/data/loto6_50.csv"))
+
+    # **⑦ A数字とB数字**
+    st.header("A数字とB数字")
+    generate_AB_numbers(pd.read_csv("https://raw.githubusercontent.com/Naobro/lototop-app/main/data/loto6_50.csv"))
+
+    # **⑧ 予測セクション**
     st.header("⑤ 予測セクション")
     prediction_count = st.selectbox("予想数", [10, 30, 100, 300], index=0)
     predictions = generate_loto6_prediction(pd.read_csv("https://raw.githubusercontent.com/Naobro/lototop-app/main/data/loto6_50.csv"), prediction_count)
