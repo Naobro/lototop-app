@@ -50,3 +50,12 @@ def page_selector():
 
 # この部分でページを表示するコードを記述
 page_selector()
+import importlib
+
+def page_selector():
+    try:
+        # ページモジュールを動的にインポート
+        page = importlib.import_module("pages.loto6_top")  # "pages.loto6_top"が正しいか確認
+        page.run()  # ページのrun()メソッドを呼び出し
+    except ModuleNotFoundError as e:
+        print(f"Error importing page module: {e}")
