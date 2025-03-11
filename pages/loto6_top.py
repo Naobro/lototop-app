@@ -300,8 +300,5 @@ prediction_df = pd.DataFrame(predictions, columns=["第1数字", "第2数字", "
 st.table(prediction_df)
 # 必要なインポートが最初にあります
 
-# ここに元々のコード
-
-# 最後にこの行を追加してください
 if __name__ == "__main__":
     run()
