@@ -1,4 +1,5 @@
 import streamlit as st
+import importlib
 
 # サイトタイトルと紹介文
 st.title("AI宝くじ分析・予想サイト")
@@ -14,36 +15,24 @@ def page_selector():
                         ["ロト6ページ", "ロト7ページ", "ミニロトページ", "ナンバーズ3ページ", "ナンバーズ4ページ"])
 
     if page == "ロト6ページ":
-        display_loto6_page()
+        display_page("loto6_top")
     elif page == "ロト7ページ":
-        display_loto7_page()
+        display_page("loto7_top")
     elif page == "ミニロトページ":
-        display_miniloto_page()
+        display_page("miniloto_top")
     elif page == "ナンバーズ3ページ":
-        display_numbers3_page()
+        display_page("numbers3_top")
     elif page == "ナンバーズ4ページ":
-        display_numbers4_page()
+        display_page("numbers4_top")
 
 # 各ページに遷移するための関数
-def display_loto6_page():
-    st.title("ロト6 AI予想")
-    st.write("ロト6予想ページの詳細内容をここに表示します。")
-
-def display_loto7_page():
-    st.title("ロト7 AI予想")
-    st.write("ロト7予想ページの詳細内容をここに表示します。")
-
-def display_miniloto_page():
-    st.title("ミニロト AI予想")
-    st.write("ミニロト予想ページの詳細内容をここに表示します。")
-
-def display_numbers3_page():
-    st.title("ナンバーズ3 AI予想")
-    st.write("ナンバーズ3予想ページの詳細内容をここに表示します。")
-
-def display_numbers4_page():
-    st.title("ナンバーズ4 AI予想")
-    st.write("ナンバーズ4予想ページの詳細内容をここに表示します。")
+def display_page(page_name):
+    try:
+        # ページをインポートして表示
+        page = importlib.import_module(page_name)
+        page.run()  # 各ページの run() 関数を呼び出す
+    except ModuleNotFoundError:
+        st.error(f"{page_name} が見つかりませんでした。")
 
 # 実行する
 page_selector()
