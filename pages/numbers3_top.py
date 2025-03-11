@@ -1,3 +1,9 @@
+import streamlit as st
+
+def run():
+    # ページの内容
+    st.title("ナンバーズ3 予想ページ")
+    st.write("ここにナンバーズ3の予想やその他の情報を表示します。")
 # pages/numbers3_top.py
 
 import streamlit as st
