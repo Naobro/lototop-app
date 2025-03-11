@@ -1,11 +1,6 @@
+# topapp.py
+
 import streamlit as st
-import requests
-
-# ヘッダー画像のURL（GitHubから画像を取得）
-header_image_url = "https://raw.githubusercontent.com/Naobro/lototop-app/main/header.png"
-
-# ヘッダー画像を表示
-st.image(header_image_url, use_container_width=True)
 
 # サイトタイトルと紹介文
 st.title("AI宝くじ分析・予想サイト")
@@ -22,19 +17,14 @@ def page_selector():
     if page == "トップページ":
         top_page()
     elif page == "ロト6ページ":
-        # ロト6ページへ遷移
         display_loto6_page()
     elif page == "ロト7ページ":
-        # ロト7ページへ遷移
         display_loto7_page()
     elif page == "ミニロトページ":
-        # ミニロトページへ遷移
         display_miniloto_page()
     elif page == "ナンバーズ3ページ":
-        # ナンバーズ3ページへ遷移
         display_numbers3_page()
     elif page == "ナンバーズ4ページ":
-        # ナンバーズ4ページへ遷移
         display_numbers4_page()
 
 # 各ページに遷移するための関数
