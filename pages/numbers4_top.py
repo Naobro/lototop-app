@@ -1,15 +1,11 @@
-# pages/numbers4_top.py
-
 import streamlit as st
 
-def display_numbers4():
-    st.title("ナンバーズ4 AI予想")
-    st.write("ナンバーズ4予想ページの詳細内容をここに表示します。")
-    # ここにナンバーズ4に関連する内容を追加
-
-# 実行する
-display_numbers4()
-import pandas as pd
+def show_page():
+    st.title("ナンバーズ4 - 当選予想ページ")
+    # ナンバーズ4に関連するコンテンツをここに追加
+    st.write("ここにナンバーズ4の予想結果が表示されます")
+    # ナンバーズ4の予想結果や分析などをここに追加
+    import pandas as pd
 import streamlit as st
 import html
 
