@@ -259,6 +259,11 @@ get_top5_numbers(df)
 
 # 出現回数TOP3を表示
 get_top3_numbers_by_position(df)
+import pandas as pd
+import streamlit as st
+
+# CSVファイルを読み込む
+df = pd.read_csv("https://raw.githubusercontent.com/Naobro/lototop-app/main/data/loto6_50.csv")
 
 # A数字とB数字の関数
 def generate_AB_numbers(df):
@@ -298,15 +303,123 @@ prediction_df = pd.DataFrame(predictions, columns=["第1数字", "第2数字", "
 
 # テーブルとして表示
 st.table(prediction_df)
-# 必要なインポートが最初にあります
+# pages/loto6_top.py
 
 import streamlit as st
+import pandas as pd
 
 def run():
-    # ロト6のコンテンツ
+    # ここに元々のコードをそのまま記載
     st.title("ロト6 AI予想サイト")
-    # 他のロジックや表示内容をここに記載
 
-# `if __name__ == "__main__":`は削除します
+    # **① 最新の当選番号**を表示
+    st.header("①最新の当選番号")
 
+    # **最新の当選番号テーブルを生成**
+    def generate_loto6_table(latest_csv, prizes_csv, carryover_csv):
+        try:
+            # 最新の抽選結果を読み込む
+            df_latest = pd.read_csv(latest_csv)
+            latest_result = df_latest.iloc[0]  # 最新の結果を取得
 
+            # キャリーオーバーを読み込む
+            df_carryover = pd.read_csv(carryover_csv)
+            carryover_result = df_carryover.iloc[0]  # 最新のキャリーオーバーを取得
+
+            # 当選口数と金額を読み込む
+            df_prizes = pd.read_csv(prizes_csv)
+            prizes_result = df_prizes.iloc[0]  # 最新の結果を取得
+
+            # HTMLテーブルの生成
+            table_html = f"""
+            <table class='custom-table' style="width: 100%; border-collapse: collapse; text-align: right;">
+                <tr>
+                    <th rowspan="2" style="width:15%;">回号</th>
+                    <td rowspan="2" class="center-align" style="font-weight: bold; font-size: 20px; text-align: right;">第{latest_result['回号'].replace('回回', '回')}</td>
+                    <th style="width:15%;">抽選日</th>
+                    <td class="center-align" style="text-align: right;">{latest_result['抽せん日'].replace('抽選', '')}</td>
+                </tr>
+                <tr>
+                    <th>本数字</th>
+                    <td class="center-align" style="font-size: 18px; font-weight: bold; color: #ff6347; text-align: right;">{latest_result['本数字']}</td>
+                </tr>
+                <tr>
+                    <th>ボーナス数字</th>
+                    <td colspan="3" class="center-align" style="font-size: 18px; font-weight: bold; color: #ff6347; text-align: right;">
+                        <span class="bold-red">({latest_result['ボーナス数字']})</span>
+                    </td>
+                </tr>
+                <tr>
+                    <th>1等</th>
+                    <td colspan="2" class="center-align" style="text-align: right;">{prizes_result['口数'].replace('口', '')}口</td>
+                    <td class="right-align" style="text-align: right;">{prizes_result['当選金額']}</td>
+                </tr>
+                <tr>
+                    <th>2等</th>
+                    <td colspan="2" class="center-align" style="text-align: right;">{df_prizes.iloc[1]['口数'].replace('口', '')}口</td>
+                    <td class="right-align" style="text-align: right;">{df_prizes.iloc[1]['当選金額']}</td>
+                </tr>
+                <tr>
+                    <th>3等</th>
+                    <td colspan="2" class="center-align" style="text-align: right;">{df_prizes.iloc[2]['口数'].replace('口', '')}口</td>
+                    <td class="right-align" style="text-align: right;">{df_prizes.iloc[2]['当選金額']}</td>
+                </tr>
+                <tr>
+                    <th>4等</th>
+                    <td colspan="2" class="center-align" style="text-align: right;">{df_prizes.iloc[3]['口数'].replace('口', '')}口</td>
+                    <td class="right-align" style="text-align: right;">{df_prizes.iloc[3]['当選金額']}</td>
+                </tr>
+                <tr>
+                    <th>5等</th>
+                    <td colspan="2" class="center-align" style="text-align: right;">{df_prizes.iloc[4]['口数'].replace('口', '')}口</td>
+                    <td class="right-align" style="text-align: right;">{df_prizes.iloc[4]['当選金額']}</td>
+                </tr>
+                <tr>
+                    <th>キャリーオーバー</th>
+                    <td colspan="3" class="right-align" style="text-align: right;">{carryover_result['キャリーオーバー']}</td>
+                </tr>
+            </table>
+            """
+            return table_html
+        except FileNotFoundError:
+            return "CSVファイルが見つかりませんでした。パスを確認してください。"
+        except Exception as e:
+            return f"エラーが発生しました: {e}"
+
+    # **最新の当選番号**を表示
+    table = generate_loto6_table(
+        "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/loto6_latest.csv",
+        "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/loto6_prizes.csv",
+        "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/loto6_carryover.csv"
+    )
+    st.markdown(table, unsafe_allow_html=True)
+
+    # **② 直近24回の当選番号**を表示
+    st.header("② 直近24回の当選番号")
+    generate_recent_loto6_table("https://raw.githubusercontent.com/Naobro/lototop-app/main/data/loto6_50.csv")
+
+    # **③ ランキング**を表示
+    st.header("③ 直近24回 出現回数 ランキング")
+    generate_ranking_table("https://raw.githubusercontent.com/Naobro/lototop-app/main/data/loto6_50.csv")
+
+    # **④ 分析**セクション
+    st.header("④ 分析セクション")
+    analyze_number_patterns("https://raw.githubusercontent.com/Naobro/lototop-app/main/data/loto6_50.csv")
+
+    # **⑤ 各位の出現回数TOP5**
+    st.header("各位の出現回数TOP5")
+    get_top5_numbers(pd.read_csv("https://raw.githubusercontent.com/Naobro/lototop-app/main/data/loto6_50.csv"))
+
+    # **⑥ 各数字の出現回数TOP3**
+    st.header("各数字の出現回数TOP3")
+    get_top3_numbers_by_position(pd.read_csv("https://raw.githubusercontent.com/Naobro/lototop-app/main/data/loto6_50.csv"))
+
+    # **⑦ A数字とB数字**
+    st.header("A数字とB数字")
+    generate_AB_numbers(pd.read_csv("https://raw.githubusercontent.com/Naobro/lototop-app/main/data/loto6_50.csv"))
+
+    # **⑧ 予測セクション**
+    st.header("⑤ 予測セクション")
+    prediction_count = st.selectbox("予想数", [10, 30, 100, 300], index=0)
+    predictions = generate_loto6_prediction(pd.read_csv("https://raw.githubusercontent.com/Naobro/lototop-app/main/data/loto6_50.csv"), prediction_count)
+    st.table(predictions)
