@@ -18,6 +18,7 @@ def page_selector():
     page = st.selectbox("どのページを表示しますか?", 
                         ["ロト6ページ", "ロト7ページ", "ミニロトページ", "ナンバーズ3ページ", "ナンバーズ4ページ"])
 
+    # 選択されたページに遷移
     if page == "ロト6ページ":
         display_loto6_page()
     elif page == "ロト7ページ":
@@ -33,22 +34,27 @@ def page_selector():
 def display_loto6_page():
     st.title("ロト6 AI予想")
     st.write("ロト6予想ページの詳細内容をここに表示します。")
+    # ここにロト6の詳細内容を追加
 
 def display_loto7_page():
     st.title("ロト7 AI予想")
     st.write("ロト7予想ページの詳細内容をここに表示します。")
+    # ここにロト7の詳細内容を追加
 
 def display_miniloto_page():
     st.title("ミニロト AI予想")
     st.write("ミニロト予想ページの詳細内容をここに表示します。")
+    # ここにミニロトの詳細内容を追加
 
 def display_numbers3_page():
     st.title("ナンバーズ3 AI予想")
     st.write("ナンバーズ3予想ページの詳細内容をここに表示します。")
+    # ここにナンバーズ3の詳細内容を追加
 
 def display_numbers4_page():
     st.title("ナンバーズ4 AI予想")
     st.write("ナンバーズ4予想ページの詳細内容をここに表示します。")
+    # ここにナンバーズ4の詳細内容を追加
 
 # 実行する
 page_selector()
