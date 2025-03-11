@@ -1,21 +1,11 @@
 import streamlit as st
 
-def run():
-    # ページの内容
-    st.title("ナンバーズ3 予想ページ")
-    st.write("ここにナンバーズ3の予想やその他の情報を表示します。")
-# pages/numbers3_top.py
-
-import streamlit as st
-
-def display_numbers3():
-    st.title("ナンバーズ3 AI予想")
-    st.write("ナンバーズ3予想ページの詳細内容をここに表示します。")
-    # ここにナンバーズ3に関連する内容を追加
-
-# 実行する
-display_numbers3()
-import pandas as pd
+def show_page():
+    st.title("ナンバーズ3 - 当選予想ページ")
+    # ナンバーズ3に関連するコンテンツをここに追加
+    st.write("ここにナンバーズ3の予想結果が表示されます")
+    # ナンバーズ3の予想結果や分析などをここに追加
+    import pandas as pd
 import streamlit as st
 import html
 
