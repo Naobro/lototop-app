@@ -1,15 +1,11 @@
-# pages/miniloto_top.py
-
 import streamlit as st
 
-def display_miniloto():
-    st.title("ミニロト AI予想")
-    st.write("ミニロト予想ページの詳細内容をここに表示します。")
-    # ここにミニロトに関連する内容を追加
-
-# 実行する
-display_miniloto()
-import pandas as pd
+def show_page():
+    st.title("ミニロト - 当選予想ページ")
+    # ミニロトに関連するコンテンツをここに追加
+    st.write("ここにミニロトの予想結果が表示されます")
+    # ミニロトの予想結果や分析などをここに追加
+    import pandas as pd
 import streamlit as st
 from miniloto_predictions import generate_miniloto_prediction  # 予測アルゴリズムのインポート
 
