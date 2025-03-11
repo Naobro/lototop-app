@@ -15,15 +15,15 @@ def page_selector():
                         ["ロト6ページ", "ロト7ページ", "ミニロトページ", "ナンバーズ3ページ", "ナンバーズ4ページ"])
 
     if page == "ロト6ページ":
-        display_page("loto6_top")
+        display_page("pages.loto6_top")  # 'pages.loto6_top' を呼び出し
     elif page == "ロト7ページ":
-        display_page("loto7_top")
+        display_page("pages.loto7_top")
     elif page == "ミニロトページ":
-        display_page("miniloto_top")
+        display_page("pages.miniloto_top")
     elif page == "ナンバーズ3ページ":
-        display_page("numbers3_top")
+        display_page("pages.numbers3_top")
     elif page == "ナンバーズ4ページ":
-        display_page("numbers4_top")
+        display_page("pages.numbers4_top")
 
 # 各ページに遷移するための関数
 def display_page(page_name):
