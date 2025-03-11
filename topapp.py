@@ -39,23 +39,3 @@ def display_page(page_name):
 
 # 実行する
 page_selector()
-
-
-import importlib
-
-def page_selector():
-    # 必要なページを呼び出す
-    page = importlib.import_module("pages.loto6_top")  # 例: ロト6ページを呼び出し
-    page.run()  # ここで`run()`を呼び出す
-
-# この部分でページを表示するコードを記述
-page_selector()
-import importlib
-
-def page_selector():
-    try:
-        # ページモジュールを動的にインポート
-        page = importlib.import_module("pages.loto6_top")  # "pages.loto6_top"が正しいか確認
-        page.run()  # ページのrun()メソッドを呼び出し
-    except ModuleNotFoundError as e:
-        print(f"Error importing page module: {e}")
