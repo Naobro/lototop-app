@@ -1,8 +1,7 @@
 import streamlit as st
-import requests
 
 # ヘッダー画像のURL
-header_image_url = "https://raw.githubusercontent.com/Naobro/lototop-app/main/header.png"
+header_image_url = "https://raw.githubusercontent.com/Naobro/lototop-app/main/header.png"  # 画像のURLを確認
 
 # ヘッダー画像を表示
 st.image(header_image_url, use_container_width=True)
@@ -17,11 +16,9 @@ st.markdown("""
 # ページを選択するドロップダウンメニュー
 def page_selector():
     page = st.selectbox("どのページを表示しますか?", 
-                        ["トップページ", "ロト6ページ", "ロト7ページ", "ミニロトページ", "ナンバーズ3ページ", "ナンバーズ4ページ"])
+                        ["ロト6ページ", "ロト7ページ", "ミニロトページ", "ナンバーズ3ページ", "ナンバーズ4ページ"])
 
-    if page == "トップページ":
-        top_page()
-    elif page == "ロト6ページ":
+    if page == "ロト6ページ":
         display_loto6_page()
     elif page == "ロト7ページ":
         display_loto7_page()
