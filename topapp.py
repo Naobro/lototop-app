@@ -1,6 +1,7 @@
 import streamlit as st
+import requests
 
-# ヘッダー画像のパス
+# ヘッダー画像のURL
 header_image_url = "https://raw.githubusercontent.com/Naobro/lototop-app/main/header.png"
 
 # ヘッダー画像を表示
@@ -13,13 +14,14 @@ st.markdown("""
 各ページでは、予想結果、ランキング、分析結果、過去の当選実績などを確認できます。
 """)
 
-# **ページを選択するドロップダウンメニュー**
+# ページを選択するドロップダウンメニュー
 def page_selector():
     page = st.selectbox("どのページを表示しますか?", 
-                        ["ロト6ページ", "ロト7ページ", "ミニロトページ", "ナンバーズ3ページ", "ナンバーズ4ページ"])
+                        ["トップページ", "ロト6ページ", "ロト7ページ", "ミニロトページ", "ナンバーズ3ページ", "ナンバーズ4ページ"])
 
-    # 選択されたページに遷移
-    if page == "ロト6ページ":
+    if page == "トップページ":
+        top_page()
+    elif page == "ロト6ページ":
         display_loto6_page()
     elif page == "ロト7ページ":
         display_loto7_page()
@@ -34,27 +36,34 @@ def page_selector():
 def display_loto6_page():
     st.title("ロト6 AI予想")
     st.write("ロト6予想ページの詳細内容をここに表示します。")
-    # ここにロト6の詳細内容を追加
 
 def display_loto7_page():
     st.title("ロト7 AI予想")
     st.write("ロト7予想ページの詳細内容をここに表示します。")
-    # ここにロト7の詳細内容を追加
 
 def display_miniloto_page():
     st.title("ミニロト AI予想")
     st.write("ミニロト予想ページの詳細内容をここに表示します。")
-    # ここにミニロトの詳細内容を追加
 
 def display_numbers3_page():
     st.title("ナンバーズ3 AI予想")
     st.write("ナンバーズ3予想ページの詳細内容をここに表示します。")
-    # ここにナンバーズ3の詳細内容を追加
 
 def display_numbers4_page():
     st.title("ナンバーズ4 AI予想")
     st.write("ナンバーズ4予想ページの詳細内容をここに表示します。")
-    # ここにナンバーズ4の詳細内容を追加
+
+# トップページ
+def top_page():
+    st.title("AI宝くじ分析・予想サイト")
+    st.write("ここにトップページの内容を表示します。")
+    
+    # ページリンク（Streamlit内のリンク）
+    st.markdown("[ロト6ページへ](#ロト6ページ)")  # ロト6ページへのリンク
+    st.markdown("[ロト7ページへ](#ロト7ページ)")  # ロト7ページへのリンク
+    st.markdown("[ミニロトページへ](#ミニロトページ)")  # ミニロトページへのリンク
+    st.markdown("[ナンバーズ3ページへ](#ナンバーズ3ページ)")  # ナンバーズ3ページへのリンク
+    st.markdown("[ナンバーズ4ページへ](#ナンバーズ4ページ)")  # ナンバーズ4ページへのリンク
 
 # 実行する
 page_selector()
