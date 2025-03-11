@@ -259,11 +259,6 @@ get_top5_numbers(df)
 
 # 出現回数TOP3を表示
 get_top3_numbers_by_position(df)
-import pandas as pd
-import streamlit as st
-
-# CSVファイルを読み込む
-df = pd.read_csv("https://raw.githubusercontent.com/Naobro/lototop-app/main/data/loto6_50.csv")
 
 # A数字とB数字の関数
 def generate_AB_numbers(df):
@@ -303,6 +298,7 @@ prediction_df = pd.DataFrame(predictions, columns=["第1数字", "第2数字", "
 
 # テーブルとして表示
 st.table(prediction_df)
+
 def run():
     # **ページのタイトル**
     st.title("ロト6 AI予想サイト")
