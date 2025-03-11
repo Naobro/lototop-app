@@ -1,6 +1,9 @@
 import streamlit as st
 import importlib
 
+# サイドバーを消す設定
+st.set_page_config(page_title="AI宝くじ分析・予想サイト", layout="wide", initial_sidebar_state="collapsed")
+
 # サイトタイトルと紹介文
 st.title("AI宝くじ分析・予想サイト")
 st.markdown("""
