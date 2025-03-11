@@ -300,5 +300,13 @@ prediction_df = pd.DataFrame(predictions, columns=["第1数字", "第2数字", "
 st.table(prediction_df)
 # 必要なインポートが最初にあります
 
-if __name__ == "__main__":
-    run()
+import streamlit as st
+
+def run():
+    # ロト6のコンテンツ
+    st.title("ロト6 AI予想サイト")
+    # 他のロジックや表示内容をここに記載
+
+# `if __name__ == "__main__":`は削除します
+
+
