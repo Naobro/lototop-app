@@ -2,7 +2,7 @@ import pandas as pd
 from filelock import FileLock
 
 def update_loto6_50():
-    lock_path = "/Users/naokinishiyama/loto-prediction-app/data/loto6_50.csv.lock"  # ロック用ファイルパス
+    lock_path = "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/loto6_50.csv.lock"  # ロック用ファイルパス
     lock = FileLock(lock_path)  # ファイルロックオブジェクト
 
     try:
@@ -10,7 +10,7 @@ def update_loto6_50():
             print("ファイルロックを取得しました。")
 
             # 最新データの読み込み
-            latest_df = pd.read_csv("/Users/naokinishiyama/loto-prediction-app/data/loto6_latest.csv")
+            latest_df = pd.read_csv("https://raw.githubusercontent.com/Naobro/lototop-app/main/data/loto6_latest.csv")
 
             # '本数字' 列をスペース区切りで分割して第1数字から第6数字に変換
             latest_df[['第1数字', '第2数字', '第3数字', '第4数字', '第5数字', '第6数字']] = latest_df['本数字'].str.split(' ', expand=True)
@@ -36,7 +36,7 @@ def update_loto6_50():
 
             # 既存のloto6_50.csvの読み込み
             try:
-                loto50_df = pd.read_csv("/Users/naokinishiyama/loto-prediction-app/data/loto6_50.csv")
+                loto50_df = pd.read_csv("https://raw.githubusercontent.com/Naobro/lototop-app/main/data/loto6_50.csv")
             except FileNotFoundError:
                 loto50_df = pd.DataFrame(columns=latest_df.columns)  # 新規ファイルの場合は空のDataFrameを作成
 
@@ -47,7 +47,7 @@ def update_loto6_50():
             updated_loto50_df = updated_loto50_df.head(24)
 
             # 新しいloto6_50.csvとして保存
-            updated_loto50_df.to_csv("/Users/naokinishiyama/loto-prediction-app/data/loto6_50.csv", index=False)
+            updated_loto50_df.to_csv("https://raw.githubusercontent.com/Naobro/lototop-app/main/data/loto6_50.csv", index=False)
 
             print("✅ 最新データがloto6_50.csvにコピーされ、最新24回分が表示されました。")
             return updated_loto50_df

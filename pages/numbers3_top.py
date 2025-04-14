@@ -65,7 +65,7 @@ def generate_numbers3_table(latest_csv):
         st.write(f"エラー詳細: {e.__class__}")
 
 # CSVのパス
-latest_csv_path = "/Users/naokinishiyama/loto-prediction-app/data/numbers_3_latest.csv"
+latest_csv_path = "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/numbers_3_latest.csv"
 generate_numbers3_table(latest_csv_path)
 
 # **② 直近24回の当選番号**を表示
@@ -117,7 +117,7 @@ def generate_recent_numbers3_table(csv_path):
         st.write(f"エラー詳細: {e.__class__}")
 
 # CSVのパス
-recent_csv_path = "/Users/naokinishiyama/loto-prediction-app/data/numbers3_24.csv"
+recent_csv_path = "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/numbers3_24.csv"
 generate_recent_numbers3_table(recent_csv_path)
 
 
@@ -172,7 +172,7 @@ def generate_ranking(csv_path):
         st.write(f"エラー詳細: {e.__class__}")
 
 # CSVのパス
-ranking_csv_path = "/Users/naokinishiyama/loto-prediction-app/data/numbers3_24.csv"
+ranking_csv_path = "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/numbers3_24.csv"
 generate_ranking(ranking_csv_path)
 import pandas as pd
 import streamlit as st
@@ -224,7 +224,7 @@ def generate_w_and_s(csv_path):
         st.write(f"エラー詳細: {e.__class__}")
 
 # CSVのパス
-csv_path = "/Users/naokinishiyama/loto-prediction-app/data/numbers3_24.csv"
+csv_path = "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/numbers3_24.csv"
 generate_w_and_s(csv_path)
 
 # **ナンバーズ3 直近24回のひっぱり数字の回数**
@@ -266,7 +266,7 @@ def generate_hoppari_numbers(csv_path):
         st.write(f"エラー詳細: {e.__class__}")
 
 # CSVのパス
-csv_path = "/Users/naokinishiyama/loto-prediction-app/data/numbers3_24.csv"
+csv_path = "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/numbers3_24.csv"
 generate_hoppari_numbers(csv_path)
 
 # **ナンバーズ3 直近24回の数字の分布（範囲ごとの分布）**
@@ -310,7 +310,7 @@ def generate_range_distribution(csv_path):
         st.write(f"エラー詳細: {e.__class__}")
 
 # CSVのパス
-csv_path = "/Users/naokinishiyama/loto-prediction-app/data/numbers3_24.csv"
+csv_path = "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/numbers3_24.csv"
 generate_range_distribution(csv_path)
 import pandas as pd
 import streamlit as st
@@ -355,7 +355,7 @@ def generate_combinations(csv_path):
         st.write(f"エラー詳細: {e.__class__}")
 
 # CSVのパス
-csv_path = "/Users/naokinishiyama/loto-prediction-app/data/numbers3_24.csv"
+csv_path = "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/numbers3_24.csv"
 generate_combinations(csv_path)
 
 # **数字の合計値の分析**
@@ -392,7 +392,7 @@ def generate_sum_analysis(csv_path):
         st.write(f"エラー詳細: {e.__class__}")
 
 # CSVのパス
-csv_path = "/Users/naokinishiyama/loto-prediction-app/data/numbers3_24.csv"
+csv_path = "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/numbers3_24.csv"
 generate_sum_analysis(csv_path)
 
 import streamlit as st

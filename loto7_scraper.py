@@ -1,40 +1,64 @@
-import random  # randomモジュールをインポート
 import pandas as pd
 import os
+import requests
+from bs4 import BeautifulSoup
 
-# ロト7最新データをスクレイピングする関数
 def scrape_loto7_latest():
     url = "https://takarakuji-loto.jp/loto7_tousenp.html"
-    response = requests.get(url)
+    
+    # キャッシュを無視するためのヘッダー設定
+    headers = {
+        'Cache-Control': 'no-cache',  # キャッシュを無視
+        'Pragma': 'no-cache',         # 古いキャッシュを無視
+        'Expires': '0'                # キャッシュの期限を過去に設定
+    }
+
+    # リクエストにヘッダーを追加
+    response = requests.get(url, headers=headers)
+
+    if response.status_code == 200:
+        print("成功: ページが正常に取得されました。")
+    else:
+        print(f"エラー: HTTP {response.status_code}")
+        return  # エラー時はここで関数を終了
+
     soup = BeautifulSoup(response.content, "html.parser")
 
     try:
         print("🚀 ロト7最新データ取得中...")
 
-        # 最新の抽選情報を取得
-        draw_info = soup.find("div", class_="lb bold text16 font1")
-        if draw_info is None:
-            raise ValueError("❌ 抽選情報が取得できませんでした。HTML構造を確認してください。")
-        draw_text = draw_info.text.strip()
+        # HTMLの全行をリストに分割（行ごとの処理）
+        html_lines = str(soup).splitlines()
 
-        draw_parts = draw_text.split()
-        if len(draw_parts) < 5:
-            raise ValueError(f"❌ 抽選情報のフォーマットが予期しない形式です: {draw_parts}")
+        # 332行目から423行目を取得（インデックスは0から始まる）
+        selected_lines = html_lines[331:423]
 
-        draw_number = draw_parts[0].replace("第", "").replace("回", "回")
-        draw_date = draw_parts[3] + " " + draw_parts[4]
+        # 取得した行を結合して再度HTMLとして扱う
+        selected_html = "\n".join(selected_lines)
 
-        # 当選番号取得
-        main_number_imgs = soup.select("table.rbox1 img")
+        # 新しいBeautifulSoupオブジェクトとして処理
+        selected_soup = BeautifulSoup(selected_html, "html.parser")
+
+        # 回号「616」の抽選結果セクションを特定
+        latest_draw_section = selected_soup.find("div", string="第６１６回　ロト7 当選番号速報")
+        
+        # 回号「616」の情報が見つからない場合
+        if latest_draw_section is None:
+            raise ValueError(f"❌ 回号 ６１６ の情報が見つかりませんでした。")
+
+        print(f"最新の抽選結果: 回号 ６１６")
+
+        # 本数字取得
+        main_number_imgs = latest_draw_section.find_next("table", class_="rbox1").select("img")  # 本数字の画像を取得
         main_numbers = [img["alt"] for img in main_number_imgs[:7]]  # ロト7は7つの本数字
 
         # ボーナス数字取得
-        bonus_section = soup.find_all("td", class_="w_auto")  # ボーナス数字があるtd要素を全て取得
+        bonus_section = latest_draw_section.find_next("table", class_="rbox2").select("img")  # ボーナス数字の画像を選択
         bonus_numbers = [img["alt"] for img in bonus_section[:2]]  # 最初の2つをボーナス数字として取得
 
         # キャリーオーバー取得
         carry_over = "0円"
-        carry_over_rows = soup.select("table.tb1 tr")
+        carry_over_rows = latest_draw_section.find_next("table", class_="tb1").select("tr")
         for row in carry_over_rows:
             if "キャリーオーバー" in row.text:
                 tds = row.find_all("td")
@@ -43,7 +67,7 @@ def scrape_loto7_latest():
                     break
 
         # 賞金情報取得
-        prize_rows = soup.select("table.tb1 tr")[1:6]  # 1等から5等まで
+        prize_rows = latest_draw_section.find_next("table", class_="tb1").select("tr")[1:6]  # 1等から5等まで
         prize_data = []
         for row in prize_rows:
             cols = row.find_all("td")
@@ -54,16 +78,15 @@ def scrape_loto7_latest():
                 prize_data.append([grade, winners, amount])
 
         # データ保存パス
-        data_dir = "/Users/naokinishiyama/loto-prediction-app/data"
+        data_dir = "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/"
         os.makedirs(data_dir, exist_ok=True)
 
         # 最新当選番号CSV保存（上書きモード）
         latest_csv_path = os.path.join(data_dir, "loto7_latest.csv")
         latest_df = pd.DataFrame({
-            "回号": [draw_number],
-            "抽せん日": [draw_date],
+            "回号": ["６１６"],
             "本数字": [" ".join(main_numbers)],
-            "ボーナス数字": [", ".join(bonus_numbers) if bonus_numbers else "未取得"],  # ボーナス数字を2つ表示
+            "ボーナス数字": [", ".join(bonus_numbers) if bonus_numbers else "未取得"],
             "キャリーオーバー": [carry_over]
         })
         latest_df.to_csv(latest_csv_path, index=False, encoding="utf-8-sig", mode="w")

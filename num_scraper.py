@@ -73,7 +73,7 @@ def scrape_numbers():
             print(item)
 
         # DataFrameに変換してCSVに保存
-        data_dir = "/Users/naokinishiyama/loto-prediction-app/data"
+        data_dir = "https://raw.githubusercontent.com/Naobro/lototop-app/main/data"
         os.makedirs(data_dir, exist_ok=True)
 
         if prize_details:  # prize_detailsが空でない場合にのみCSVを書き込む

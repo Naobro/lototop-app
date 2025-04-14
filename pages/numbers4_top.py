@@ -1,6 +1,21 @@
 import pandas as pd
 import streamlit as st
 import html
+import random
+from collections import Counter
+
+latest_csv_path = "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/numbers_4_latest.csv"
+recent_csv_path = "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/numbers4_24.csv"
+
+
+def show_page():
+    st.title("ナンバーズ4 - 当選予想ページ")
+    # ナンバーズ4に関連するコンテンツをここに追加
+    st.write("ここにナンバーズ4の予想結果が表示されます")
+    # ナンバーズ4の予想結果や分析などをここに追加
+    import pandas as pd
+import streamlit as st
+import html
 
 # **最新の当選番号テーブルを生成**
 def generate_numbers4_table(latest_csv):
@@ -67,7 +82,7 @@ def generate_numbers4_table(latest_csv):
         st.write(f"エラー詳細: {e.__class__}")
 
 # CSVのパス
-latest_csv_path = "/Users/naokinishiyama/loto-prediction-app/data/numbers_4_latest.csv"
+latest_csv_path = "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/numbers_4_latest.csv"
 generate_numbers4_table(latest_csv_path)
 
 import pandas as pd
@@ -121,8 +136,16 @@ def generate_recent_numbers4_table(csv_path):
         st.write(f"エラー詳細: {e.__class__}")
 
 # CSVのパス
-recent_csv_path = "/Users/naokinishiyama/loto-prediction-app/data/numbers4_24.csv"
+recent_csv_path = "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/numbers4_24.csv"
 generate_recent_numbers4_table(recent_csv_path)
+
+import streamlit as st
+import pandas as pd
+import html
+
+# CSVパス（上から24行が最新）
+recent_csv_path = "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/numbers4_24.csv"
+
 
 # **ナンバーズ4 ランキングの作成**
 st.header("ナンバーズ4 ランキング")
@@ -182,7 +205,7 @@ def generate_ranking_numbers4(csv_path):
         st.write(f"エラー詳細: {e.__class__}")
 
 # CSVのパス
-ranking_csv_path = "/Users/naokinishiyama/loto-prediction-app/data/numbers4_24.csv"
+ranking_csv_path = "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/numbers4_24.csv"
 generate_ranking_numbers4(ranking_csv_path)
 # **④分析セクション**
 st.header("④分析セクション")
@@ -234,7 +257,7 @@ def generate_w_s_t(csv_path):
         st.write(f"エラー詳細: {e.__class__}")
 
 # CSVのパス
-csv_path = "/Users/naokinishiyama/loto-prediction-app/data/numbers4_24.csv"
+csv_path = "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/numbers4_24.csv"
 generate_w_s_t(csv_path)
 # **ナンバーズ4 直近24回のひっぱり数字の回数**
 st.subheader("直近24回のひっぱり回数")
@@ -276,7 +299,7 @@ def generate_hoppari_numbers(csv_path):
         st.write(f"エラー詳細: {e.__class__}")
 
 # CSVのパス
-csv_path = "/Users/naokinishiyama/loto-prediction-app/data/numbers4_24.csv"
+csv_path = "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/numbers4_24.csv"
 generate_hoppari_numbers(csv_path)
 
 # **ナンバーズ4 直近24回の数字の分布（範囲ごとの分布）**
@@ -321,7 +344,7 @@ def generate_range_distribution(csv_path):
         st.write(f"エラー詳細: {e.__class__}")
 
 # CSVのパス
-csv_path = "/Users/naokinishiyama/loto-prediction-app/data/numbers4_24.csv"
+csv_path = "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/numbers4_24.csv"
 generate_range_distribution(csv_path)
 import pandas as pd
 from collections import Counter
@@ -368,7 +391,7 @@ def generate_combinations(csv_path):
         st.write(f"エラー詳細: {e.__class__}")
 
 # CSVのパス
-csv_path = "/Users/naokinishiyama/loto-prediction-app/data/numbers4_24.csv"
+csv_path = "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/numbers4_24.csv"
 generate_combinations(csv_path)
 
 # **数字の合計値の分析**
@@ -406,11 +429,24 @@ def generate_sum_analysis(csv_path):
         st.write(f"エラー詳細: {e.__class__}")
 
 # CSVのパス
-csv_path = "/Users/naokinishiyama/loto-prediction-app/data/numbers4_24.csv"
+csv_path = "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/numbers4_24.csv"
 generate_sum_analysis(csv_path)
-import streamlit as st
+# 合計
+st.subheader("直近24回の合計値の出現回数")
 
-import pandas as pd
+def generate_sum_analysis(csv_path):
+    df = pd.read_csv(csv_path).head(24)
+    for i in range(1, 5):
+        df[f"第{i}数字"] = df[f"第{i}数字"].astype(int)
+
+    sum_counts = Counter()
+    for _, row in df.iterrows():
+        total = sum([row[f"第{i}数字"] for i in range(1, 5)])
+        sum_counts[total] += 1
+
+    st.write(pd.DataFrame(sum_counts.items(), columns=["合計値", "出現回数"]).sort_values(by="出現回数", ascending=False))
+
+generate_sum_analysis(recent_csv_path)
 
 # **ナンバーズ4 予測セクション**
 st.header("ナンバーズ4 予測")
@@ -438,3 +474,28 @@ if st.button("20パターン予測", key="random_predict_button"):
     st.write(f"ランダム予測 (20パターン)：")
     df_random_predictions = pd.DataFrame(random_predictions, columns=[f'予測番号{i+1}' for i in range(4)])
     st.dataframe(df_random_predictions)
+
+
+
+
+
+
+# ----------------------------
+# 予想（軸数字ありランダム）
+# ----------------------------
+st.header("ナンバーズ4 予想")
+st.write("軸数字を1つ選んで、ランダムに20通り予想を出します")
+
+def generate_random_predictions(n, axis):
+    results = []
+    while len(results) < n:
+        others = random.sample([i for i in range(10) if i != axis], 3)
+        combo = sorted([axis] + others)
+        if combo not in results:
+            results.append(combo)
+    return results
+
+axis_number = st.selectbox("軸数字を選択（0〜9）", list(range(10)))
+if st.button("20パターン予測"):
+    preds = generate_random_predictions(20, axis_number)
+    st.dataframe(pd.DataFrame(preds, columns=["予測1", "予測2", "予測3", "予測4"]))
