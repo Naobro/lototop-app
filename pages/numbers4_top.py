@@ -452,34 +452,6 @@ generate_sum_analysis(recent_csv_path)
 st.header("ナンバーズ4 予測")
 st.write("軸数字を1つ選択")
 
-# ① ランダム予測（軸数字を必ず含む）
-def generate_random_predictions(n, axis_number):
-    predictions = []
-    for _ in range(n):
-        # ランダム予測：軸数字を含んだ予測
-        prediction = [axis_number, random.choice([i for i in range(10) if i != axis_number]), 
-                      random.choice([i for i in range(10) if i != axis_number]),
-                      random.choice([i for i in range(10) if i != axis_number])]
-        prediction = sorted(prediction)  # 順番を無視するためにソート
-        if prediction not in predictions:  # 重複を排除
-            predictions.append(prediction)
-    return predictions
-
-# **予測のボタン処理**
-axis_number = st.selectbox("軸数字を選択 (0〜9)", list(range(10)), key="axis_number")
-num_predictions = 20  # 予測数を20に固定
-
-if st.button("20パターン予測", key="random_predict_button"):
-    random_predictions = generate_random_predictions(num_predictions, axis_number)
-    st.write(f"ランダム予測 (20パターン)：")
-    df_random_predictions = pd.DataFrame(random_predictions, columns=[f'予測番号{i+1}' for i in range(4)])
-    st.dataframe(df_random_predictions)
-
-
-
-
-
-
 # ----------------------------
 # 予想（軸数字ありランダム）
 # ----------------------------

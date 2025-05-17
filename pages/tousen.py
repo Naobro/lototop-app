@@ -1,120 +1,148 @@
-import streamlit as st
-import pandas as pd
-import re
 import os
+import re
+import pandas as pd
 from datetime import datetime
+import streamlit as st
+from dotenv import load_dotenv
+import subprocess
 
-st.set_page_config(page_title="みずほ銀行 抽選結果CSV化 + GitHub自動更新", layout="wide")
-st.title("みずほ銀行の抽選結果をコピペしてCSVに変換・GitHub保存")
+# ==================== 初期設定 ====================
+load_dotenv()
+GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
+ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
+DATA_DIR = os.path.join(ROOT_DIR, "..", "data")
+os.makedirs(DATA_DIR, exist_ok=True)
 
-# 選択時に入力欄をリセットする
-if "last_selection" not in st.session_state:
-    st.session_state.last_selection = ""
-if "text_input" not in st.session_state:
-    st.session_state.text_input = ""
+st.set_page_config(page_title="宝くじCSV化＋GitHub保存", layout="wide")
+st.title("抽選結果をコピペしてCSVに保存・GitHubへ反映")
 
 lottery_type = st.selectbox("宝くじの種類を選んでください", ["ロト6", "ロト7", "ミニロト", "ナンバーズ3", "ナンバーズ4"])
-if lottery_type != st.session_state.last_selection:
-    st.session_state.text_input = ""
-    st.session_state.last_selection = lottery_type
+text_input = st.text_area("みずほ銀行の抽選結果をコピペしてください", height=300)
 
-text_input = st.text_area("みずほ銀行の抽選結果をそのままコピペしてください", value=st.session_state.text_input, height=300)
-st.session_state.text_input = text_input
+# ==================== 抽出関数 ====================
+def extract_round(text):
+    match = re.search(r'第\s*(\d+)', text)
+    return int(match.group(1)) if match else None
 
-# 日付をYYYY-MM-DD形式に変換する関数
-def convert_date(date_str):
-    for fmt in ("%Y年%m月%d日", "%Y/%m/%d"):
-        try:
-            return datetime.strptime(date_str, fmt).strftime("%Y-%m-%d")
-        except:
-            continue
-    return date_str
+def extract_date(text):
+    match = re.search(r'(\d{4})[年/](\d{1,2})[月/](\d{1,2})', text)
+    if match:
+        y, m, d = map(int, match.groups())
+        return f"{y:04d}-{m:02d}-{d:02d}"
+    return ""
 
-# パース関数（安全性強化）
-def safe_search(pattern, text, group=1):
-    match = re.search(pattern, text)
-    return match.group(group) if match else ""
+def extract_numbers(text, count):
+    return re.findall(r'\b(\d{1,2})\b', text)[:count]
 
-def parse_lottery_text(text, kind):
-    text = text.replace("\u3000", " ").replace("抽選日", "").replace("(", "").replace(")", "")
-    lines = text.splitlines()
-    result = {}
+def extract_bonus(text):
+    return re.findall(r'\(\s*(\d{1,2})\s*\)', text)
 
-    if kind in ["ロト6", "ロト7", "ミニロト"]:
-        result['回号'] = safe_search(r'第(\d+)回', text)
-        raw_date = safe_search(r'(\d{4}年\d{1,2}月\d{1,2}日|\d{4}/\d{1,2}/\d{1,2})', text)
-        result['抽せん日'] = convert_date(raw_date)
+def extract_prize_info(text, grade):
+    match = re.search(fr'{grade}[\s\S]*?(\d+)口[\s\S]*?(\d[\d,]*)円', text)
+    return (match.group(1), match.group(2)) if match else ("0", "0円")
 
-        numbers = re.findall(r'\d{1,2}', text)
-        if kind == "ロト6":
-            result['本数字'] = ' '.join(numbers[:6])
-            result['ボーナス数字'] = numbers[6] if len(numbers) > 6 else ""
-            return pd.DataFrame([result])
+def extract_carry(text):
+    match = re.search(r'キャリーオーバー\s*([\d,]+円)', text)
+    return match.group(1) if match else "0円"
 
-        elif kind == "ロト7":
-            result['本数字'] = ' '.join(numbers[:7])
-            result['ボーナス数字'] = ' '.join(numbers[7:9]) if len(numbers) > 8 else ""
-            return pd.DataFrame([result])
+# ==================== CSV保存関数 ====================
+def save_record(file_path, record):
+    df = pd.DataFrame([record])
+    if os.path.exists(file_path):
+        old = pd.read_csv(file_path)
+        if str(record["回号"]) in old["回号"].astype(str).values:
+            st.warning("⚠️ 同じ回号のデータが存在します")
+            return False
+        df = pd.concat([old, df]).tail(24).reset_index(drop=True)
+    df.to_csv(file_path, index=False)
+    return True
 
-        elif kind == "ミニロト":
-            result['本数字'] = ' '.join(numbers[:5])
-            result['ボーナス数字'] = numbers[5] if len(numbers) > 5 else ""
-            return pd.DataFrame([result])
+# ==================== GitHub自動Push ====================
+def push_to_github():
+    try:
+        subprocess.run(["git", "add", "../data/*.csv"], check=True)
+        subprocess.run(["git", "commit", "-m", "update lottery data"], check=True)
+        subprocess.run(["git", "push", f"https://{GITHUB_TOKEN}@github.com/Naobro/lototop-app.git"], check=True)
+        st.success("✅ GitHubにPush完了")
+    except Exception as e:
+        st.error(f"GitHub push失敗: {e}")
 
-    elif kind in ["ナンバーズ3", "ナンバーズ4"]:
-        result['回号'] = safe_search(r'第(\d+)回', text)
-        raw_date = safe_search(r'(\d{4}年\d{1,2}月\d{1,2}日|\d{4}/\d{1,2}/\d{1,2})', text)
-        result['抽せん日'] = convert_date(raw_date)
-        number_match = re.search(r'(?:抽せん数字|当せん番号)[\s\n]*([0-9]{3,4})', text)
-        result['当選番号'] = number_match.group(1) if number_match else ""
-        return pd.DataFrame([result])
-
-    return pd.DataFrame()
-
-# 保存関数（上書きではなく追加）
-def save_to_csv(df, kind):
-    file_map = {
-        "ロト6": "data/loto6_50.csv",
-        "ロト7": "data/loto7_50.csv",
-        "ミニロト": "data/miniloto_50.csv",
-        "ナンバーズ3": "data/numbers3_24.csv",
-        "ナンバーズ4": "data/numbers4_24.csv",
-    }
-    file = file_map[kind]
-
-    # 数字を列に展開
-    if kind in ["ロト6", "ロト7", "ミニロト"]:
-        nums = df["本数字"].iloc[0].split(" ")
-        for i, num in enumerate(nums):
-            df[f"第{i+1}数字"] = int(num)
-        df["ボーナス数字"] = df["ボーナス数字"].astype(str)
-
-    elif kind in ["ナンバーズ3", "ナンバーズ4"]:
-        digits = list(df["当選番号"].iloc[0])
-        for i, d in enumerate(digits):
-            df[f"第{i+1}数字"] = int(d)
-
-    df["日付"] = df.get("抽せん日", df.get("抽選日", ""))
-    df = df.drop(columns=[c for c in ["本数字", "当選番号", "抽せん日", "抽選日"] if c in df.columns])
-
-    # 既存CSVに追記
-    if os.path.exists(file):
-        old = pd.read_csv(file)
-        new = pd.concat([df, old]).drop_duplicates(subset=["回号"]).head(200)
+# ==================== 実行処理 ====================
+if st.button("CSV保存＋GitHub反映"):
+    if not text_input:
+        st.warning("⚠️ 抽選結果を貼り付けてください")
     else:
-        new = df
+        round_no = extract_round(text_input)
+        date = extract_date(text_input)
 
-    new.to_csv(file, index=False)
+        if lottery_type == "ロト6":
+            nums = extract_numbers(text_input, 6)
+            bonus = extract_bonus(text_input)
+            record = {
+                "回号": round_no,
+                "日付": date,
+                **{f"第{i+1}数字": nums[i] for i in range(6)},
+                "ボーナス数字": bonus[0] if bonus else "",
+                **{f"{g}口数": extract_prize_info(text_input, g)[0] for g in ["1等", "2等", "3等", "4等", "5等"]},
+                **{f"{g}賞金": extract_prize_info(text_input, g)[1] for g in ["1等", "2等", "3等", "4等", "5等"]},
+                "キャリーオーバー": extract_carry(text_input)
+            }
+            file_path = os.path.join(DATA_DIR, "loto6_50.csv")
 
-# 実行ボタン
-if st.button("解析して保存"):
-    if text_input:
-        try:
-            df_parsed = parse_lottery_text(text_input, lottery_type)
-            save_to_csv(df_parsed, lottery_type)
-            st.success("✅ データを解析して保存しました")
-            st.dataframe(df_parsed)
-        except Exception as e:
-            st.error(f"⚠️ エラーが発生しました: {e}")
-    else:
-        st.warning("テキストを入力してください。")
+        elif lottery_type == "ロト7":
+            nums = extract_numbers(text_input, 7)
+            bonus = extract_bonus(text_input)
+            record = {
+                "回号": round_no,
+                "日付": date,
+                **{f"第{i+1}数字": nums[i] for i in range(7)},
+                "BONUS数字1": bonus[0] if len(bonus) > 0 else "",
+                "BONUS数字2": bonus[1] if len(bonus) > 1 else "",
+                **{f"{g}口数": extract_prize_info(text_input, g)[0] for g in ["1等", "2等", "3等", "4等", "5等", "6等"]},
+                **{f"{g}賞金": extract_prize_info(text_input, g)[1] for g in ["1等", "2等", "3等", "4等", "5等", "6等"]},
+                "キャリーオーバー": extract_carry(text_input)
+            }
+            file_path = os.path.join(DATA_DIR, "loto7_50.csv")
+
+        elif lottery_type == "ミニロト":
+            nums = extract_numbers(text_input, 5)
+            bonus = extract_bonus(text_input)
+            record = {
+                "回号": round_no,
+                "日付": date,
+                **{f"第{i+1}数字": nums[i] for i in range(5)},
+                "ボーナス数字": bonus[0] if bonus else "",
+                **{f"{g}口数": extract_prize_info(text_input, g)[0] for g in ["1等", "2等", "3等", "4等"]},
+                **{f"{g}賞金": extract_prize_info(text_input, g)[1] for g in ["1等", "2等", "3等", "4等"]}
+            }
+            file_path = os.path.join(DATA_DIR, "miniloto_50.csv")
+
+        elif lottery_type == "ナンバーズ3":
+            nums = extract_numbers(text_input, 3)
+            record = {
+                "回号": round_no,
+                "日付": date,
+                **{f"第{i+1}数字": nums[i] for i in range(3)},
+                **{f"{g}口数": extract_prize_info(text_input, g)[0] for g in ["ストレート", "ボックス", "セット・ストレート", "セット・ボックス", "ミニ"]},
+                **{f"{g}賞金": extract_prize_info(text_input, g)[1] for g in ["ストレート", "ボックス", "セット・ストレート", "セット・ボックス", "ミニ"]}
+            }
+            file_path = os.path.join(DATA_DIR, "numbers3_24.csv")
+
+        elif lottery_type == "ナンバーズ4":
+            nums = extract_numbers(text_input, 4)
+            record = {
+                "回号": round_no,
+                "日付": date,
+                **{f"第{i+1}数字": nums[i] for i in range(4)},
+                **{f"{g}口数": extract_prize_info(text_input, g)[0] for g in ["ストレート", "ボックス", "セット・ストレート", "セット・ボックス"]},
+                **{f"{g}賞金": extract_prize_info(text_input, g)[1] for g in ["ストレート", "ボックス", "セット・ストレート", "セット・ボックス"]}
+            }
+            file_path = os.path.join(DATA_DIR, "numbers4_24.csv")
+
+        else:
+            st.error("❌ 未対応の宝くじ種別です")
+            file_path = ""
+
+        if file_path and save_record(file_path, record):
+            st.success(f"✅ {lottery_type} 第{round_no}回 保存完了")
+            push_to_github()

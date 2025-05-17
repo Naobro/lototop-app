@@ -1,494 +1,344 @@
+# 【1/3】全コード：前半部（データ取得～出現傾向分析）
 import pandas as pd
+import random
 import streamlit as st
 
-# **ページのタイトル**
+st.set_page_config(layout="wide")
 st.title("ミニロト AI予想サイト")
 
-# CSVファイルのパス
+# CSS適用
+st.markdown("""
+<style>
+table { width: 100%; border-collapse: collapse; text-align: center; font-size: 16px; }
+th, td { border: 1px solid #ccc; padding: 8px; }
+thead { background-color: #f2f2f2; font-weight: bold; }
+.wide-table td { white-space: nowrap; }
+</style>
+""", unsafe_allow_html=True)
+
+def style_table(df):
+    return df.to_html(index=False, escape=False, classes="wide-table")
+
+# 読み込み
 csv_path = "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/miniloto_50.csv"
 df = pd.read_csv(csv_path)
+df = df.rename(columns={"日付": "抽せん日"})
+df['抽せん日'] = pd.to_datetime(df['抽せん日'], errors='coerce')
+df = df.dropna(subset=['抽せん日'])
+df = df.sort_values(by="抽せん日", ascending=False)
+df_recent = df.head(24)
 
-# **① 最新の当選番号**を表示
+# ① 最新の当選番号表示
+df_latest = df.iloc[0]
 st.header("① 最新の当選番号")
+latest_html = f"""
+<table>
+<tr><th>回号</th><td>第{df_latest['回号']}回</td><th>抽選日</th><td>{df_latest['抽せん日'].strftime('%Y-%m-%d')}</td></tr>
+<tr><th>本数字</th><td colspan='3'>{df_latest['第1数字']} {df_latest['第2数字']} {df_latest['第3数字']} {df_latest['第4数字']} {df_latest['第5数字']}</td></tr>
+<tr><th>ボーナス</th><td colspan='3'>{df_latest['ボーナス数字']}</td></tr>
+</table>
+"""
+st.markdown(latest_html, unsafe_allow_html=True)
 
-def generate_miniloto_table(latest_csv, prizes_csv):
-    try:
-        # 最新の抽選結果を読み込む
-        df_latest = pd.read_csv(latest_csv)
+# 賞金表示
+def format_yen(val):
+    return f"<b>{int(val):,}円</b>" if pd.notnull(val) else "-"
+prize_html = f"""
+<table><thead><tr><th>等級</th><th>口数</th><th>当選金額</th></tr></thead><tbody>
+<tr><td>1等</td><td>{df_latest['1等口数']}口</td><td>{format_yen(df_latest['1等賞金'])}</td></tr>
+<tr><td>2等</td><td>{df_latest['2等口数']}口</td><td>{format_yen(df_latest['2等賞金'])}</td></tr>
+<tr><td>3等</td><td>{df_latest['3等口数']}口</td><td>{format_yen(df_latest['3等賞金'])}</td></tr>
+<tr><td>4等</td><td>{df_latest['4等口数']}口</td><td>{format_yen(df_latest['4等賞金'])}</td></tr>
+</tbody></table>
+"""
+st.markdown(prize_html, unsafe_allow_html=True)
 
-        # データフレームが空でないことを確認
-        if len(df_latest) > 0:
-            latest_result = df_latest.iloc[0]
-        else:
-            return "データフレームが空です。"
-
-        # 賞金情報を読み込む
-        df_prizes = pd.read_csv(prizes_csv)
-
-        # HTMLテーブルの生成
-        table_html = f"""
-        <table class='custom-table' style="width: 100%; border-collapse: collapse; text-align: right;">
-            <tr>
-                <th rowspan="2" style="width:15%;">回号</th>
-                <td rowspan="2" class="center-align" style="font-weight: bold; font-size: 20px; text-align: right;">第{latest_result['回号'].replace('回回', '回')}</td>
-                <th style="width:15%;">抽選日</th>
-                <td class="center-align" style="text-align: right;">{latest_result['抽せん日'].replace('抽選', '')}</td>
-            </tr>
-            <tr>
-                <th>本数字</th>
-                <td class="center-align" style="font-size: 18px; font-weight: bold; color: #ff6347; text-align: right;">{latest_result['本数字']}</td>
-            </tr>
-            <tr>
-                <th>ボーナス数字</th>
-                <td colspan="3" class="center-align" style="font-size: 18px; font-weight: bold; color: #ff6347; text-align: right;">
-                    <span class="bold-red">({latest_result['ボーナス数字']})</span>
-                </td>
-            </tr>
-        </table>
-        """
-
-        # 賞金情報（1等〜4等）のテーブルを生成
-        prize_table_html = """
-        <table class='custom-table' style="width: 100%; border-collapse: collapse; text-align: right;">
-            <thead>
-                <tr>
-                    <th>等級</th>
-                    <th>口数</th>
-                    <th>当選金額</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>1等</td>
-                    <td class="center-align">{}</td>
-                    <td class="center-align">{}</td>
-                </tr>
-                <tr>
-                    <td>2等</td>
-                    <td class="center-align">{}</td>
-                    <td class="center-align">{}</td>
-                </tr>
-                <tr>
-                    <td>3等</td>
-                    <td class="center-align">{}</td>
-                    <td class="center-align">{}</td>
-                </tr>
-                <tr>
-                    <td>4等</td>
-                    <td class="center-align">{}</td>
-                    <td class="center-align">{}</td>
-                </tr>
-            </tbody>
-        </table>
-        """.format(
-            df_prizes.iloc[0]['口数'], df_prizes.iloc[0]['当選金額'],
-            df_prizes.iloc[1]['口数'], df_prizes.iloc[1]['当選金額'],
-            df_prizes.iloc[2]['口数'], df_prizes.iloc[2]['当選金額'],
-            df_prizes.iloc[3]['口数'], df_prizes.iloc[3]['当選金額']
-        )
-
-        return table_html + prize_table_html
-
-    except FileNotFoundError:
-        return "CSVファイルが見つかりませんでした。パスを確認してください。"
-    except Exception as e:
-        return f"エラーが発生しました: {e}"
-
-# **最新の当選番号**を表示
-table = generate_miniloto_table(
-    "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/miniloto_latest.csv",
-    "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/miniloto_prizes.csv"
-)
-st.markdown(table, unsafe_allow_html=True)
-
-import pandas as pd
-import streamlit as st
-
-# **② 直近24回の当選番号**を表示
+# ② 直近24回 当選番号 + ABC + 引っ張り + 連続分析
 st.header("② 直近24回の当選番号")
+all_numbers = df_recent[[f"第{i}数字" for i in range(1, 6)]].values.flatten()
+counts = pd.Series(all_numbers).value_counts()
+A_set = set(counts[(counts >= 3) & (counts <= 4)].index)
+B_set = set(counts[counts >= 5].index)
 
-def generate_recent_miniloto_table(csv_path):
-    try:
-        df = pd.read_csv(csv_path)
-        df = df.fillna("未定義")
-        
-        # '抽せん日' カラムを日付型に変換
-        df['抽せん日'] = pd.to_datetime(df['抽せん日'], errors="coerce")
-        
-        # 無効な日付を削除
-        df = df.dropna(subset=["抽せん日"])
-        
-        # 直近24回分を取得
-        df_recent = df.tail(24).sort_values(by="抽せん日", ascending=False)
-
-        # テーブルの作成
-        table_html = "<table border='1' style='width: 100%; border-collapse: collapse; text-align: right;'>"
-        table_html += "<thead><tr><th>抽選日</th><th>第1数字</th><th>第2数字</th><th>第3数字</th><th>第4数字</th><th>第5数字</th></tr></thead><tbody>"
-
-        # データの行をテーブルに追加
-        for _, row in df_recent.iterrows():
-            table_html += f"<tr><td>{row['抽せん日'].strftime('%Y-%m-%d')}</td><td>{row['第1数字']}</td><td>{row['第2数字']}</td><td>{row['第3数字']}</td><td>{row['第4数字']}</td><td>{row['第5数字']}</td></tr>"
-
-        table_html += "</tbody></table>"
-
-        # HTMLとして表示
-        st.markdown(table_html, unsafe_allow_html=True)
-    except Exception as e:
-        st.write(f"エラーが発生しました: {e}")
-        st.write(f"エラー詳細: {e.__class__}")
-
-# CSVファイルのパスを指定
-recent_csv_path = "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/miniloto_50.csv"
-generate_recent_miniloto_table(recent_csv_path)
-
-import pandas as pd
-import streamlit as st
-
-# **③ ランキング**を表示
-st.header("③ 直近24回 出現回数 ランキング")
-
-def generate_ranking_table(csv_path):
-    df = pd.read_csv(csv_path)
-    
-    # '第1数字' から '第5数字' を使って出現回数を数える
-    numbers = df[['第1数字', '第2数字', '第3数字', '第4数字', '第5数字']].values.flatten()
-
-    # 数字の出現回数をカウント
-    number_counts = pd.Series(numbers).value_counts().sort_values(ascending=False)
-
-    ranking_df = pd.DataFrame({
-        '順位': range(1, len(number_counts) + 1),
-        '数字': number_counts.index,
-        '出現回数': number_counts.values
+abc_rows = []
+prev_numbers = set()
+pull_total = 0
+cont_total = 0
+abc_counts = {'A': 0, 'B': 0, 'C': 0}
+for _, row in df_recent.iterrows():
+    nums = [int(row[f"第{i}数字"]) for i in range(1, 6)]
+    sorted_nums = sorted(nums)
+    abc = []
+    for n in sorted_nums:
+        if n in B_set:
+            abc.append('B'); abc_counts['B'] += 1
+        elif n in A_set:
+            abc.append('A'); abc_counts['A'] += 1
+        else:
+            abc.append('C'); abc_counts['C'] += 1
+    pulls = len(set(nums) & prev_numbers)
+    pull_total += bool(pulls)
+    prev_numbers = set(nums)
+    cont = any(b - a == 1 for a, b in zip(sorted_nums, sorted_nums[1:]))
+    cont_total += cont
+    abc_rows.append({
+        '抽選日': row['抽せん日'].strftime('%Y-%m-%d'),
+        **{f"第{i}数字": row[f"第{i}数字"] for i in range(1, 6)},
+        'ABC構成': ','.join(abc),
+        'ひっぱり': f"{pulls}個" if pulls else "なし",
+        '連続': "あり" if cont else "なし"
     })
+abc_df = pd.DataFrame(abc_rows)
+st.markdown(style_table(abc_df), unsafe_allow_html=True)
 
-    ranking_html = "<table border='1' style='width: 100%; border-collapse: collapse; text-align: right;'>"
-    ranking_html += "<thead><tr><th>順位</th><th>出現回数</th><th>数字</th></tr></thead><tbody>"
+# 出現傾向分析
+total_abc = sum(abc_counts.values())
+a_perc = round(abc_counts['A'] / total_abc * 100, 1)
+b_perc = round(abc_counts['B'] / total_abc * 100, 1)
+c_perc = round(abc_counts['C'] / total_abc * 100, 1)
+pull_rate = round(pull_total / 24 * 100, 1)
+cont_rate = round(cont_total / 24 * 100, 1)
+st.markdown("#### 🔎 出現傾向（ABC割合・ひっぱり率・連続率）")
+sum_df = pd.DataFrame({"分析項目": ["A割合", "B割合", "C割合", "ひっぱり率", "連続率"],
+                       "値": [f"{a_perc}%", f"{b_perc}%", f"{c_perc}%", f"{pull_rate}%", f"{cont_rate}%"]})
+st.markdown(style_table(sum_df), unsafe_allow_html=True)
+# 【2/3】全コード：中盤（統計・ABC分類・基本予想）
 
-    for _, row in ranking_df.iterrows():
-        ranking_html += f"<tr><td>{row['順位']}</td><td>{row['出現回数']}</td><td>{row['数字']}</td></tr>"
+# ③ 分布パターン
+st.header("③ 分布パターン")
+def get_distribution(row):
+    pattern = []
+    for n in sorted(row):
+        if 1 <= n <= 9:
+            pattern.append("1")
+        elif 10 <= n <= 19:
+            pattern.append("10")
+        else:
+            pattern.append("20")
+    return '-'.join(pattern)
+pattern_series = df_recent[[f"第{i}数字" for i in range(1, 6)]].apply(get_distribution, axis=1)
+pattern_counts = pattern_series.value_counts().reset_index()
+pattern_counts.columns = ['パターン', '出現回数']
+st.markdown(style_table(pattern_counts), unsafe_allow_html=True)
 
-    ranking_html += "</tbody></table>"
+# 各位の出現回数TOP5
+st.header("④ 各位の出現回数TOP5")
+number_groups = {'1': [], '10': [], '20': [], '30': []}
+for i in range(1, 6):
+    number_groups['1'] += df_recent[f'第{i}数字'][df_recent[f'第{i}数字'].between(1, 9)].tolist()
+    number_groups['10'] += df_recent[f'第{i}数字'][df_recent[f'第{i}数字'].between(10, 19)].tolist()
+    number_groups['20'] += df_recent[f'第{i}数字'][df_recent[f'第{i}数字'].between(20, 29)].tolist()
+    number_groups['30'] += df_recent[f'第{i}数字'][df_recent[f'第{i}数字'].between(30, 31)].tolist()
 
-    st.markdown(ranking_html, unsafe_allow_html=True)
+def pad_top_values(series, length=5):
+    values = series.value_counts().head(length).index.tolist()
+    return values + [""] * (length - len(values))
 
-# ランキング表示
-ranking_csv_path = "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/miniloto_50.csv"
-generate_ranking_table(ranking_csv_path)
+top5_df = pd.DataFrame({
+    '1の位': pad_top_values(pd.Series(number_groups['1'])),
+    '10の位': pad_top_values(pd.Series(number_groups['10'])),
+    '20の位': pad_top_values(pd.Series(number_groups['20'])),
+    '30の位': pad_top_values(pd.Series(number_groups['30']))
+})
+st.markdown(style_table(top5_df), unsafe_allow_html=True)
 
-import pandas as pd
-import streamlit as st
+# 各数字の出現回数TOP3（位置別）
+st.header("⑤ 各数字の出現回数TOP3（位置別）")
+position_result = {'順位': ['1位', '2位', '3位']}
+for i in range(1, 6):
+    col = f'第{i}数字'
+    counts = df_recent[col].value_counts().sort_values(ascending=False).head(3)
+    position_result[col] = [f"{n}（{c}回）" for n, c in zip(counts.index, counts.values)] + [""] * (3 - len(counts))
+st.markdown(style_table(pd.DataFrame(position_result)), unsafe_allow_html=True)
 
-# **④ 分析**セクション
-st.header("④ 分析セクション")
+# ABC分類
+st.header("⑥ A・B・C数字（出現頻度分類）")
+A = counts[(counts >= 3) & (counts <= 4)].index.tolist()
+B = counts[counts >= 5].index.tolist()
+C = list(set(range(1, 32)) - set(A) - set(B))
+max_len = max(len(A), len(B), len(C))
+A += [""] * (max_len - len(A))
+B += [""] * (max_len - len(B))
+C += [""] * (max_len - len(C))
+abc_class_df = pd.DataFrame({"A数字（3〜4回）": A, "B数字（5回以上）": B, "C数字（その他）": C})
+st.markdown(style_table(abc_class_df), unsafe_allow_html=True)
 
-# パターン分析の表示
-def analyze_number_patterns(csv_path):
-    df = pd.read_csv(csv_path)
+# ⑦ 基本予想（パターン上位＋電卓法）
+st.header("⑦ 基本予想（人気パターン & 電卓式）")
 
-    # パターンを取得 (1-9は1、10-19は10...に分類)
-    # '第1数字', '第2数字', '第3数字', '第4数字', '第5数字' を使ってパターンを分析
-    patterns = df[['第1数字', '第2数字', '第3数字', '第4数字', '第5数字']].apply(
-        lambda x: '-'.join([str((int(num) - 1) // 10 * 10 + 1) if 1 <= int(num) <= 9 else str((int(num) // 10) * 10) for num in sorted(x)]), axis=1)
-
-    # パターンごとの出現回数をカウント
-    pattern_counts = patterns.value_counts().reset_index()
-    pattern_counts.columns = ['パターン', '出現回数']
-
-    st.write("出現したパターンとその回数:1→1〜9,10→10〜19,20→20〜29,30→30〜31")
-    st.write(pattern_counts)
-
-# CSVファイルのパスを指定して関数を呼び出し
-analyze_number_patterns("https://raw.githubusercontent.com/Naobro/lototop-app/main/data/miniloto_50.csv")
-
-import pandas as pd
-import streamlit as st
-
-# CSVファイルのURL
-url = 'https://raw.githubusercontent.com/Naobro/lototop-app/main/data/miniloto_50.csv'
-
-# URLからミニロトのデータを読み込む
-df = pd.read_csv(url)
-
-# A数字とB数字の関数
-def generate_AB_numbers(df):
-    # ミニロトのデータは1〜31の範囲なので、数字が31以上の場合を除外する
-    number_groups = df[['第1数字', '第2数字', '第3数字', '第4数字', '第5数字']].values.flatten()
-    number_groups = [num for num in number_groups if num <= 31]  # 31を超える数字を除外
-
-    # 出現回数を計算
-    number_counts = pd.Series(number_groups).value_counts()
-
-    # A数字: 直近24回で出現回数3〜4回の数字を抽出
-    A_numbers = number_counts[(number_counts >= 3) & (number_counts <= 4)].index.tolist()
-
-    # B数字: 直近24回で出現回数5回以上の数字を抽出
-    B_numbers = number_counts[number_counts >= 5].index.tolist()
-
-    # A数字とB数字を横並びにして表示するためのDataFrameを作成
-    AB_numbers_df = pd.DataFrame({
-        'A数字　出現回数3〜4回': [', '.join(map(str, A_numbers))],
-        'B数字　出現回数5回以上': [', '.join(map(str, B_numbers))]
-    })
-
-    # 横並びにして表示
-    st.write("A数字とB数字:")
-    st.table(AB_numbers_df)
-
-# A数字とB数字のテーブルを表示
-generate_AB_numbers(df)
-
-import pandas as pd
-import streamlit as st
-
-# CSVファイルのURL
-csv_path = "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/miniloto_50.csv"
-df = pd.read_csv(csv_path)
-
-# A数字とB数字の関数
-def generate_AB_numbers(df):
-    # ミニロトのデータは1〜31の範囲なので、数字が31以上の場合を除外する
-    number_groups = df[['第1数字', '第2数字', '第3数字', '第4数字', '第5数字']].values.flatten()
-    number_groups = [num for num in number_groups if num <= 31]  # 31を超える数字を除外
-
-    # 出現回数を計算
-    number_counts = pd.Series(number_groups).value_counts()
-
-    # A数字: 直近24回で出現回数3〜4回の数字を抽出
-    A_numbers = number_counts[(number_counts >= 3) & (number_counts <= 4)].index.tolist()
-
-    # B数字: 直近24回で出現回数5回以上の数字を抽出
-    B_numbers = number_counts[number_counts >= 5].index.tolist()
-
-    # C数字: AとBに含まれないその他の数字
-    all_numbers = set(range(1, 32))  # ミニロトは1〜31まで
-    C_numbers = list(all_numbers - set(A_numbers) - set(B_numbers))
-
-    return A_numbers, B_numbers, C_numbers
-
-import pandas as pd
-import streamlit as st
-
-
-# CSVファイルのURL
-csv_path = "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/miniloto_50.csv"
-df = pd.read_csv(csv_path)
-
-# A数字とB数字の関数
-def generate_AB_numbers(df):
-    # ミニロトのデータは1〜31の範囲なので、数字が31以上の場合を除外する
-    number_groups = df[['第1数字', '第2数字', '第3数字', '第4数字', '第5数字']].values.flatten()
-    number_groups = [num for num in number_groups if num <= 31]  # 31を超える数字を除外
-
-    # 出現回数を計算
-    number_counts = pd.Series(number_groups).value_counts()
-
-    # A数字: 直近24回で出現回数3〜4回の数字を抽出
-    A_numbers = number_counts[(number_counts >= 3) & (number_counts <= 4)].index.tolist()
-
-    # B数字: 直近24回で出現回数5回以上の数字を抽出
-    B_numbers = number_counts[number_counts >= 5].index.tolist()
-
-    # C数字: AとBに含まれないその他の数字
-    all_numbers = set(range(1, 32))  # ミニロトは1〜31まで
-    C_numbers = list(all_numbers - set(A_numbers) - set(B_numbers))
-
-    return A_numbers, B_numbers, C_numbers
-
-# 直近10回の当選番号を取得する関数
-def generate_recent_miniloto_table(csv_path, recent_count=10):
-    df = pd.read_csv(csv_path)
-    
-    # '抽せん日' カラムを日付型に変換
-    df['抽せん日'] = pd.to_datetime(df['抽せん日'], errors="coerce")
-    
-    # 無効な日付を削除
-    df = df.dropna(subset=["抽せん日"])
-    
-    # 直近のn回分を取得
-    df_recent = df.tail(recent_count).sort_values(by="抽せん日", ascending=False)
-    
-    return df_recent
-
-# 直近10回の当選番号をA、B、Cに分類する関数
-def categorize_numbers(df_recent, A_numbers, B_numbers, C_numbers):
-    categorized_data = []
-    
-    for _, row in df_recent.iterrows():
-        # 当選番号を取り出し
-        numbers = [row['第1数字'], row['第2数字'], row['第3数字'], row['第4数字'], row['第5数字']]
-        
-        # グループを分類
-        groups = []
-        for num in numbers:
-            if num in B_numbers:
-                groups.append('B')
-            elif num in A_numbers:
-                groups.append('A')
-            else:
-                groups.append('C')
-        
-        categorized_data.append(groups)
-    
-    return categorized_data
-
-# A、B、Cグループを取得
-A_numbers, B_numbers, C_numbers = generate_AB_numbers(df)
-
-# 直近10回の当選番号を取得
-df_recent = generate_recent_miniloto_table(csv_path)
-
-# 直近10回の当選番号をA、B、Cに分類
-categorized_data = categorize_numbers(df_recent, A_numbers, B_numbers, C_numbers)
-
-# **直近10回の当選番号とグループを表示**
-st.header("② 直近10回の当選番号（A, B, C グループ）")
-
-# テーブル形式で表示
-table_data = {
-    "抽選日": df_recent['抽せん日'].dt.strftime('%Y-%m-%d'),
-    "第1数字": df_recent['第1数字'],
-    "第2数字": df_recent['第2数字'],
-    "第3数字": df_recent['第3数字'],
-    "第4数字": df_recent['第4数字'],
-    "第5数字": df_recent['第5数字'],
-    "グループ": [' | '.join(groups) for groups in categorized_data]
-}
-
-table_df = pd.DataFrame(table_data)
-
-st.table(table_df)
-
-import random
-import pandas as pd
-import streamlit as st
-
-# **範囲の設定**
+# パターン上位ベース
+pattern_pool = pattern_counts['パターン'].tolist()
+pattern_weights = [3, 3, 2, 1, 1]  # 1位〜5位までに割り当てる個数
 column_ranges = {
-    1: list(range(1, 10)),    # 一列目 (1〜9)
-    2: list(range(10, 19)),   # 二列目 (10〜18)
-    3: list(range(19, 22)),   # 三列目 (19〜21)
-    4: list(range(22, 28)),   # 四列目 (22〜27)
-    5: list(range(28, 32))    # 五列目 (28〜31)
+    1: list(range(1, 10)),    # 1〜9
+    2: list(range(10, 19)),   # 10〜18
+    3: list(range(19, 22)),   # 19〜21
+    4: list(range(22, 28)),   # 22〜27
+    5: list(range(28, 32))    # 28〜31
 }
+pattern_predictions = []
+for i, p in enumerate(pattern_pool[:5]):
+    for _ in range(pattern_weights[i]):
+        pattern_parts = list(map(int, p.split('-')))
+        nums = []
+        for part in pattern_parts:
+            pool = list(set(column_ranges[int(part)]) - set(nums))
+            if pool:
+                nums.append(random.choice(pool))
+        nums = sorted(nums)
+        if not (any(b - a == 1 for a, b in zip(nums, nums[1:])) and nums[2] - nums[0] == 2):  # 3連避け
+            pattern_predictions.append(nums)
 
-# **直近24回のデータから3回以上出現した数字を抽出する関数**
-def get_numbers_with_multiple_occurrences(df, min_occurrences=3):
-    numbers = df[['第1数字', '第2数字', '第3数字', '第4数字', '第5数字']].values.flatten()
-    number_counts = pd.Series(numbers).value_counts()
-    return number_counts[number_counts >= min_occurrences].index.tolist()
+# 電卓式予想
+def calculate_number_with_formula(numbers, weights):
+    total = sum(numbers)
+    predicted_numbers = [min(round(total / w), 31) for w in weights]
+    return sorted(set(predicted_numbers))[:5]
 
-# **前回の当選番号を取得する関数**
-def get_previous_numbers(df):
-    # 最新のデータから前回の抽選番号を取得
-    latest_result = df.iloc[0]  # 最新の行
-    previous_result = df.iloc[1]  # 1行前（前回の抽選結果）
-    
-    # 前回の当選番号をリストとして取得
-    return [previous_result['第1数字'], previous_result['第2数字'], previous_result['第3数字'], previous_result['第4数字'], previous_result['第5数字']]
+calc_results = []
+weights_list = [[2.5, 5, 3.2, 2.3, 1.8], [3, 2, 3, 2, 2]]
+for weights in weights_list:
+    numbers = random.sample(range(1, 32), 5)
+    calc_results.append(calculate_number_with_formula(numbers, weights))
 
-# **前回の当選番号の前後の数字を取得する関数**
-def get_neighbouring_numbers(previous_numbers):
-    neighbouring_numbers = []
-    for num in previous_numbers:
-        if num > 1:
-            neighbouring_numbers.append(num - 1)  # 前の数字
-        if num < 31:
-            neighbouring_numbers.append(num + 1)  # 次の数字
-    return list(set(neighbouring_numbers))  # 重複を排除して返す
+basic_df = pd.DataFrame(pattern_predictions[:8] + calc_results, columns=["第1数字", "第2数字", "第3数字", "第4数字", "第5数字"])
+st.markdown(style_table(basic_df), unsafe_allow_html=True)
+# 【3/3】全コード：後半部（セレクト予想・検証機能）
+import itertools
 
-# **その他の数字を取得する関数**
-def get_other_numbers(excluded_numbers, all_numbers_range=range(1, 32)):
-    # 除外された数字を取り除いた残りの数字を返す
-    return list(set(all_numbers_range) - set(excluded_numbers))
+# 出現パターン分析（1-10-20など）
+def get_distribution(row):
+    pattern = []
+    for n in sorted(row):
+        if 1 <= n <= 9:
+            pattern.append("1")
+        elif 10 <= n <= 19:
+            pattern.append("10")
+        else:
+            pattern.append("20")
+    return '-'.join(pattern)
 
-# **範囲ごとに出現した数字をフィルタリングして選ぶ関数**
-def get_numbers_by_range(available_numbers, ranges):
-    selected_numbers = []
-    
-    for number_range in ranges:
-        # それぞれの範囲に該当する数字をフィルタリング
-        available_in_range = list(set(number_range) & set(available_numbers))
-        if available_in_range:
-            selected_numbers.append(random.choice(available_in_range))
-    
-    return selected_numbers
+pattern_series = df_recent[[f"第{i}数字" for i in range(1, 6)]].apply(get_distribution, axis=1)
+pattern_counts = pattern_series.value_counts().reset_index()
+pattern_counts.columns = ['パターン', '出現回数']
+st.header("③ 分布パターンと頻出構成")
+st.markdown(style_table(pattern_counts), unsafe_allow_html=True)
 
-# **予測生成関数**
-def generate_miniloto_prediction(axis_numbers, remove_numbers, df, prediction_count=10):
-    # 使用する数字のリスト
-    available_numbers = set(range(1, 32)) - set(remove_numbers)  # 削除した数字を除外
-    predictions = []
+# 各位出現TOP5
+st.header("④ 各位の出現回数TOP5")
+number_groups = {'1': [], '10': [], '20': [], '30': []}
+for i in range(1, 6):
+    number_groups['1'] += df_recent[f'第{i}数字'][df_recent[f'第{i}数字'].between(1, 9)].tolist()
+    number_groups['10'] += df_recent[f'第{i}数字'][df_recent[f'第{i}数字'].between(10, 19)].tolist()
+    number_groups['20'] += df_recent[f'第{i}数字'][df_recent[f'第{i}数字'].between(20, 29)].tolist()
+    number_groups['30'] += df_recent[f'第{i}数字'][df_recent[f'第{i}数字'].between(30, 31)].tolist()
 
-    # A〜Dの数字を抽出
-    A_numbers = get_numbers_with_multiple_occurrences(df)  # 3回または4回出現した数字
-    B_numbers = get_numbers_with_multiple_occurrences(df, 5)  # 5回以上出現した数字
-    C_numbers = get_previous_numbers(df)  # 前回の当選番号
-    D_numbers = get_neighbouring_numbers(C_numbers)  # 前回の当選番号の前後の数字
-    E_numbers = get_other_numbers(A_numbers + B_numbers + C_numbers + D_numbers)  # その他の数字
+def pad_top(series):
+    values = series.value_counts().head(5).index.tolist()
+    return values + [""] * (5 - len(values))
 
-    # 各範囲を定義（ミニロト用）
-    ranges = [
-        list(range(1, 10)),   # 第1数字（1〜9）
-        list(range(10, 19)),  # 第2数字（10〜18）
-        list(range(19, 22)),  # 第3数字（19〜21）
-        list(range(22, 28)),  # 第4数字（22〜27）
-        list(range(28, 32))   # 第5数字（28〜31）
-    ]
+top5_df = pd.DataFrame({
+    '1の位': pad_top(pd.Series(number_groups['1'])),
+    '10の位': pad_top(pd.Series(number_groups['10'])),
+    '20の位': pad_top(pd.Series(number_groups['20'])),
+    '30の位': pad_top(pd.Series(number_groups['30']))
+})
+st.markdown(style_table(top5_df), unsafe_allow_html=True)
 
-    for _ in range(prediction_count):
-        prediction = list(axis_numbers)  # 軸数字を追加
-        
-        # 残りの数字を基準に基づいて選ぶ
-        remaining_numbers = list(available_numbers - set(prediction))
-        
-        # 各範囲に対応する数字を選ぶ
-        selected_range_numbers = get_numbers_by_range(remaining_numbers, ranges)
-        
-        prediction.extend(selected_range_numbers)
-        
-        # 必要な数字数をランダムに補う
-        while len(prediction) < 5:
-            prediction.append(random.choice(remaining_numbers))
-        
-        prediction = [int(num) for num in prediction]  # 小数点を整数に変換
-        prediction.sort()
+# 位置別出現回数TOP3
+st.header("⑤ 各数字の出現回数TOP3（位置別）")
+position_result = {'順位': ['1位', '2位', '3位']}
+for i in range(1, 6):
+    col = f'第{i}数字'
+    top3 = df_recent[col].value_counts().head(3)
+    position_result[col] = [f"{n}（{c}回）" for n, c in zip(top3.index, top3.values)] + [""] * (3 - len(top3))
+st.markdown(style_table(pd.DataFrame(position_result)), unsafe_allow_html=True)
 
-        # 予測結果が5個かどうか確認
-        if len(prediction) != 5:
-            print(f"予測が5個でない: {prediction} (個数: {len(prediction)})")  # エラーチェック用
-        
-        predictions.append(prediction)
-    
-    return predictions
+# A/B/C分類表示
+st.header("⑥ A・B・C数字（出現頻度分類）")
+A = counts[(counts >= 3) & (counts <= 4)].index.tolist()
+B = counts[counts >= 5].index.tolist()
+C = list(set(range(1, 32)) - set(A) - set(B))
+max_len = max(len(A), len(B), len(C))
+A += [""] * (max_len - len(A))
+B += [""] * (max_len - len(B))
+C += [""] * (max_len - len(C))
+abc_class_df = pd.DataFrame({"A（3〜4回）": A, "B（5回以上）": B, "C（その他）": C})
+st.markdown(style_table(abc_class_df), unsafe_allow_html=True)
 
-# **予測結果を表示する関数**
-def display_predictions(predictions):
-    predictions = [pred[:5] for pred in predictions]  # 5個の数字に切り取る
-    prediction_df = pd.DataFrame(predictions, columns=["第1数字", "第2数字", "第3数字", "第4数字", "第5数字"])
-    st.table(prediction_df)
+# 基本予想（頻出パターン×ランダム）
+st.header("⑦ 基本予想（出現構成 + 電卓法）")
+pattern_weights = pattern_counts.head(5)['パターン'].tolist()
+predicts = []
 
-# **予測セクション**
-st.header("② セレクト予想")
+# 電卓法
+weights = [4.1, 6.3, 5.7, 7.2, 5.5]
+def calculate_number_with_formula(numbers):
+    total = sum(numbers)
+    pred = [min(round(total / w), 31) for w in weights]
+    return sorted(set(pred))[:5]
 
-# 軸数字（最大3個）と削除数字（最大20個）を選択
-axis_numbers = st.multiselect("軸数字を選んでください (最大3個まで)", options=range(1, 32), max_selections=3)
-remove_numbers = st.multiselect("削除数字を選んでください (最大20個まで)", options=range(1, 32), max_selections=20)
+# 10通り予測（上位5構成 + ランダム）
+used_patterns = pattern_weights[:5] + random.choices(pattern_counts['パターン'][5:], k=5)
+for p in used_patterns:
+    parts = list(map(int, p.split('-')))
+    nums = []
+    for part in parts:
+        pool = list(set(range(part, part+9)) - set(nums))
+        if pool:
+            nums.append(random.choice(pool))
+    if len(nums) >= 5:
+        nums = calculate_number_with_formula(nums)
+    predicts.append(sorted(nums))
 
-# ボタンを押して予想を生成
+predict_df = pd.DataFrame(predicts, columns=["第1","第2","第3","第4","第5"])
+st.markdown(style_table(predict_df), unsafe_allow_html=True)
+
+# セレクト予想
+st.header("⑧ セレクト予想")
+axis = st.multiselect("軸数字（最大3）", list(range(1,32)), max_selections=3)
+remove = st.multiselect("除外数字（最大20）", list(range(1,32)), max_selections=20)
+
+def generate_selected(axis, remove, count=10):
+    A_nums = [int(n) for n in abc_class_df['A（3〜4回）'] if n != '']
+    B_nums = [int(n) for n in abc_class_df['B（5回以上）'] if n != '']
+    C_nums = [int(n) for n in abc_class_df['C（その他）'] if n != '']
+    ranges = [range(1,10), range(10,19), range(19,22), range(22,28), range(28,32)]
+    full_pool = set(A_nums + B_nums + C_nums) - set(remove)
+
+    def pick_by_range(pool):
+        sel = []
+        for r in ranges:
+            choices = list(set(r) & pool)
+            if choices:
+                sel.append(random.choice(choices))
+        return sel
+
+    results = []
+    for _ in range(count):
+        nums = list(axis)
+        pool = full_pool - set(nums)
+        nums += pick_by_range(pool)
+        nums = list(set(nums))[:5]
+        while len(nums) < 5:
+            pick = random.choice(list(pool))
+            if pick not in nums:
+                nums.append(pick)
+        results.append(sorted(nums))
+    return results
+
 if st.button("予想を生成"):
-    if axis_numbers or remove_numbers:  # 軸数字か削除数字が選択されていれば予想生成
-        select_predictions = generate_miniloto_prediction(
-            axis_numbers, remove_numbers,
-            pd.read_csv("https://raw.githubusercontent.com/Naobro/lototop-app/main/data/miniloto_50.csv"),
-            prediction_count=20  # 20パターンを生成
-        )
-        display_predictions(select_predictions)
-    else:
-        # どちらも選択されていない場合、完全にランダムな予想を生成
-        random_predictions = generate_miniloto_prediction(
-            axis_numbers, remove_numbers,
-            pd.read_csv("https://raw.githubusercontent.com/Naobro/lototop-app/main/data/miniloto_50.csv"),
-            prediction_count=20  # 20パターンを生成
-        )
-        display_predictions(random_predictions)
+    pred = generate_selected(axis, remove)
+    st.markdown(style_table(pd.DataFrame(pred, columns=["第1","第2","第3","第4","第5"])), unsafe_allow_html=True)
+
+# 検証機能
+st.header("⑨ 予想検証機能")
+uploaded = st.file_uploader("検証する予想CSVファイルをアップロード（5列・各行予想）")
+if uploaded is not None:
+    test_df = pd.read_csv(uploaded)
+    win_numbers = set([df_latest[f"第{i}数字"] for i in range(1, 6)])
+    def match_count(row):
+        return len(set(row) & win_numbers)
+    test_df['一致数'] = test_df.apply(match_count, axis=1)
+    st.markdown("#### 検証結果：")
+    st.markdown(style_table(test_df), unsafe_allow_html=True)
