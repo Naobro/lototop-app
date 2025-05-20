@@ -1,6 +1,11 @@
 import ssl
 import pandas as pd
+import random
 import streamlit as st
+
+# ✅ HTMLテーブル変換関数（スタイルは外部で適用）
+def style_table(df):
+    return df.to_html(index=False, escape=False)
 
 ssl._create_default_https_context = ssl._create_unverified_context
 
@@ -152,33 +157,34 @@ summary_df = pd.DataFrame({
     "値": [f"{a_perc}%", f"{b_perc}%", f"{c_perc}%", f"{pull_rate}%", f"{cont_rate}%" ]
 })
 
-# 💡 分析テーブル中央揃え用スタイル
-center_css = """
+# 💡 分析テーブル左揃え用スタイル
+left_css = """
 <style>
-.center-table {
-    width: 50%;
-    margin-left: auto;
+.left-table {
+    width: 60%;
+    margin-left: 0;
     margin-right: auto;
     border-collapse: collapse;
     font-size: 16px;
 }
-.center-table th, .center-table td {
+.left-table th, .left-table td {
     border: 1px solid #ccc;
     padding: 12px 16px;
-    text-align: center;
+    text-align: left;
 }
-.center-table thead {
+.left-table thead {
     background-color: #f2f2f2;
     font-weight: bold;
 }
 </style>
 """
-def center_table(df):
-    return df.to_html(index=False, escape=False, classes="center-table")
+
+def left_table(df):
+    return df.to_html(index=False, escape=False, classes="left-table")
 
 st.markdown("#### 🔎 出現傾向（ABC割合・ひっぱり率・連続率）")
-st.markdown(center_css, unsafe_allow_html=True)
-st.markdown(center_table(summary_df), unsafe_allow_html=True)
+st.markdown(left_css, unsafe_allow_html=True)
+st.markdown(left_table(summary_df), unsafe_allow_html=True)
 # ④ パターン分析
 st.header("④ パターン分析")
 patterns = df_recent[['第1数字', '第2数字', '第3数字', '第4数字', '第5数字', '第6数字']].apply(
@@ -310,40 +316,37 @@ for label, pattern in pattern_list:
 
     pred_df = pd.DataFrame(predictions, columns=[f"第{i}数字" for i in range(1, 7)])
     st.markdown(style_table(pred_df), unsafe_allow_html=True)
-# ⑧ セレクト予想
-st.header("⑧ セレクト予想")
-axis_numbers = st.multiselect("軸数字を選んでください (最大3個まで)", options=range(1, 44), max_selections=3)
-remove_numbers = st.multiselect("削除数字を選んでください (最大20個まで)", options=range(1, 44), max_selections=20)
-
 if st.button("予想を生成"):
-    available_numbers = set(range(1, 44)) - set(remove_numbers)
+    available_numbers = set(range(1, 44)) - set(remove_numbers)  # ロト6は1〜43
     ranges = [
-        list(range(1, 17)),
-        list(range(2, 25)),
-        list(range(6, 33)),
-        list(range(12, 39)),
-        list(range(19, 43)),
-        list(range(27, 44))
+        list(range(1, 14)),
+        list(range(2, 18)),
+        list(range(5, 23)),
+        list(range(8, 28)),
+        list(range(14, 34)),
+        list(range(20, 37))
     ]
 
     def fill_numbers(selected, available_in_range):
-        candidates = [n for n in available_in_range if n in B_numbers] + \
-                     [n for n in available_in_range if n in A_numbers] + \
-                     [n for n in available_in_range if n not in B_numbers and n not in A_numbers]
-        for num in candidates:
+        pool = list(available_in_range)
+        random.shuffle(pool)
+        for num in pool:
             if num not in selected:
                 selected.append(num)
-                return
+                break
 
     predictions = []
     for _ in range(20):
         selected = list(axis_numbers)
+        used = set(selected)
         for r in ranges:
-            available_in_range = list(set(r) & available_numbers)
+            available_in_range = set(r) & available_numbers - used
             fill_numbers(selected, available_in_range)
-        selected = selected[:6]
+            used = set(selected)
+        selected = selected[:6]  # ロト6は6数字
         selected.sort()
         predictions.append(selected)
 
-    pred_df = pd.DataFrame(predictions, columns=["第1数字", "第2数字", "第3数字", "第4数字", "第5数字", "第6数字"])
+    pred_df = pd.DataFrame(predictions, columns=[f"第{i}数字" for i in range(1, 7)])
     st.markdown(style_table(pred_df), unsafe_allow_html=True)
+    

@@ -1,3 +1,4 @@
+
 import os
 import re
 import pandas as pd
@@ -28,7 +29,7 @@ def extract_date(text):
     match = re.search(r'(\d{4})[年/](\d{1,2})[月/](\d{1,2})', text)
     if match:
         y, m, d = map(int, match.groups())
-        return f"{y:04d}-{m:02d}-{d:02d}"
+        return f"{y:04d}-{m:02d}-{d:02d}"  # ハイフンで統一
     return ""
 
 def extract_numbers(text, count):
@@ -38,12 +39,16 @@ def extract_bonus(text):
     return re.findall(r'\(\s*(\d{1,2})\s*\)', text)
 
 def extract_prize_info(text, grade):
-    match = re.search(fr'{grade}[\s\S]*?(\d+)口[\s\S]*?(\d[\d,]*)円', text)
-    return (match.group(1), match.group(2)) if match else ("0", "0円")
+    if "該当なし" in text and grade == "1等":
+        return ("該当なし", "該当なし")
+    match = re.search(fr'{grade}[\s\S]*?(\d[\d,]*)口[\s\S]*?(\d[\d,]*)円', text)
+    if match:
+        return (match.group(1).replace(",", ""), match.group(2).replace(",", ""))
+    return ("0", "0")
 
 def extract_carry(text):
-    match = re.search(r'キャリーオーバー\s*([\d,]+円)', text)
-    return match.group(1) if match else "0円"
+    match = re.search(r'キャリーオーバー\s*([\d,]+)円', text)
+    return match.group(1).replace(",", "") if match else "0"
 
 # ==================== CSV保存関数 ====================
 def save_record(file_path, record):
