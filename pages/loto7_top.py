@@ -31,11 +31,15 @@ st.markdown(css_style, unsafe_allow_html=True)
 def style_table(df):
     return df.to_html(index=False, escape=False)
 
-# データ読み込み
-df = pd.read_csv("https://raw.githubusercontent.com/Naobro/lototop-app/main/data/loto7_50.csv")
-df["日付"] = pd.to_datetime(df["日付"], errors="coerce")
-df = df.sort_values(by="日付").reset_index(drop=True)  # 🔁 日付で並び替える
-latest = df.iloc[-1]  # 🔽 これで本当に最新の日付の行を取得
+# 35行目以降に以下を追加
+def load_data():
+    df = pd.read_csv("https://raw.githubusercontent.com/Naobro/lototop-app/main/data/loto7_50.csv")
+    df["抽せん日"] = pd.to_datetime(df["抽せん日"], errors="coerce")
+    df = df.sort_values(by="抽せん日").reset_index(drop=True)
+    return df
+
+df = load_data()
+latest = df.iloc[-1]
 
 # 最新の当選番号（①）
 st.title("ロト7 AI予想サイト")
@@ -47,11 +51,17 @@ bonus_numbers = f"{latest['BONUS数字1']}, {latest['BONUS数字2']}"
 
 # 金額整形
 def format_yen(val):
-    return f"{int(val):,}円" if pd.notnull(val) else "-"
+    if pd.notnull(val):
+        try:
+            return f"{int(str(val).replace(',', '').strip()):,}円"
+        except ValueError:
+            return str(val)
+    else:
+        return "-"
 
 st.markdown(f"""
 <table style='width: 100%; border-collapse: collapse; text-align: right;'>
-<tr><th>回号</th><td style="font-weight: bold;">第{latest['回号']}回</td><th>抽選日</th><td>{latest['日付'].strftime('%Y-%m-%d')}</td></tr>
+<tr><th>回号</th><td style="font-weight: bold;">第{latest['回号']}回</td><th>抽選日</th><td>{latest['抽せん日'].strftime('%Y-%m-%d')}</td></tr>
 <tr><th>本数字</th><td colspan='3' style='color:#e74c3c; font-weight: bold; font-size: 18px;'>{main_numbers}</td></tr>
 <tr><th>ボーナス数字</th><td colspan='3' style='color:#e74c3c; font-weight: bold;'>({bonus_numbers})</td></tr>
 <tr><th>1等</th><td>{latest['1等口数']}口</td><td colspan='2' style='text-align: right; font-weight: bold;'>{format_yen(latest['1等賞金'])}</td></tr>
@@ -68,7 +78,7 @@ st.markdown(f"""
 st.header(" 直近24回の当選番号")
 
 # 最新データから直近24回を取得
-df_recent = df.tail(24).sort_values(by="日付", ascending=False)
+df_recent = df.tail(24).sort_values(by="抽せん日", ascending=False)
 
 # 出現回数でABC分類セット作成（7数字分に対応）
 all_numbers = df_recent[[f"第{i}数字" for i in range(1, 8)]].values.flatten()
@@ -110,7 +120,7 @@ for _, row in df_recent.iterrows():
         cont_total += 1
 
     abc_rows.append({
-        '抽選日': row['日付'].strftime('%Y-%m-%d'),
+        '抽選日': row['抽せん日'].strftime('%Y-%m-%d'),
         '第1数字': row['第1数字'], '第2数字': row['第2数字'], '第3数字': row['第3数字'],
         '第4数字': row['第4数字'], '第5数字': row['第5数字'], '第6数字': row['第6数字'],
         '第7数字': row['第7数字'], 'ABC構成': abc_str,
@@ -188,6 +198,58 @@ st.markdown("#### 🔎 出現傾向（ABC割合・ひっぱり率・連続率）
 st.markdown(center_css, unsafe_allow_html=True)
 st.markdown(center_table(summary_df), unsafe_allow_html=True)
 
+import pandas as pd
+from collections import Counter
+import streamlit as st
+
+st.header("⑩ 連続数字ペア & ひっぱり傾向")
+
+# 直近24回のデータを取得（dfは直近全データ）
+latest_24 = df.tail(24)
+
+# ロト7は本数字が7個
+numbers_list = latest_24[[f"第{i}数字" for i in range(1, 8)]].values.tolist()
+
+# 🔁 連続ペア（例: 25-26）
+consecutive_pairs = []
+for row in numbers_list:
+    sorted_row = sorted(row)
+    for a, b in zip(sorted_row, sorted_row[1:]):
+        if b - a == 1:
+            consecutive_pairs.append(f"{a}-{b}")
+consec_counter = Counter(consecutive_pairs)
+consec_df = pd.DataFrame(consec_counter.items(), columns=["連続ペア", "出現回数"])
+consec_df = consec_df.sort_values(by="出現回数", ascending=False).reset_index(drop=True)
+
+# 🔄 ひっぱり分析（前回からのひっぱり）
+all_numbers = [set(row) for row in numbers_list]
+pull_counter = Counter()
+total_counter = Counter()
+for i in range(1, len(all_numbers)):
+    current = all_numbers[i]
+    prev = all_numbers[i - 1]
+    for num in current:
+        total_counter[num] += 1
+        if num in prev:
+            pull_counter[num] += 1
+
+# 出現回数とひっぱり率計算
+pull_data = []
+for num in sorted(total_counter.keys()):
+    total = total_counter[num]
+    pulls = pull_counter.get(num, 0)
+    rate = f"{round(pulls / total * 100, 1)}%" if total > 0 else "-"
+    pull_data.append([num, total, pulls, rate])
+pull_df = pd.DataFrame(pull_data, columns=["数字", "出現回数", "ひっぱり回数", "ひっぱり率"])
+pull_df = pull_df.sort_values(by="ひっぱり率", ascending=False).reset_index(drop=True)
+
+# 表示
+st.subheader("🔁 連続ペア 出現ランキング")
+st.markdown(style_table(consec_df), unsafe_allow_html=True)
+
+st.subheader("🔄 ひっぱり回数とひっぱり率")
+st.markdown(style_table(pull_df), unsafe_allow_html=True)
+
 # ③ 出現回数ランキング
 st.header(" 直近24回 出現回数 ランキング")
 numbers = df_recent[[f"第{i}数字" for i in range(1, 8)]].values.flatten()
@@ -198,6 +260,55 @@ ranking_df = pd.DataFrame({
     "数字": number_counts.index
 })
 st.markdown(style_table(ranking_df), unsafe_allow_html=True)
+
+import pandas as pd
+from collections import Counter
+
+def analyze_loto(df: pd.DataFrame, n_numbers: int):
+    df.columns = df.columns.str.strip()
+    if "抽せん日" not in df.columns:
+        df = df.rename(columns={"抽せん日": "抽せん日"})
+    df["抽せん日"] = pd.to_datetime(df["抽せん日"], errors="coerce")
+    df = df.dropna(subset=["抽せん日"])
+    df = df.sort_values(by="抽せん日", ascending=False).head(24)
+
+    number_cols = [f"第{i}数字" for i in range(1, n_numbers + 1)]
+    numbers_list = df[number_cols].values.tolist()
+
+    # 🔁 連続ペア
+    consecutive_pairs = []
+    for row in numbers_list:
+        sorted_row = sorted(row)
+        for a, b in zip(sorted_row, sorted_row[1:]):
+            if b - a == 1:
+                consecutive_pairs.append(f"{a}-{b}")
+    consec_counter = Counter(consecutive_pairs)
+    consec_df = pd.DataFrame(consec_counter.items(), columns=["連続ペア", "出現回数"])
+    consec_df = consec_df.sort_values(by="出現回数", ascending=False).reset_index(drop=True)
+
+    # 🔄 ひっぱり回数と率
+    all_numbers = [set(row) for row in numbers_list]
+    pull_counter = Counter()
+    total_counter = Counter()
+    for i in range(1, len(all_numbers)):
+        current = all_numbers[i]
+        prev = all_numbers[i - 1]
+        for num in current:
+            total_counter[num] += 1
+            if num in prev:
+                pull_counter[num] += 1
+
+    pull_data = []
+    for num in sorted(total_counter.keys()):
+        total = total_counter[num]
+        pulls = pull_counter.get(num, 0)
+        rate = f"{round(pulls / total * 100, 1)}%" if total > 0 else "-"
+        pull_data.append([num, total, pulls, rate])
+
+    pull_df = pd.DataFrame(pull_data, columns=["数字", "出現回数", "ひっぱり回数", "ひっぱり率"])
+    pull_df = pull_df.sort_values(by="ひっぱり率", ascending=False)
+
+    return consec_df, pull_df
 
 # ④ パターン分析
 st.header(" パターン分析")
