@@ -84,7 +84,7 @@ def push_to_github():
             st.error(f"❌ git add 失敗:\n{result_add.stderr}")
             return
 
-        # git commit（空でも通す）
+        # git commit
         result_commit = subprocess.run(
             ["git", "-C", repo_path, "commit", "--allow-empty", "-m", "強制コミット: CSV反映"],
             capture_output=True, text=True)
@@ -92,16 +92,15 @@ def push_to_github():
             st.error(f"❌ git commit 失敗:\n{result_commit.stderr}")
             return
 
-        # ⛔ git pull は行わない
-        # 強制 push
+        # git push --force
         result_push = subprocess.run(
-            ["git", "-C", repo_path, "push", "origin", "main"],
+            ["git", "-C", repo_path, "push", "origin", "main", "--force"],
             capture_output=True, text=True)
         if result_push.returncode != 0:
             st.error(f"❌ git push 失敗:\n{result_push.stderr}")
             return
 
-        st.success("✅ GitHubに強制Push完了（pull/rebaseせず上書き）")
+        st.success("✅ GitHubに強制Push完了（リモートの変更に関係なく上書き）")
 
     except Exception as e:
         st.error(f"💥 想定外のエラー:\n{str(e)}")
