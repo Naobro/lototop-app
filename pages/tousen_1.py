@@ -167,17 +167,22 @@ if st.button("CSV保存＋GitHub反映"):
                        "1等賞金", "2等賞金", "3等賞金", "4等賞金"]
 
         elif lottery_type == "ナンバーズ3":
-            nums = extract_numbers3(text_input,)
+            nums = extract_numbers3(text_input)
             record = {
-    "回号": round_no, "抽せん日": date,
-    **{f"第{i+1}数字": nums[i] for i in range(3)},
-    **{f"{g}口数": extract_prize_info(text_input, g)[0] for g in ["ストレート", "ボックス", "セット(ストレート)", "セット(ボックス)", "ミニ"]},
-    **{f"{g}当選金額": extract_prize_info(text_input, g)[1] for g in ["ストレート", "ボックス", "セット(ストレート)", "セット(ボックス)", "ミニ"]}
-}
+                "回号": round_no,
+                "抽せん日": date,
+                **{f"第{i+1}数字": nums[i] for i in range(3)},
+                **{f"{g}口数": extract_prize_info(text_input, g)[0] for g in [
+                    "ストレート", "ボックス", "セット（ストレート）", "セット（ボックス）", "ミニ"]},
+                **{f"{g}当選金額": extract_prize_info(text_input, g)[1] for g in [
+                    "ストレート", "ボックス", "セット（ストレート）", "セット（ボックス）", "ミニ"]}
+            }
             file_path = os.path.join(DATA_DIR, "numbers3_24.csv")
-            columns = ["回号", "抽せん日", "第1数字", "第2数字", "第3数字",
-                       "ストレート口数", "ボックス口数", "セット(ストレート)口数", "セット(ボックス)口数", "ミニ口数",
-                       "ストレート当選金額", "ボックス当選金額", "セット(ストレート)当選金額", "セット(ボックス)当選金額", "ミニ当選金額"]
+            columns = [
+                "回号", "抽せん日", "第1数字", "第2数字", "第3数字",
+                "ストレート口数", "ボックス口数", "セット（ストレート）口数", "セット（ボックス）口数", "ミニ口数",
+                "ストレート当選金額", "ボックス当選金額", "セット（ストレート）当選金額", "セット（ボックス）当選金額", "ミニ当選金額"
+            ]
 
         elif lottery_type == "ナンバーズ4":
             nums = extract_numbers4(text_input,)
