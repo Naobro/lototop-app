@@ -36,14 +36,11 @@ def extract_bonus(text):
     return re.findall(r'\(\s*(\d{1,2})\s*\)', text)
 
 def extract_prize_info(text, grade):
-    # 「セット（ストレート）」などに対応するため表記を置き換える
     grade_map = {
         "セットストレート": "セット（ストレート）",
         "セットボックス": "セット（ボックス）"
     }
-    actual_grade = grade_map.get(grade, grade)  # 変換がある場合は変換、なければそのまま
-
-    # カンマ付き数字にも対応
+    actual_grade = grade_map.get(grade, grade)
     pattern = fr"{actual_grade}[\s\S]*?([\d,]+)口[\s\S]*?([\d,]+)円"
     match = re.search(pattern, text)
     if match:
@@ -54,6 +51,7 @@ def extract_prize_info(text, grade):
 def extract_carry(text):
     match = re.search(r'キャリーオーバー\s*([\d,]+)円', text)
     return match.group(1).replace(",", "") if match else "0"
+
 def extract_numbers3(text):
     match = re.search(r'抽せん数字[：:\s]*([0-9]{3})', text)
     return list(match.group(1)) if match else ["0", "0", "0"]
@@ -77,25 +75,21 @@ def save_record(file_path, record, columns):
 def push_to_github():
     try:
         repo_path = os.path.join(ROOT_DIR, "..")
-
-        # git add
         result_add = subprocess.run(["git", "-C", repo_path, "add", "-A"], capture_output=True, text=True)
         if result_add.returncode != 0:
             st.error(f"❌ git add 失敗:\n{result_add.stderr}")
             return
 
-        # git commit
-        result_commit = subprocess.run(
-            ["git", "-C", repo_path, "commit", "--allow-empty", "-m", "強制コミット: CSV反映"],
-            capture_output=True, text=True)
+        result_commit = subprocess.run([
+            "git", "-C", repo_path, "commit", "--allow-empty", "-m", "強制コミット: CSV反映"
+        ], capture_output=True, text=True)
         if result_commit.returncode != 0 and "nothing to commit" not in result_commit.stderr:
             st.error(f"❌ git commit 失敗:\n{result_commit.stderr}")
             return
 
-        # git push --force
-        result_push = subprocess.run(
-            ["git", "-C", repo_path, "push", "origin", "main", "--force"],
-            capture_output=True, text=True)
+        result_push = subprocess.run([
+            "git", "-C", repo_path, "push", "origin", "main", "--force"
+        ], capture_output=True, text=True)
         if result_push.returncode != 0:
             st.error(f"❌ git push 失敗:\n{result_push.stderr}")
             return
@@ -104,6 +98,7 @@ def push_to_github():
 
     except Exception as e:
         st.error(f"💥 想定外のエラー:\n{str(e)}")
+
 # ==================== 実行処理 ====================
 if st.button("CSV保存＋GitHub反映"):
     if not text_input:
@@ -182,7 +177,7 @@ if st.button("CSV保存＋GitHub反映"):
             ]
 
         elif lottery_type == "ナンバーズ4":
-            nums = extract_numbers4(text_input,)
+            nums = extract_numbers4(text_input)
             record = {
                 "回号": round_no, "抽せん日": date,
                 **{f"第{i+1}数字": nums[i] for i in range(4)},
