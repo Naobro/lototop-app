@@ -22,7 +22,7 @@ def style_table(df):
 # 読み込み
 csv_path = "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/miniloto_50.csv"
 df = pd.read_csv(csv_path)
-df = df.rename(columns={"日付": "抽せん日"})
+df = df.rename(columns={"抽せん日": "抽せん日"})
 df['抽せん日'] = pd.to_datetime(df['抽せん日'], errors='coerce')
 df = df.dropna(subset=['抽せん日'])
 df = df.sort_values(by="抽せん日", ascending=False)
@@ -123,7 +123,7 @@ df = pd.read_csv(csv_path)
 
 # 整形処理
 df.columns = df.columns.str.strip()
-df = df.rename(columns={"日付": "抽せん日"})
+df = df.rename(columns={"抽せん日": "抽せん日"})
 df["抽せん日"] = pd.to_datetime(df["抽せん日"], errors="coerce")
 df = df.dropna(subset=["抽せん日"])
 df = df.sort_values(by="抽せん日", ascending=False).head(24)
@@ -278,11 +278,11 @@ df = pd.read_csv("https://raw.githubusercontent.com/Naobro/lototop-app/main/data
 # 列名の空白除去
 df.columns = df.columns.str.strip()
 
-# 日付変換
-df["日付"] = pd.to_datetime(df["日付"], errors="coerce")
+# 抽せん日変換
+df["抽せん日"] = pd.to_datetime(df["抽せん日"], errors="coerce")
 
 # 直近24回分抽出
-latest24 = df.sort_values("日付", ascending=False).head(24)
+latest24 = df.sort_values("抽せん日", ascending=False).head(24)
 
 # 本数字のみ取り出し
 number_cols = [col for col in df.columns if "第" in col and "数字" in col]

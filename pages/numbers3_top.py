@@ -1,72 +1,81 @@
 import pandas as pd
 import streamlit as st
 import html
+import random
+from collections import Counter
 
-# **① 最新の当選番号**
-def generate_numbers3_table(latest_csv):
+# GitHub上のCSVパス
+CSV_PATH = "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/numbers3_24.csv"
+
+# 最新の当選結果表示関数
+def show_latest_results(csv_path):
     try:
-        # CSVファイルを読み込む
-        df_latest = pd.read_csv(latest_csv)
-        # 最新の結果を取得
-        latest_result = df_latest.iloc[0]  # 最新の結果を取得
+        df = pd.read_csv(csv_path)
+        df = df.loc[:, ~df.columns.str.contains('^Unnamed')]
+        df = df.fillna("未定義")
+        df["抽せん日"] = pd.to_datetime(df["抽せん日"], errors="coerce")
+        df = df.dropna(subset=["抽せん日"])
 
-        # Streamlitページのタイトル
-        st.title("ナンバーズ3 最新の当選番号")
+        latest = df.sort_values(by="抽せん日", ascending=False).iloc[0]
 
-        # 最新の当選番号テーブルを生成
+        number_str = f"{latest['第1数字']}{latest['第2数字']}{latest['第3数字']}"
+
         st.header("① 最新の当選番号")
         table_html = f"""
         <table style="width: 80%; margin: 0 auto; border-collapse: collapse; text-align: right;">
             <tr>
                 <td style="padding: 10px; font-weight: bold;text-align: left;">回号</td>
-                <td style="padding: 10px; font-size: 20px;">{latest_result['回号']}回</td>
-                <td style="padding: 10px; font-weight: bold;">抽選日</td>
-                <td style="padding: 10px; font-size: 20px;">{latest_result['抽選日']}</td>
+                <td style="padding: 10px; font-size: 20px;">{html.escape(str(latest['回号']))}回</td>
+                <td style="padding: 10px; font-weight: bold;">抽せん日</td>
+                <td style="padding: 10px; font-size: 20px;">{html.escape(latest['抽せん日'].strftime('%Y-%m-%d'))}</td>
             </tr>
             <tr>
                 <td style="padding: 10px; font-weight: bold; text-align: left;">当選番号</td>
                 <td colspan="3" style="padding: 10px; font-size: 24px; font-weight: bold; color: red; text-align: right;">
-                    {latest_result['当選番号']}
+                    {number_str}
                 </td>
             </tr>
             <tr>
-                <td style="padding: 10px; font-weight: bold; text-align: left;">ストレート</td>
-                <td style="padding: 10px; text-align: right;" colspan="2">{latest_result['ストレート 口数']}</td>
-                <td style="padding: 10px; text-align: right;">{latest_result['ストレート 当選金額']}</td>
-            </tr>
-            <tr>
-                <td style="padding: 10px; font-weight: bold; text-align: left;">ボックス</td>
-                <td style="padding: 10px; text-align: right;" colspan="2">{latest_result['ボックス 口数']}</td>
-                <td style="padding: 10px; text-align: right;">{latest_result['ボックス 当選金額']}</td>
-            </tr>
-            <tr>
-                <td style="padding: 10px; font-weight: bold; text-align: left;">セット-ストレート</td>
-                <td style="padding: 10px; text-align: right;" colspan="2">{latest_result['セット・ストレート 口数']}</td>
-                <td style="padding: 10px; text-align: right;">{latest_result['セット・ストレート 当選金額']}</td>
-            </tr>
-            <tr>
-                <td style="padding: 10px; font-weight: bold; text-align: left;">セット-ボックス</td>
-                <td style="padding: 10px; text-align: right;" colspan="2">{latest_result['セット・ボックス 口数']}</td>
-                <td style="padding: 10px; text-align: right;">{latest_result['セット・ボックス 当選金額']}</td>
-            </tr>
-            <tr>
-                <td style="padding: 10px; font-weight: bold; text-align: left;">ミニ</td>
-                <td style="padding: 10px; text-align: right;" colspan="2">{latest_result['ミニ 口数']}</td>
-                <td style="padding: 10px; text-align: right;">{latest_result['ミニ 当選金額']}</td>
-            </tr>
+    <td style="padding: 10px; font-weight: bold; text-align: left;">ストレート</td>
+    <td colspan="2">{html.escape(str(latest['ストレート口数']))}口</td>
+    <td>{html.escape(str(latest['ストレート当選金額']))}円</td>
+</tr>
+<tr>
+    <td style="padding: 10px; font-weight: bold; text-align: left;">ボックス</td>
+    <td colspan="2">{html.escape(str(latest['ボックス口数']))}口</td>
+    <td>{html.escape(str(latest['ボックス当選金額']))}円</td>
+</tr>
+<tr>
+    <td style="padding: 10px; font-weight: bold; text-align: left;">セット・ストレート</td>
+    <td colspan="2">{html.escape(str(latest['セット(ストレート)口数']))}口</td>
+    <td>{html.escape(str(latest['セット(ストレート)当選金額']))}円</td>
+</tr>
+<tr>
+    <td style="padding: 10px; font-weight: bold; text-align: left;">セット・ボックス</td>
+    <td colspan="2">{html.escape(str(latest['セット(ボックス)口数']))}口</td>
+    <td>{html.escape(str(latest['セット(ボックス)当選金額']))}円</td>
+</tr>
+<tr>
+    <td style="padding: 10px; font-weight: bold; text-align: left;">ミニ</td>
+    <td colspan="2">{html.escape(str(latest['ミニ口数']))}口</td>
+    <td>{html.escape(str(latest['ミニ当選金額']))}円</td>
+</tr>
         </table>
         """
-
-        # 最新の当選番号テーブルを表示
         st.markdown(table_html, unsafe_allow_html=True)
 
     except Exception as e:
-        st.write(f"エラーが発生しました: {e}")
-        st.write(f"エラー詳細: {e.__class__}")
+        st.error(f"エラーが発生しました: {e}")
+        st.error(f"エラー詳細: {type(e)}")
 
-# CSVのパス
-latest_csv_path = "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/numbers_3_latest.csv"
-generate_numbers3_table(latest_csv_path)
+# Streamlit表示
+def show_page():
+    st.title("ナンバーズ3 - 当選予想ページ")
+    show_latest_results(CSV_PATH)
+
+# 実行
+if __name__ == "__main__":
+    show_page()
 
 # **② 直近24回の当選番号**を表示
 st.header("② 直近24回の当選番号")
