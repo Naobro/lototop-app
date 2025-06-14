@@ -12,6 +12,29 @@ ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(ROOT_DIR, "..", "data")
 os.makedirs(DATA_DIR, exist_ok=True)
 
+# ==================== GitHubの最新CSVでローカルを上書き ====================
+import requests
+
+def download_latest_csv():
+    url_map = {
+        "ロト6": "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/loto6_50.csv",
+        "ロト7": "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/loto7_50.csv",
+        "ミニロト": "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/miniloto_50.csv",
+        "ナンバーズ3": "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/numbers3_24.csv",
+        "ナンバーズ4": "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/numbers4_24.csv"
+    }
+    for name, url in url_map.items():
+        path = os.path.join(DATA_DIR, os.path.basename(url))
+        try:
+            r = requests.get(url)
+            r.raise_for_status()
+            with open(path, 'wb') as f:
+                f.write(r.content)
+        except Exception as e:
+            st.warning(f"⚠️ {name} のCSV取得に失敗しました: {e}")
+
+download_latest_csv()
+
 st.set_page_config(page_title="宝くじCSV化＋GitHub保存", layout="wide")
 st.title("抽選結果をコピペしてCSVに保存・GitHubへ反映")
 
