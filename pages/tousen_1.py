@@ -77,11 +77,14 @@ def save_record(file_path, record, columns):
 def push_to_github():
     try:
         repo_path = os.path.join(ROOT_DIR, "..")
+
+        # git add
         result_add = subprocess.run(["git", "-C", repo_path, "add", "-A"], capture_output=True, text=True)
         if result_add.returncode != 0:
             st.error(f"❌ git add 失敗:\n{result_add.stderr}")
             return
 
+        # git commit（空でも通す）
         result_commit = subprocess.run(
             ["git", "-C", repo_path, "commit", "--allow-empty", "-m", "強制コミット: CSV反映"],
             capture_output=True, text=True)
@@ -89,21 +92,16 @@ def push_to_github():
             st.error(f"❌ git commit 失敗:\n{result_commit.stderr}")
             return
 
-        result_pull = subprocess.run(
-            ["git", "-C", repo_path, "pull", "--rebase"],
-            capture_output=True, text=True)
-        if result_pull.returncode != 0:
-            st.warning(f"⚠️ git pull（rebase）失敗:\n{result_pull.stderr}")
-            # それでも push 続行する
-
+        # ⛔ git pull は行わない
+        # 強制 push
         result_push = subprocess.run(
-            ["git", "-C", repo_path, "push"],
+            ["git", "-C", repo_path, "push", "origin", "main"],
             capture_output=True, text=True)
         if result_push.returncode != 0:
             st.error(f"❌ git push 失敗:\n{result_push.stderr}")
             return
 
-        st.success("✅ GitHubに強制Push完了（内容が同じでも反映）")
+        st.success("✅ GitHubに強制Push完了（pull/rebaseせず上書き）")
 
     except Exception as e:
         st.error(f"💥 想定外のエラー:\n{str(e)}")
