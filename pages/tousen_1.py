@@ -83,11 +83,18 @@ def save_record(file_path, record, columns):
 def push_to_github():
     try:
         repo_path = os.path.join(ROOT_DIR, "..")
+
+        # 🔍 変更内容の確認
+        result_status = subprocess.run(["git", "-C", repo_path, "status"], capture_output=True, text=True)
+        st.text("🧪 Gitステータス確認:\n" + result_status.stdout)
+
+        # git add
         result_add = subprocess.run(["git", "-C", repo_path, "add", "-A"], capture_output=True, text=True)
         if result_add.returncode != 0:
             st.error(f"❌ git add 失敗:\n{result_add.stderr}")
             return
 
+        # git commit
         result_commit = subprocess.run([
             "git", "-C", repo_path, "commit", "--allow-empty", "-m", "強制コミット: CSV反映"
         ], capture_output=True, text=True)
@@ -95,6 +102,7 @@ def push_to_github():
             st.error(f"❌ git commit 失敗:\n{result_commit.stderr}")
             return
 
+        # git push
         result_push = subprocess.run([
             "git", "-C", repo_path, "push", "origin", "main", "--force"
         ], capture_output=True, text=True)
@@ -106,7 +114,6 @@ def push_to_github():
 
     except Exception as e:
         st.error(f"💥 想定外のエラー:\n{str(e)}")
-
 # ==================== 実行処理 ====================
 if st.button("CSV保存＋GitHub反映"):
     if not text_input:
@@ -168,15 +175,20 @@ if st.button("CSV保存＋GitHub反映"):
 
         elif lottery_type == "ナンバーズ3":
             nums = extract_numbers3(text_input)
+
             record = {
                 "回号": round_no,
                 "抽せん日": date,
-                **{f"第{i+1}数字": nums[i] for i in range(3)},
-                **{f"{g}口数": extract_prize_info(text_input, g)[0] for g in [
-                    "ストレート", "ボックス", "セット（ストレート）", "セット（ボックス）", "ミニ"]},
-                **{f"{g}当選金額": extract_prize_info(text_input, g)[1] for g in [
-                    "ストレート", "ボックス", "セット（ストレート）", "セット（ボックス）", "ミニ"]}
+                "第1数字": nums[0],
+                "第2数字": nums[1],
+                "第3数字": nums[2],
             }
+
+            for g in ["ストレート", "ボックス", "セット（ストレート）", "セット（ボックス）", "ミニ"]:
+                kousu, kingaku = extract_prize_info(text_input, g)
+                record[f"{g}口数"] = str(kousu or "0")
+                record[f"{g}当選金額"] = str(kingaku or "0")
+
             file_path = os.path.join(DATA_DIR, "numbers3_24.csv")
             columns = [
                 "回号", "抽せん日", "第1数字", "第2数字", "第3数字",
