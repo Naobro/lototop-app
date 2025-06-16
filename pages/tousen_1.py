@@ -36,12 +36,10 @@ def extract_bonus(text):
     return re.findall(r'\(\s*(\d{1,2})\s*\)', text)
 
 def extract_prize_info(text, grade):
-    grade_map = {
-        "セットストレート": "セット（ストレート）",
-        "セットボックス": "セット（ボックス）"
-    }
-    actual_grade = grade_map.get(grade, grade)
-    pattern = fr"{actual_grade}[\s\S]*?([\d,]+)口[\s\S]*?([\d,]+)円"
+    # カッコを半角に正規化
+    grade = grade.replace("（", "(").replace("）", ")")
+
+    pattern = fr"{grade}[\s\S]*?([\d,]+)口[\s\S]*?([\d,]+)円"
     match = re.search(pattern, text)
     if match:
         count, prize = match.groups()
