@@ -36,20 +36,24 @@ def extract_bonus(text):
     return re.findall(r'\(\s*(\d{1,2})\s*\)', text)
 
 def extract_prize_info(text, grade):
-    pattern = rf"{re.escape(grade)}[^\d]*(\d+)[^\d]+([\d,]+)円"
+    # 「セット（ストレート）」などに対応するため表記を置き換える
+    grade_map = {
+        "セットストレート": "セット（ストレート）",
+        "セットボックス": "セット（ボックス）"
+    }
+    actual_grade = grade_map.get(grade, grade)  # 変換がある場合は変換、なければそのまま
 
-
-    for line in text.splitlines():
-        match = re.search(pattern, line)
-        if match:
-            count, amount = match.groups()
-            return count, amount.replace(",", "")
-    return "0", "0"
+    # カンマ付き数字にも対応
+    pattern = fr"{actual_grade}[\s\S]*?([\d,]+)口[\s\S]*?([\d,]+)円"
+    match = re.search(pattern, text)
+    if match:
+        count, prize = match.groups()
+        return count.replace(",", ""), prize.replace(",", "")
+    return ("0", "0")
 
 def extract_carry(text):
     match = re.search(r'キャリーオーバー\s*([\d,]+)円', text)
     return match.group(1).replace(",", "") if match else "0"
-
 def extract_numbers3(text):
     match = re.search(r'抽せん数字[：:\s]*([0-9]{3})', text)
     return list(match.group(1)) if match else ["0", "0", "0"]
@@ -61,54 +65,45 @@ def extract_numbers4(text):
 def save_record(file_path, record, columns):
     df = pd.DataFrame([record])
     df = df.reindex(columns=columns)
-
     if os.path.exists(file_path):
         old = pd.read_csv(file_path)
-
-        # ✅ カラム名を正規化（全角カッコ → 半角カッコ）
-        old.columns = [c.replace("（", "(").replace("）", ")") for c in old.columns]
-
         if str(record["回号"]) in old["回号"].astype(str).values:
             st.warning("⚠️ 同じ回号のデータが存在します")
             return False
-
         df = pd.concat([old, df], ignore_index=True)
-
     df.to_csv(file_path, index=False)
     return True
-
 
 def push_to_github():
     try:
         repo_path = os.path.join(ROOT_DIR, "..")
-
-        # 🔍 変更内容の確認
-        result_status = subprocess.run(["git", "-C", repo_path, "status"], capture_output=True, text=True)
-        st.text("🧪 Gitステータス確認:\n" + result_status.stdout)
-
-        # git add
         result_add = subprocess.run(["git", "-C", repo_path, "add", "-A"], capture_output=True, text=True)
         if result_add.returncode != 0:
             st.error(f"❌ git add 失敗:\n{result_add.stderr}")
             return
 
-        # git commit
-        result_commit = subprocess.run([
-            "git", "-C", repo_path, "commit", "--allow-empty", "-m", "強制コミット: CSV反映"
-        ], capture_output=True, text=True)
+        result_commit = subprocess.run(
+            ["git", "-C", repo_path, "commit", "--allow-empty", "-m", "強制コミット: CSV反映"],
+            capture_output=True, text=True)
         if result_commit.returncode != 0 and "nothing to commit" not in result_commit.stderr:
             st.error(f"❌ git commit 失敗:\n{result_commit.stderr}")
             return
 
-        # git push
-        result_push = subprocess.run([
-            "git", "-C", repo_path, "push", "origin", "main", "--force"
-        ], capture_output=True, text=True)
+        result_pull = subprocess.run(
+            ["git", "-C", repo_path, "pull", "--rebase"],
+            capture_output=True, text=True)
+        if result_pull.returncode != 0:
+            st.warning(f"⚠️ git pull（rebase）失敗:\n{result_pull.stderr}")
+            # それでも push 続行する
+
+        result_push = subprocess.run(
+            ["git", "-C", repo_path, "push"],
+            capture_output=True, text=True)
         if result_push.returncode != 0:
             st.error(f"❌ git push 失敗:\n{result_push.stderr}")
             return
 
-        st.success("✅ GitHubに強制Push完了（リモートの変更に関係なく上書き）")
+        st.success("✅ GitHubに強制Push完了（内容が同じでも反映）")
 
     except Exception as e:
         st.error(f"💥 想定外のエラー:\n{str(e)}")
@@ -171,32 +166,31 @@ if st.button("CSV保存＋GitHub反映"):
                        "1等口数", "2等口数", "3等口数", "4等口数",
                        "1等賞金", "2等賞金", "3等賞金", "4等賞金"]
 
-        
+        elif lottery_type == "ナンバーズ3":
+            nums = extract_numbers3(text_input,)
+            record = {
+    "回号": round_no, "抽せん日": date,
+    **{f"第{i+1}数字": nums[i] for i in range(3)},
+    **{f"{g}口数": extract_prize_info(text_input, g)[0] for g in ["ストレート", "ボックス", "セット（ストレート）", "セット（ボックス）", "ミニ"]},
+    **{f"{g}当選金額": extract_prize_info(text_input, g)[1] for g in ["ストレート", "ボックス", "セット（ストレート）", "セット（ボックス）", "ミニ"]}
+}
+            file_path = os.path.join(DATA_DIR, "numbers3_24.csv")
+            columns = ["回号", "抽せん日", "第1数字", "第2数字", "第3数字",
+                       "ストレート口数", "ボックス口数", "セット（ストレート）口数", "セットボックス口数", "ミニ口数",
+                       "ストレート当選金額", "ボックス当選金額", "セット（ストレート）当選金額", "セットボックス当選金額", "ミニ当選金額"]
+
         elif lottery_type == "ナンバーズ4":
-            nums = extract_numbers4(text_input)
+            nums = extract_numbers4(text_input,)
             record = {
                 "回号": round_no, "抽せん日": date,
                 **{f"第{i+1}数字": nums[i] for i in range(4)},
-                **{f"{g}口数": extract_prize_info(text_input, g)[0] for g in ["ストレート", "ボックス", "セット(ストレート)", "セット(ボックス)"]},
-                **{f"{g}当選金額": extract_prize_info(text_input, g)[1] for g in ["ストレート", "ボックス", "セット(ストレート)", "セット(ボックス)"]}
+                **{f"{g}口数": extract_prize_info(text_input, g)[0] for g in ["ストレート", "ボックス", "セット（ストレート）", "セット（ボックス）"]},
+                **{f"{g}当選金額": extract_prize_info(text_input, g)[1] for g in ["ストレート", "ボックス", "セット（ストレート）", "セット（ボックス）"]}
             }
             file_path = os.path.join(DATA_DIR, "numbers4_24.csv")
             columns = ["回号", "抽せん日", "第1数字", "第2数字", "第3数字", "第4数字",
                        "ストレート口数", "ボックス口数", "セット（ストレート）口数", "セット（ボックス）口数",
                        "ストレート当選金額", "ボックス当選金額", "セット（ストレート）当選金額", "セット（ボックス）当選金額"]
-            
-        elif lottery_type == "ナンバーズ3":
-            nums = extract_numbers3(text_input)
-            record = {
-                "回号": round_no, "抽せん日": date,
-                **{f"第{i+1}数字": nums[i] for i in range(3)},
-                **{f"{g}口数": extract_prize_info(text_input, g)[0] for g in ["ストレート", "ボックス", "セット（ストレート）", "セット（ボックス）","ミニ"]},
-                **{f"{g}当選金額": extract_prize_info(text_input, g)[1] for g in ["ストレート", "ボックス", "セット（ストレート）", "セット（ボックス）","ミニ"]}
-            }
-            file_path = os.path.join(DATA_DIR, "numbers3_24.csv")
-            columns = ["回号", "抽せん日", "第1数字", "第2数字", "第3数字", 
-                       "ストレート口数", "ボックス口数", "セット（ストレート）口数", "セット（ボックス）口数","ミニ口数",
-                       "ストレート当選金額", "ボックス当選金額", "セット（ストレート）当選金額", "セット（ボックス）当選金額","ミニ当選金額"]
 
         if file_path and save_record(file_path, record, columns):
             st.success(f"✅ {lottery_type} 第{round_no}回 保存完了")
