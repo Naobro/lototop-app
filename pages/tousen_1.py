@@ -36,8 +36,8 @@ def extract_bonus(text):
     return re.findall(r'\(\s*(\d{1,2})\s*\)', text)
 
 def extract_prize_info(text, grade):
-    grade = grade.replace("（", "(").replace("）", ")")
     pattern = rf"{re.escape(grade)}[^\d]*(\d+)[^\d]+([\d,]+)円"
+
 
     for line in text.splitlines():
         match = re.search(pattern, line)
