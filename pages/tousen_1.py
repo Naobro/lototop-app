@@ -36,15 +36,15 @@ def extract_bonus(text):
     return re.findall(r'\(\s*(\d{1,2})\s*\)', text)
 
 def extract_prize_info(text, grade):
-    # カッコを半角に正規化
     grade = grade.replace("（", "(").replace("）", ")")
 
-    pattern = fr"{grade}[\s\S]*?([\d,]+)口[\s\S]*?([\d,]+)円"
-    match = re.search(pattern, text)
-    if match:
-        count, prize = match.groups()
-        return count.replace(",", ""), prize.replace(",", "")
-    return ("0", "0")
+    for line in text.splitlines():
+        if grade in line:
+            match = re.search(rf"{grade}[^\d]*(\d+)[^\d]*(\d+,?\d*)円", line)
+            if match:
+                count, amount = match.groups()
+                return count, amount.replace(",", "")
+    return "0", "0"
 
 def extract_carry(text):
     match = re.search(r'キャリーオーバー\s*([\d,]+)円', text)
