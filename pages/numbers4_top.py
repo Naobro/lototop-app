@@ -7,7 +7,20 @@ from collections import Counter
 # CSVパス
 CSV_PATH = "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/numbers4_24.csv"
 
-# 最新の当選結果表示関数
+import pandas as pd
+import streamlit as st
+import html
+from collections import Counter
+
+CSV_PATH = "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/numbers4_24.csv"
+
+def format_number(val):
+    try:
+        return f"{int(float(val)):,}"
+    except:
+        return "未定義"
+
+# 最新表示 + df_recent抽出 + 表示
 def show_latest_results(csv_path):
     try:
         df = pd.read_csv(csv_path)
@@ -16,8 +29,11 @@ def show_latest_results(csv_path):
         df = df.fillna("未定義")
         df["抽せん日"] = pd.to_datetime(df["抽せん日"], errors="coerce")
         df = df.dropna(subset=["抽せん日"])
+        df = df.sort_values(by="抽せん日", ascending=False).reset_index(drop=True)
 
-        latest = df.sort_values(by="抽せん日", ascending=False).iloc[0]
+        latest = df.iloc[0]
+        global df_recent
+        df_recent = df[["回号", "抽せん日", "第1数字", "第2数字", "第3数字", "第4数字"]].head(24)
 
         number_str = f"{latest['第1数字']}{latest['第2数字']}{latest['第3数字']}{latest['第4数字']}"
 
@@ -28,7 +44,7 @@ def show_latest_results(csv_path):
                 <td style="padding: 10px; font-weight: bold;text-align: left;">回号</td>
                 <td style="padding: 10px; font-size: 20px;">{html.escape(str(latest['回号']))}回</td>
                 <td style="padding: 10px; font-weight: bold;">抽せん日</td>
-                <td style="padding: 10px; font-size: 20px;">{html.escape(latest['抽せん日'].strftime('%Y-%m-%d'))}</td>
+                <td style="padding: 10px; font-size: 20px;">{latest['抽せん日'].strftime('%Y-%m-%d')}</td>
             </tr>
             <tr>
                 <td style="padding: 10px; font-weight: bold; text-align: left;">当選番号</td>
@@ -38,23 +54,23 @@ def show_latest_results(csv_path):
             </tr>
             <tr>
                 <td style="padding: 10px; font-weight: bold; text-align: left;">ストレート</td>
-                <td colspan="2">{html.escape(str(latest['ストレート口数']))}口</td>
-                <td>{html.escape(str(latest['ストレート当選金額']))}円</td>
+                <td colspan="2">{format_number(latest['ストレート口数'])}口</td>
+                <td>{format_number(latest['ストレート当選金額'])}円</td>
             </tr>
             <tr>
                 <td style="padding: 10px; font-weight: bold; text-align: left;">ボックス</td>
-                <td colspan="2">{html.escape(str(latest['ボックス口数']))}口</td>
-                <td>{html.escape(str(latest['ボックス当選金額']))}円</td>
+                <td colspan="2">{format_number(latest['ボックス口数'])}口</td>
+                <td>{format_number(latest['ボックス当選金額'])}円</td>
             </tr>
             <tr>
                 <td style="padding: 10px; font-weight: bold; text-align: left;">セット・ストレート</td>
-                <td colspan="2">{html.escape(str(latest['セット（ストレート）口数']))}口</td>
-                <td>{html.escape(str(latest['セット（ストレート）当選金額']))}円</td>
+                <td colspan="2">{format_number(latest['セット（ストレート）口数'])}口</td>
+                <td>{format_number(latest['セット（ストレート）当選金額'])}円</td>
             </tr>
             <tr>
                 <td style="padding: 10px; font-weight: bold; text-align: left;">セット・ボックス</td>
-                <td colspan="2">{html.escape(str(latest['セット（ボックス）口数']))}口</td>
-                <td>{html.escape(str(latest['セット（ボックス）当選金額']))}円</td>
+                <td colspan="2">{format_number(latest['セット（ボックス）口数'])}口</td>
+                <td>{format_number(latest['セット（ボックス）当選金額'])}円</td>
             </tr>
         </table>
         """
@@ -63,20 +79,32 @@ def show_latest_results(csv_path):
     except Exception as e:
         st.error(f"エラーが発生しました: {e}")
         st.error(f"エラー詳細: {type(e)}")
-# ① 最新結果の表示と df_recent の準備
+
+# 最新結果と df_recent 定義
 show_latest_results(CSV_PATH)
 
-# ③ ランキング表示
-st.header("③ 各桁の出現ランキング")
-ranking_df = pd.DataFrame({
-    "順位": [f"{i+1}位" for i in range(10)],
-    "第1数字": df_recent["第1数字"].value_counts().reindex(range(10), fill_value=0).sort_values(ascending=False).index[:10],
-    "第2数字": df_recent["第2数字"].value_counts().reindex(range(10), fill_value=0).sort_values(ascending=False).index[:10],
-    "第3数字": df_recent["第3数字"].value_counts().reindex(range(10), fill_value=0).sort_values(ascending=False).index[:10],
-    "第4数字": df_recent["第4数字"].value_counts().reindex(range(10), fill_value=0).sort_values(ascending=False).index[:10],
-})
-st.dataframe(ranking_df)
+# ② 直近24回の当選番号（数字のみ）
+st.header("② 直近24回の当選番号")
+try:
+    df_disp = df_recent.copy()
+    df_disp["抽せん日"] = pd.to_datetime(df_disp["抽せん日"], errors="coerce").dt.strftime("%Y-%m-%d")
+    st.dataframe(df_disp[["回号", "抽せん日", "第1数字", "第2数字", "第3数字", "第4数字"]], use_container_width=True)
+except Exception as e:
+    st.error(f"直近24回の表示に失敗しました: {e}")
 
+# ③ 各桁の出現ランキング
+st.header("③ 各桁の出現ランキング")
+try:
+    ranking_df = pd.DataFrame({
+        "順位": [f"{i+1}位" for i in range(10)],
+        "第1数字": df_recent["第1数字"].value_counts().reindex(range(10), fill_value=0).sort_values(ascending=False).index[:10],
+        "第2数字": df_recent["第2数字"].value_counts().reindex(range(10), fill_value=0).sort_values(ascending=False).index[:10],
+        "第3数字": df_recent["第3数字"].value_counts().reindex(range(10), fill_value=0).sort_values(ascending=False).index[:10],
+        "第4数字": df_recent["第4数字"].value_counts().reindex(range(10), fill_value=0).sort_values(ascending=False).index[:10],
+    })
+    st.dataframe(ranking_df, use_container_width=True)
+except Exception as e:
+    st.error(f"ランキングの表示に失敗しました: {e}")
 # ④ W/S/T カウント
 st.subheader("④ シングル・ダブル・トリプル分析")
 s = d = t = 0
