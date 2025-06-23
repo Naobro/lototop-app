@@ -11,6 +11,7 @@ CSV_PATH = "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/numbe
 def show_latest_results(csv_path):
     try:
         df = pd.read_csv(csv_path)
+        df.columns = [col.replace("(", "（").replace(")", "）") for col in df.columns]
         df = df.loc[:, ~df.columns.str.contains('^Unnamed')]
         df = df.fillna("未定義")
         df["抽せん日"] = pd.to_datetime(df["抽せん日"], errors="coerce")
@@ -84,6 +85,7 @@ def generate_recent_numbers3_table(csv_path):
     try:
         # CSVを読み込む
         df = pd.read_csv(csv_path)
+        df.columns = [col.replace("(", "（").replace(")", "）") for col in df.columns]
         df = df.fillna("未定義")  # 欠損値を"未定義"で埋める
         df["抽せん日"] = pd.to_datetime(df["抽せん日"], errors="coerce")  # 日付に変換
         df = df.dropna(subset=["抽せん日"])  # 日付が無効な行を削除
