@@ -101,6 +101,44 @@ for _, row in df_recent.iterrows():
 abc_df = pd.DataFrame(abc_rows)
 st.markdown(style_table(abc_df), unsafe_allow_html=True)
 
+# A数字・B数字を取得（文字列→int変換）
+A_nums = [int(n) for n in abc_class_df['A（3〜4回）'] if n != '']
+B_nums = [int(n) for n in abc_class_df['B（5回以上）'] if n != '']
+
+# 位別に分類
+def classify_by_digit(nums):
+    one_digit = sorted([n for n in nums if 1 <= n <= 9])
+    ten_digit = sorted([n for n in nums if 10 <= n <= 19])
+    twenty_digit = sorted([n for n in nums if 20 <= n <= 31])
+    return one_digit, ten_digit, twenty_digit
+
+a1, a10, a20 = classify_by_digit(A_nums)
+b1, b10, b20 = classify_by_digit(B_nums)
+
+# 表示用 DataFrame に整形
+max_len = max(len(a1), len(a10), len(a20), len(b1), len(b10), len(b20))
+def pad(lst):
+    return lst + [''] * (max_len - len(lst))
+
+digit_df = pd.DataFrame({
+    "位": ["1の位"] * max_len + ["10の位"] * max_len + ["20/30の位"] * max_len,
+    "A数字": pad(a1) + pad(a10) + pad(a20),
+    "B数字": pad(b1) + pad(b10) + pad(b20),
+})
+
+st.header("⑥-A A数字・B数字の位別分類")
+st.markdown(style_table(digit_df), unsafe_allow_html=True)
+
+# 最新回（前回）の当選番号だけを表示
+st.header("⑥-B 前回の当選番号（ひっぱり検討用）")
+
+latest_numbers = [df_latest[f"第{i}数字"] for i in range(1, 6)]
+latest_df = pd.DataFrame({
+    "前回当選番号": latest_numbers
+})
+
+st.markdown(style_table(latest_df), unsafe_allow_html=True)
+
 # 出現傾向分析
 total_abc = sum(abc_counts.values())
 a_perc = round(abc_counts['A'] / total_abc * 100, 1)
@@ -164,7 +202,7 @@ pull_stats_df = pd.DataFrame(pull_stats).sort_values(by="出現回数", ascendin
 print(pull_stats_df)
 
 # 🔁 連続ペアの出現回数 & 🔄 ひっぱり回数とひっぱり率の分析
-st.header("⑩ 連続数字ペア & ひっぱり傾向")
+st.header("連続数字ペア & ひっぱり傾向")
 
 from collections import Counter
 
@@ -211,9 +249,7 @@ pull_df = pull_df.sort_values(by="ひっぱり率", ascending=False)
 st.subheader("🔁 連続ペア 出現ランキング")
 st.markdown(style_table(consec_df), unsafe_allow_html=True)
 
-st.subheader("🔄 ひっぱり回数とひっぱり率")
-st.markdown(style_table(pull_df), unsafe_allow_html=True)
-st.header("③ 分布パターン")
+st.header("分布パターン")
 
 def get_distribution(row):
     pattern = []
@@ -222,10 +258,8 @@ def get_distribution(row):
             pattern.append("1")
         elif 10 <= n <= 19:
             pattern.append("10")
-        elif 20 <= n <= 29:
+        else:  # ✅ 20〜31 をすべて 20 に分類
             pattern.append("20")
-        else:
-            pattern.append("30")
     return '-'.join(pattern)
 
 pattern_series = df_recent[[f"第{i}数字" for i in range(1, 6)]].apply(get_distribution, axis=1)
@@ -235,12 +269,12 @@ st.markdown(style_table(pattern_counts), unsafe_allow_html=True)
 
 st.header("④ 各位の出現回数TOP5")
 
-number_groups = {'1': [], '10': [], '20': [], '30': []}
+# 20〜31をまとめて1つのグループに
+number_groups = {'1': [], '10': [], '20/30': []}
 for i in range(1, 6):
     number_groups['1'] += df_recent[f'第{i}数字'][df_recent[f'第{i}数字'].between(1, 9)].tolist()
     number_groups['10'] += df_recent[f'第{i}数字'][df_recent[f'第{i}数字'].between(10, 19)].tolist()
-    number_groups['20'] += df_recent[f'第{i}数字'][df_recent[f'第{i}数字'].between(20, 29)].tolist()
-    number_groups['30'] += df_recent[f'第{i}数字'][df_recent[f'第{i}数字'].between(30, 31)].tolist()
+    number_groups['20/30'] += df_recent[f'第{i}数字'][df_recent[f'第{i}数字'].between(20, 31)].tolist()
 
 def pad_top_values(series, length=5):
     values = series.value_counts().head(length).index.tolist()
@@ -249,8 +283,7 @@ def pad_top_values(series, length=5):
 top5_df = pd.DataFrame({
     '1の位': pad_top_values(pd.Series(number_groups['1'])),
     '10の位': pad_top_values(pd.Series(number_groups['10'])),
-    '20の位': pad_top_values(pd.Series(number_groups['20'])),
-    '30の位': pad_top_values(pd.Series(number_groups['30']))
+    '20/30の位': pad_top_values(pd.Series(number_groups['20/30']))
 })
 st.markdown(style_table(top5_df), unsafe_allow_html=True)
 
@@ -353,25 +386,6 @@ st.markdown(style_table(basic_df), unsafe_allow_html=True)
 # 【3/3】全コード：後半部（セレクト予想・検証機能）
 import itertools
 
-# 出現パターン分析（1-10-20など）
-def get_distribution(row):
-    pattern = []
-    for n in sorted(row):
-        if 1 <= n <= 9:
-            pattern.append("1")
-        elif 10 <= n <= 19:
-            pattern.append("10")
-        else:
-            pattern.append("20")
-    return '-'.join(pattern)
-
-pattern_series = df_recent[[f"第{i}数字" for i in range(1, 6)]].apply(get_distribution, axis=1)
-pattern_counts = pattern_series.value_counts().reset_index()
-pattern_counts.columns = ['パターン', '出現回数']
-st.header("③ 分布パターンと頻出構成")
-st.markdown(style_table(pattern_counts), unsafe_allow_html=True)
-
-
 # A/B/C分類表示
 st.header("⑥ A・B・C数字（出現頻度分類）")
 
@@ -423,16 +437,16 @@ def pad_pattern(pattern):
 range_map = {
     "1": list(range(1, 10)),
     "10": list(range(10, 20)),
-    "20": list(range(20, 30)),
-    "30": list(range(30, 32))
+    "20": list(range(20, 32)),
+    
 }
 
-# ---- 分布パターンのランキング取得 ----
+# ---- 分布パターンのランキング取得（1 / 10 / 20 の3区分に統一） ----
 pattern_series = df_recent[[f"第{i}数字" for i in range(1, 6)]].apply(lambda row: '-'.join([
     "1" if 1 <= n <= 9 else
     "10" if 10 <= n <= 19 else
-    "20" if 20 <= n <= 29 else
-    "30" for n in sorted(row)
+    "20"  # ✅ 20〜31 すべてを20に分類
+    for n in sorted(row)
 ]), axis=1)
 
 pattern_counts = pattern_series.value_counts().reset_index()
