@@ -94,18 +94,22 @@ def push_to_github():
     try:
         repo_path = os.path.join(ROOT_DIR, "..")
 
-        # ✅ Streamlit Cloud用：Gitユーザー情報を設定（毎回必要）
+        # Gitユーザー設定（Cloud対応）
         subprocess.run(["git", "config", "--global", "user.email", "naobro@example.com"])
         subprocess.run(["git", "config", "--global", "user.name", "Naobro"])
 
-        result_add = subprocess.run(["git", "-C", repo_path, "add", "-A"], capture_output=True, text=True)
-        if result_add.returncode != 0:
-            st.error(f"❌ git add 失敗:\n{result_add.stderr}")
-            return
+        # ✅ GitHubトークンを使ったリモートURLを再設定
+        subprocess.run([
+            "git", "-C", repo_path, "remote", "set-url", "origin",
+            f"https://{GITHUB_TOKEN}:x-oauth-basic@github.com/Naobro/lototop-app.git"
+        ])
 
+        # add, commit, push 実行
+        subprocess.run(["git", "-C", repo_path, "add", "-A"], capture_output=True, text=True)
         result_commit = subprocess.run(
             ["git", "-C", repo_path, "commit", "--allow-empty", "-m", "強制コミット: CSV反映"],
             capture_output=True, text=True)
+
         if result_commit.returncode != 0 and "nothing to commit" not in result_commit.stderr:
             st.error(f"❌ git commit 失敗:\n{result_commit.stderr}")
             return
@@ -113,11 +117,12 @@ def push_to_github():
         result_push = subprocess.run(
             ["git", "-C", repo_path, "push", "origin", "main", "--force"],
             capture_output=True, text=True)
+
         if result_push.returncode != 0:
             st.error(f"❌ git push 失敗:\n{result_push.stderr}")
             return
 
-        st.success("✅ GitHubに強制Push完了（内容が同じでも反映）")
+        st.success("✅ GitHubに強制Push完了（認証成功）")
 
     except Exception as e:
         st.error(f"💥 想定外のエラー:\n{str(e)}")
