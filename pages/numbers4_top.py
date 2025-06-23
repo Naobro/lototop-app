@@ -67,14 +67,18 @@ def show_latest_results(csv_path):
 st.header("② 直近24回分の当選番号一覧")
 
 try:
-    # df_recentから抽出し、抽せん日を日付だけに整形
+    # df_recent の必要カラムだけ抜き出し、コピー
     df_recent_display = df_recent[["回号", "抽せん日", "第1数字", "第2数字", "第3数字", "第4数字"]].copy()
+
+    # 抽せん日の時間を削除（YYYY-MM-DD 形式に整形）
     df_recent_display["抽せん日"] = pd.to_datetime(df_recent_display["抽せん日"], errors="coerce").dt.strftime("%Y-%m-%d")
 
     # 表示
     st.dataframe(df_recent_display)
+
 except Exception as e:
-    st.error(f"表示エラー: {e}")
+    st.error("② 直近24回分の当選番号の表示中にエラーが発生しました")
+    st.error(str(e))
 
 # 表示実行
 show_latest_results(CSV_PATH)
