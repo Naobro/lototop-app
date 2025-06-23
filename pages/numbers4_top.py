@@ -46,6 +46,8 @@ def show_latest_results(csv_path):
     except Exception as e:
         st.error("最新の当選結果の表示中にエラーが発生しました")
         st.error(str(e))
+# ① 最新結果の表示と df_recent の準備
+show_latest_results(CSV_PATH)
 
 # ③ ランキング表示
 st.header("③ 各桁の出現ランキング")
@@ -79,12 +81,11 @@ st.write(pd.DataFrame({
 st.subheader("⑤ ひっぱり数字の回数")
 hoppari = 0
 for i in range(1, len(df_recent)):
-    prev = set(df_recent.iloc[i - 1][[f"第{i}数字" for i in range(1, 5)]])
-    curr = set(df_recent.iloc[i][[f"第{i}数字" for i in range(1, 5)]])
+    prev = set(df_recent.iloc[i - 1][[f"第{n}数字" for n in range(1, 5)]])
+    curr = set(df_recent.iloc[i][[f"第{n}数字" for n in range(1, 5)]])
     if prev & curr:
         hoppari += 1
 st.write(f"ひっぱり数字の回数：{hoppari} 回")
-
 # ⑥ 数字の範囲分布
 st.subheader("⑥ 数字の範囲ごとの分布")
 range_counts = {'0-2': 0, '3-5': 0, '6-9': 0}
