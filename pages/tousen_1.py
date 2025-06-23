@@ -2,16 +2,31 @@ import os
 import re
 import pandas as pd
 import streamlit as st
+import subprocess  # ← dotenv の import は削除OK
 from dotenv import load_dotenv
-import subprocess
+import streamlit as st
 
-# ==================== 初期設定 ====================
+# ✅ ローカル用：.envから読み込む
 load_dotenv()
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
+
+# ==================== 初期設定 ====================
+# --- 認証 ---
+PASSWORD = "nao2480"  # ← あなたが自由に決めてOK
+
+if "authenticated" not in st.session_state:
+    st.session_state.authenticated = False
+
+if not st.session_state.authenticated:
+    pwd = st.text_input("🔒 パスワードを入力してください", type="password")
+    if pwd == PASSWORD:
+        st.session_state.authenticated = True
+        st.rerun()
+    else:
+        st.stop()
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(ROOT_DIR, "..", "data")
 os.makedirs(DATA_DIR, exist_ok=True)
-
 st.set_page_config(page_title="宝くじCSV化＋GitHub保存", layout="wide")
 st.title("抽選結果をコピペしてCSVに保存・GitHubへ反映")
 
@@ -41,16 +56,20 @@ def extract_prize_info(text, grade):
         "セットストレート": "セット（ストレート）",
         "セットボックス": "セット（ボックス）"
     }
-    actual_grade = grade_map.get(grade, grade)  # 変換がある場合は変換、なければそのまま
+    actual_grade = grade_map.get(grade, grade)
 
     # カンマ付き数字にも対応
     pattern = fr"{actual_grade}[\s\S]*?([\d,]+)口[\s\S]*?([\d,]+)円"
     match = re.search(pattern, text)
+
+    # ✅ ミニ専用の補正（改行・タブ等のズレ対応）
+    if actual_grade == "ミニ" and (not match or match.group(1) == "0"):
+        match = re.search(r"ミニ[ \t]*([\d,]+)口[ \t\n]*([\d,]+)円", text)
+
     if match:
         count, prize = match.groups()
         return count.replace(",", ""), prize.replace(",", "")
     return ("0", "0")
-
 def extract_carry(text):
     match = re.search(r'キャリーオーバー\s*([\d,]+)円', text)
     return match.group(1).replace(",", "") if match else "0"
@@ -89,16 +108,11 @@ def push_to_github():
             st.error(f"❌ git commit 失敗:\n{result_commit.stderr}")
             return
 
-        result_pull = subprocess.run(
-            ["git", "-C", repo_path, "pull", "--rebase"],
-            capture_output=True, text=True)
-        if result_pull.returncode != 0:
-            st.warning(f"⚠️ git pull（rebase）失敗:\n{result_pull.stderr}")
-            # それでも push 続行する
-
+    
         result_push = subprocess.run(
-            ["git", "-C", repo_path, "push"],
+            ["git", "-C", repo_path, "push", "origin", "main", "--force"],
             capture_output=True, text=True)
+ 
         if result_push.returncode != 0:
             st.error(f"❌ git push 失敗:\n{result_push.stderr}")
             return
@@ -176,8 +190,8 @@ if st.button("CSV保存＋GitHub反映"):
 }
             file_path = os.path.join(DATA_DIR, "numbers3_24.csv")
             columns = ["回号", "抽せん日", "第1数字", "第2数字", "第3数字",
-                       "ストレート口数", "ボックス口数", "セット（ストレート）口数", "セットボックス口数", "ミニ口数",
-                       "ストレート当選金額", "ボックス当選金額", "セット（ストレート）当選金額", "セットボックス当選金額", "ミニ当選金額"]
+                       "ストレート口数", "ボックス口数", "セット（ストレート）口数", "セット（ボックス）口数", "ミニ口数",
+                       "ストレート当選金額", "ボックス当選金額", "セット（ストレート）当選金額", "セット（ボックス）当選金額", "ミニ当選金額"]
 
         elif lottery_type == "ナンバーズ4":
             nums = extract_numbers4(text_input,)
