@@ -11,16 +11,13 @@ CSV_PATH = "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/numbe
 def show_latest_results(csv_path):
     try:
         df = pd.read_csv(csv_path)
+        df.columns = [col.replace("(", "（").replace(")", "）") for col in df.columns]
         df = df.loc[:, ~df.columns.str.contains('^Unnamed')]
         df = df.fillna("未定義")
         df["抽せん日"] = pd.to_datetime(df["抽せん日"], errors="coerce")
         df = df.dropna(subset=["抽せん日"])
-        df = df.sort_values(by="抽せん日", ascending=False).reset_index(drop=True)
 
-        # 最新1件
-        latest = df.iloc[0]
-        global df_recent
-        df_recent = df.head(24)
+        latest = df.sort_values(by="抽せん日", ascending=False).iloc[0]
 
         number_str = f"{latest['第1数字']}{latest['第2数字']}{latest['第3数字']}{latest['第4数字']}"
 
@@ -39,13 +36,33 @@ def show_latest_results(csv_path):
                     {number_str}
                 </td>
             </tr>
+            <tr>
+                <td style="padding: 10px; font-weight: bold; text-align: left;">ストレート</td>
+                <td colspan="2">{html.escape(str(latest['ストレート口数']))}口</td>
+                <td>{html.escape(str(latest['ストレート当選金額']))}円</td>
+            </tr>
+            <tr>
+                <td style="padding: 10px; font-weight: bold; text-align: left;">ボックス</td>
+                <td colspan="2">{html.escape(str(latest['ボックス口数']))}口</td>
+                <td>{html.escape(str(latest['ボックス当選金額']))}円</td>
+            </tr>
+            <tr>
+                <td style="padding: 10px; font-weight: bold; text-align: left;">セット・ストレート</td>
+                <td colspan="2">{html.escape(str(latest['セット（ストレート）口数']))}口</td>
+                <td>{html.escape(str(latest['セット（ストレート）当選金額']))}円</td>
+            </tr>
+            <tr>
+                <td style="padding: 10px; font-weight: bold; text-align: left;">セット・ボックス</td>
+                <td colspan="2">{html.escape(str(latest['セット（ボックス）口数']))}口</td>
+                <td>{html.escape(str(latest['セット（ボックス）当選金額']))}円</td>
+            </tr>
         </table>
         """
         st.markdown(table_html, unsafe_allow_html=True)
 
     except Exception as e:
-        st.error("最新の当選結果の表示中にエラーが発生しました")
-        st.error(str(e))
+        st.error(f"エラーが発生しました: {e}")
+        st.error(f"エラー詳細: {type(e)}")
 # ① 最新結果の表示と df_recent の準備
 show_latest_results(CSV_PATH)
 
