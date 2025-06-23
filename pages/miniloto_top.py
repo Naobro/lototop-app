@@ -105,29 +105,29 @@ st.markdown(style_table(abc_df), unsafe_allow_html=True)
 A_nums = [int(n) for n in abc_class_df['A（3〜4回）'] if n != '']
 B_nums = [int(n) for n in abc_class_df['B（5回以上）'] if n != '']
 
-# 位別に分類
-def classify_by_digit(nums):
-    one_digit = sorted([n for n in nums if 1 <= n <= 9])
-    ten_digit = sorted([n for n in nums if 10 <= n <= 19])
-    twenty_digit = sorted([n for n in nums if 20 <= n <= 31])
-    return one_digit, ten_digit, twenty_digit
+# A数字・B数字を直接使って位別に分類（abc_class_df 不要）
+def classify_numbers_by_digit_group(numbers):
+    bins = {'1の位': [], '10の位': [], '20/30の位': []}
+    for n in numbers:
+        if 1 <= n <= 9:
+            bins['1の位'].append(n)
+        elif 10 <= n <= 19:
+            bins['10の位'].append(n)
+        elif 20 <= n <= 31:
+            bins['20/30の位'].append(n)
+    return bins
 
-a1, a10, a20 = classify_by_digit(A_nums)
-b1, b10, b20 = classify_by_digit(B_nums)
+A_bins = classify_numbers_by_digit_group(A_set)
+B_bins = classify_numbers_by_digit_group(B_set)
 
-# 表示用 DataFrame に整形
-max_len = max(len(a1), len(a10), len(a20), len(b1), len(b10), len(b20))
-def pad(lst):
-    return lst + [''] * (max_len - len(lst))
-
-digit_df = pd.DataFrame({
-    "位": ["1の位"] * max_len + ["10の位"] * max_len + ["20/30の位"] * max_len,
-    "A数字": pad(a1) + pad(a10) + pad(a20),
-    "B数字": pad(b1) + pad(b10) + pad(b20),
+digit_table = pd.DataFrame({
+    "位": ['1の位', '10の位', '20/30の位'],
+    "A数字": [', '.join(map(str, A_bins[k])) for k in ['1の位', '10の位', '20/30の位']],
+    "B数字": [', '.join(map(str, B_bins[k])) for k in ['1の位', '10の位', '20/30の位']]
 })
 
 st.header("⑥-A A数字・B数字の位別分類")
-st.markdown(style_table(digit_df), unsafe_allow_html=True)
+st.markdown(style_table(digit_table), unsafe_allow_html=True)
 
 # 最新回（前回）の当選番号だけを表示
 st.header("⑥-B 前回の当選番号（ひっぱり検討用）")
