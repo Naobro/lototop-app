@@ -82,6 +82,7 @@ def save_record(file_path, record, columns):
     df = df.reindex(columns=columns)
     if os.path.exists(file_path):
         old = pd.read_csv(file_path)
+        old.columns = [col.replace("(", "（").replace(")", "）") for col in old.columns]
         if str(record["回号"]) in old["回号"].astype(str).values:
             st.warning("⚠️ 同じ回号のデータが存在します")
             return False
