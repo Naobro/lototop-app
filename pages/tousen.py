@@ -93,6 +93,11 @@ def save_record(file_path, record, columns):
 def push_to_github():
     try:
         repo_path = os.path.join(ROOT_DIR, "..")
+
+        # ✅ Streamlit Cloud用：Gitユーザー情報を設定（毎回必要）
+        subprocess.run(["git", "config", "--global", "user.email", "naobro@example.com"])
+        subprocess.run(["git", "config", "--global", "user.name", "Naobro"])
+
         result_add = subprocess.run(["git", "-C", repo_path, "add", "-A"], capture_output=True, text=True)
         if result_add.returncode != 0:
             st.error(f"❌ git add 失敗:\n{result_add.stderr}")
@@ -105,11 +110,9 @@ def push_to_github():
             st.error(f"❌ git commit 失敗:\n{result_commit.stderr}")
             return
 
-    
         result_push = subprocess.run(
             ["git", "-C", repo_path, "push", "origin", "main", "--force"],
             capture_output=True, text=True)
- 
         if result_push.returncode != 0:
             st.error(f"❌ git push 失敗:\n{result_push.stderr}")
             return
