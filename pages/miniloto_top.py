@@ -27,6 +27,23 @@ df['抽せん日'] = pd.to_datetime(df['抽せん日'], errors='coerce')
 df = df.dropna(subset=['抽せん日'])
 df = df.sort_values(by="抽せん日", ascending=False)
 df_recent = df.head(24)
+# --- abc_class_df の生成（先に定義しておく） ---
+latest24_numbers = df_recent[[f"第{i}数字" for i in range(1, 6)]].values.flatten()
+counts = pd.Series(latest24_numbers).value_counts()
+A = [str(n) for n in counts[(counts >= 3) & (counts <= 4)].index.tolist()]
+B = [str(n) for n in counts[counts >= 5].index.tolist()]
+C = [str(n) for n in range(1, 32) if str(n) not in A + B]
+
+max_len = max(len(A), len(B), len(C))
+A += [""] * (max_len - len(A))
+B += [""] * (max_len - len(B))
+C += [""] * (max_len - len(C))
+
+abc_class_df = pd.DataFrame({
+    "A（3〜4回）": sorted(A),
+    "B（5回以上）": sorted(B),
+    "C（その他）": sorted(C)
+})
 
 # 最新データの取得
 df_latest = df.iloc[0]
@@ -105,7 +122,10 @@ st.markdown(style_table(abc_df), unsafe_allow_html=True)
 A_nums = [int(n) for n in abc_class_df['A（3〜4回）'] if n != '']
 B_nums = [int(n) for n in abc_class_df['B（5回以上）'] if n != '']
 
-# A数字・B数字を直接使って位別に分類（abc_class_df 不要）
+# ⑥-A A数字・B数字の位別分類
+st.header("⑥-A A数字・B数字の位別分類")
+
+# A数字・B数字を直接使って位別に分類（A_set, B_set は定義済み）
 def classify_numbers_by_digit_group(numbers):
     bins = {'1の位': [], '10の位': [], '20/30の位': []}
     for n in numbers:
@@ -120,13 +140,14 @@ def classify_numbers_by_digit_group(numbers):
 A_bins = classify_numbers_by_digit_group(A_set)
 B_bins = classify_numbers_by_digit_group(B_set)
 
+# 表示用テーブルに整形
 digit_table = pd.DataFrame({
     "位": ['1の位', '10の位', '20/30の位'],
     "A数字": [', '.join(map(str, A_bins[k])) for k in ['1の位', '10の位', '20/30の位']],
     "B数字": [', '.join(map(str, B_bins[k])) for k in ['1の位', '10の位', '20/30の位']]
 })
 
-st.header("⑥-A A数字・B数字の位別分類")
+# スタイルを整えて表示
 st.markdown(style_table(digit_table), unsafe_allow_html=True)
 
 # 最新回（前回）の当選番号だけを表示
@@ -335,10 +356,14 @@ A += [""] * (max_len - len(A))
 B += [""] * (max_len - len(B))
 C += [""] * (max_len - len(C))
 
+A = [str(n) for n in A]
+B = [str(n) for n in B]
+C = [str(n) for n in C]
+
 abc_class_df = pd.DataFrame({
-    "A数字（3〜4回）": sorted(A, key=lambda x: (x == "", x)),
-    "B数字（5回以上）": sorted(B, key=lambda x: (x == "", x)),
-    "C数字（その他）": sorted(C, key=lambda x: (x == "", x))
+    "A（3〜4回）": sorted(A),
+    "B（5回以上）": sorted(B),
+    "C（その他）": sorted(C)
 })
 
 # Streamlit用：テーブル表示（style_table関数が必要）
