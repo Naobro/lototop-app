@@ -20,7 +20,7 @@ def show_latest_results(csv_path):
         # 最新1件
         latest = df.iloc[0]
         global df_recent
-        df_recent = df.head(24)  # ← ここで定義
+        df_recent = df.head(24)
 
         number_str = f"{latest['第1数字']}{latest['第2数字']}{latest['第3数字']}{latest['第4数字']}"
 
@@ -39,49 +39,13 @@ def show_latest_results(csv_path):
                     {number_str}
                 </td>
             </tr>
-            <tr>
-                <td style="padding: 10px; font-weight: bold; text-align: left;">ストレート</td>
-                <td colspan="2">{html.escape(str(latest['ストレート口数']))}口</td>
-                <td>{html.escape(str(latest['ストレート当選金額']))}円</td>
-            </tr>
-            <tr>
-                <td style="padding: 10px; font-weight: bold; text-align: left;">ボックス</td>
-                <td colspan="2">{html.escape(str(latest['ボックス口数']))}口</td>
-                <td>{html.escape(str(latest['ボックス当選金額']))}円</td>
-            </tr>
-            <tr>
-                <td style="padding: 10px; font-weight: bold; text-align: left;">セット・ストレート</td>
-                <td colspan="2">{html.escape(str(latest['セット（ストレート）口数']))}口</td>
-                <td>{html.escape(str(latest['セット（ストレート）当選金額']))}円</td>
-            </tr>
-            <tr>
-                <td style="padding: 10px; font-weight: bold; text-align: left;">セット・ボックス</td>
-                <td colspan="2">{html.escape(str(latest['セット（ボックス）口数']))}口</td>
-                <td>{html.escape(str(latest['セット（ボックス）当選金額']))}円</td>
-            </tr>
         </table>
         """
         st.markdown(table_html, unsafe_allow_html=True)
 
-# ② 直近24回分の当選番号一覧
-st.header("② 直近24回分の当選番号一覧")
-
-try:
-    # df_recent の必要カラムだけ抜き出し、コピー
-    df_recent_display = df_recent[["回号", "抽せん日", "第1数字", "第2数字", "第3数字", "第4数字"]].copy()
-
-    # 抽せん日の時間を削除（YYYY-MM-DD 形式に整形）
-    df_recent_display["抽せん日"] = pd.to_datetime(df_recent_display["抽せん日"], errors="coerce").dt.strftime("%Y-%m-%d")
-
-    # 表示
-    st.dataframe(df_recent_display)
-
-except Exception as e:
-    st.error("② 直近24回分の当選番号の表示中にエラーが発生しました")
-    st.error(str(e))
-
-# 表示実行
-show_latest_results(CSV_PATH)
+    except Exception as e:
+        st.error("最新の当選結果の表示中にエラーが発生しました")
+        st.error(str(e))
 
 # ③ ランキング表示
 st.header("③ 各桁の出現ランキング")
