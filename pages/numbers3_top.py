@@ -85,47 +85,19 @@ def generate_recent_numbers3_table(csv_path):
     try:
         # CSVを読み込む
         df = pd.read_csv(csv_path)
-        df.columns = [col.replace("(", "（").replace(")", "）") for col in df.columns]
-        df = df.fillna("未定義")  # 欠損値を"未定義"で埋める
-        df["抽せん日"] = pd.to_datetime(df["抽せん日"], errors="coerce")  # 日付に変換
-        df = df.dropna(subset=["抽せん日"])  # 日付が無効な行を削除
-        df_recent = df.tail(24).sort_values(by="抽せん日", ascending=False)  # 直近24回を取得
 
-        # データフレームの内容を表示
-        st.write(df_recent)  # データフレームを表示
-        
-        # 正しいHTML構造に修正
-        table_html = """
-        <table style="width: 100%; margin: 0 auto; border-collapse: collapse;">
-            <thead>
-                <tr>
-                    <th style="padding: 10px; font-weight: bold; text-align: left;">回号</th>
-                    <th style="padding: 10px; font-weight: bold; text-align: left;">抽選日</th>
-                    <th style="padding: 10px; font-weight: bold; text-align: left;">第1数字</th>
-                    <th style="padding: 10px; font-weight: bold; text-align: left;">第2数字</th>
-                    <th style="padding: 10px; font-weight: bold; text-align: left;">第3数字</th>
-                </tr>
-            </thead>
-            <tbody>
-        """
+        # 不要な列を除外し、日付整形
+        df["抽せん日"] = pd.to_datetime(df["抽せん日"], errors="coerce").dt.strftime("%Y-%m-%d")
+        df = df[["回号", "抽せん日", "第1数字", "第2数字", "第3数字"]]
 
-        # テーブルの行を追加
-        for _, row in df_recent.iterrows():
-            table_html += f"""
-            <tr>
-                <td style="padding: 10px; text-align: left;">{html.escape(str(row['回号']))}</td>
-                <td style="padding: 10px; text-align: left;">{html.escape(row['抽せん日'].strftime('%Y-%d'))}</td>
-                <td style="padding: 10px; text-align: right;">{html.escape(str(row['第1数字']))}</td>
-                <td style="padding: 10px; text-align: right;">{html.escape(str(row['第2数字']))}</td>
-                <td style="padding: 10px; text-align: right;">{html.escape(str(row['第3数字']))}</td>
-            </tr>
-            """
-        
-        table_html += "</tbody></table>"  # テーブルの閉じタグを忘れずに追加
+        # 回号で降順ソートして24件に絞る
+        df = df.sort_values(by="回号", ascending=False).head(24)
+
+        # 表示
+        st.dataframe(df, use_container_width=True)
 
     except Exception as e:
-        st.write(f"エラーが発生しました: {e}")
-        st.write(f"エラー詳細: {e.__class__}")
+        st.error(f"エラーが発生しました: {e}")
 
 # CSVのパス
 recent_csv_path = "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/numbers3_24.csv"
