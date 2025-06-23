@@ -3,12 +3,8 @@ import re
 import pandas as pd
 import streamlit as st
 import subprocess  # ← dotenv の import は削除OK
-from dotenv import load_dotenv
-import streamlit as st
-
-# ✅ ローカル用：.envから読み込む
-load_dotenv()
-GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
+# Cloud環境用：Streamlit Secrets から読み込む
+GITHUB_TOKEN = st.secrets["GITHUB_TOKEN"]
 
 # ==================== 初期設定 ====================
 # --- 認証 ---
