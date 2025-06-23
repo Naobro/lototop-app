@@ -63,13 +63,18 @@ def show_latest_results(csv_path):
         """
         st.markdown(table_html, unsafe_allow_html=True)
 
-        # 表示用データ（直近24回）
-        st.header("② 直近24回分の当選番号一覧")
-        st.dataframe(df_recent[["回号", "抽せん日", "第1数字", "第2数字", "第3数字", "第4数字"]])
+# ② 直近24回分の当選番号一覧
+st.header("② 直近24回分の当選番号一覧")
 
-    except Exception as e:
-        st.error(f"エラーが発生しました: {e}")
-        st.error(f"エラー詳細: {type(e)}")
+try:
+    # df_recentから抽出し、抽せん日を日付だけに整形
+    df_recent_display = df_recent[["回号", "抽せん日", "第1数字", "第2数字", "第3数字", "第4数字"]].copy()
+    df_recent_display["抽せん日"] = pd.to_datetime(df_recent_display["抽せん日"], errors="coerce").dt.strftime("%Y-%m-%d")
+
+    # 表示
+    st.dataframe(df_recent_display)
+except Exception as e:
+    st.error(f"表示エラー: {e}")
 
 # 表示実行
 show_latest_results(CSV_PATH)
