@@ -47,13 +47,13 @@ def show_latest_results(csv_path):
 </tr>
 <tr>
     <td style="padding: 10px; font-weight: bold; text-align: left;">セット・ストレート</td>
-    <td colspan="2">{html.escape(str(latest['セット(ストレート)口数']))}口</td>
-    <td>{html.escape(str(latest['セット(ストレート)当選金額']))}円</td>
+    <td colspan="2">{html.escape(str(latest['セット（ストレート）口数']))}口</td>
+    <td>{html.escape(str(latest['セット（ストレート）当選金額']))}円</td>
 </tr>
 <tr>
     <td style="padding: 10px; font-weight: bold; text-align: left;">セット・ボックス</td>
-    <td colspan="2">{html.escape(str(latest['セット(ボックス)口数']))}口</td>
-    <td>{html.escape(str(latest['セット(ボックス)当選金額']))}円</td>
+    <td colspan="2">{html.escape(str(latest['セット（ボックス）口数']))}口</td>
+    <td>{html.escape(str(latest['セット（ボックス）当選金額']))}円</td>
 </tr>
 <tr>
     <td style="padding: 10px; font-weight: bold; text-align: left;">ミニ</td>
@@ -74,8 +74,8 @@ def show_page():
     show_latest_results(CSV_PATH)
 
 # 実行
-if __name__ == "__main__":
-    show_page()
+# ✅ 修正後（この1行だけにする）
+show_page()
 
 # **② 直近24回の当選番号**を表示
 st.header("② 直近24回の当選番号")
@@ -135,58 +135,54 @@ st.header("③ ランキング")
 
 def generate_ranking(csv_path):
     try:
-        # CSVを読み込む
         df = pd.read_csv(csv_path)
-        df = df.fillna("未定義")  # 欠損値を"未定義"で埋める
+        df = df.fillna("未定義")
         df["第1数字"] = df["第1数字"].astype(int)
         df["第2数字"] = df["第2数字"].astype(int)
         df["第3数字"] = df["第3数字"].astype(int)
-        
-        # 各数字の出現回数をカウント
-        count_1st = df["第1数字"].value_counts().sort_values(ascending=False)
-        count_2nd = df["第2数字"].value_counts().sort_values(ascending=False)
-        count_3rd = df["第3数字"].value_counts().sort_values(ascending=False)
 
-        # 数字1から9までを揃えて0で埋める
-        all_numbers = range(0, 10)  # ナンバーズ3の場合、0から9の数字が使用される
-        count_1st = count_1st.reindex(all_numbers).fillna(0).astype(int)
-        count_2nd = count_2nd.reindex(all_numbers).fillna(0).astype(int)
-        count_3rd = count_3rd.reindex(all_numbers).fillna(0).astype(int)
+        # 直近24回のみを抽出（回号の降順）
+        df = df.sort_values("回号", ascending=False).head(24)
 
-        # データフレームを作成
-        ranking_df = pd.DataFrame({
-            "順位": [f"{i}位" for i in range(1, 11)],
-            "第1数字": [f"{num}({count})" for num, count in zip(count_1st.index[:10], count_1st.values[:10])],
-            "第2数字": [f"{num}({count})" for num, count in zip(count_2nd.index[:10], count_2nd.values[:10])],
-            "第3数字": [f"{num}({count})" for num, count in zip(count_3rd.index[:10], count_3rd.values[:10])],
+        def rank_counts(series):
+            counts = series.value_counts().sort_values(ascending=False)
+            df_rank = counts.reset_index()
+            df_rank.columns = ["数字", "出現回数"]
+            df_rank["順位"] = df_rank["出現回数"].rank(method="dense", ascending=False).astype(int)
+            return df_rank.sort_values(["順位", "数字"]).reset_index(drop=True)
+
+        def expand_top_ranks(ranking_df, max_rank=5):
+            return ranking_df[ranking_df["順位"] <= max_rank].sort_values(["順位", "数字"]).reset_index(drop=True)
+
+        top_1st = expand_top_ranks(rank_counts(df["第1数字"]))
+        top_2nd = expand_top_ranks(rank_counts(df["第2数字"]))
+        top_3rd = expand_top_ranks(rank_counts(df["第3数字"]))
+
+        max_len = max(len(top_1st), len(top_2nd), len(top_3rd))
+        fill = lambda lst: lst + [""] * (max_len - len(lst))
+
+        combined_df = pd.DataFrame({
+            "順位": [f"{i+1}位" for i in range(max_len)],
+            "第1桁目": fill([f"{row['数字']}（{row['出現回数']}回）" for _, row in top_1st.iterrows()]),
+            "第2桁目": fill([f"{row['数字']}（{row['出現回数']}回）" for _, row in top_2nd.iterrows()]),
+            "第3桁目": fill([f"{row['数字']}（{row['出現回数']}回）" for _, row in top_3rd.iterrows()])
         })
 
-        # 上位5位まで目立つ色で塗りつぶし、文字を赤文字で太字に
-        def highlight_top5(row):
-            if row["順位"] in ["1位", "2位", "3位", "4位", "5位"]:
-                return ['background-color: yellow; color: black; font-weight: bold; text-align: center'] * len(row)
+        # スタイル適用：上位3位まで黄色、文字を中央揃え
+        def highlight(row):
+            if row["順位"] in ["1位", "2位", "3位"]:
+                return ['background-color: gold; color: black; font-weight: bold; text-align: center'] * len(row)
             return ['text-align: center'] * len(row)
 
-        # インデックスを1から始める
-        ranking_df.index += 1  # インデックスを1からスタートにする
-
-        # インデックス列を削除
-        ranking_df = ranking_df.reset_index(drop=True)
-
-        # ランキングテーブルを表示
-        st.write(ranking_df.style.apply(highlight_top5, axis=1).set_properties(**{'text-align': 'center'}))
+        st.write(combined_df.style.apply(highlight, axis=1).set_properties(**{'text-align': 'center'}))
 
     except Exception as e:
         st.write(f"エラーが発生しました: {e}")
         st.write(f"エラー詳細: {e.__class__}")
 
-# CSVのパス
+# CSVパス指定
 ranking_csv_path = "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/numbers3_24.csv"
 generate_ranking(ranking_csv_path)
-import pandas as pd
-import streamlit as st
-import pandas as pd
-import streamlit as st
 
 # **④分析セクション**
 st.header("④分析セクション")
