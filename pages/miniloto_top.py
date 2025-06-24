@@ -368,162 +368,63 @@ abc_class_df = pd.DataFrame({
 
 # Streamlit用：テーブル表示（style_table関数が必要）
 # st.markdown(style_table(abc_class_df), unsafe_allow_html=True)
-st.header("⑦ 基本予想（人気パターン & 電卓式）")
+st.header("⑦ 基本予想（構成・出現・ABC優先）")
 
-# パターン上位ベース
-pattern_pool = pattern_counts['パターン'].tolist()
-pattern_weights = [3, 3, 2, 1, 1]  # 1位〜5位までに割り当てる個数
-column_ranges = {
-    '1': list(range(1, 10)),     # 1〜9
-    '10': list(range(10, 20)),   # 10〜19
-    '20': list(range(20, 30)),   # 20〜29
-    '30': list(range(30, 32))    # 30〜31
-}
-
-pattern_predictions = []
-for i, p in enumerate(pattern_pool[:5]):
-    for _ in range(pattern_weights[i]):
-        pattern_parts = p.split('-')  # ← ここを修正
-        nums = []
-        for part in pattern_parts:
-            pool = list(set(column_ranges[part]) - set(nums))  # partは文字列のまま使う
-            if pool:
-                nums.append(random.choice(pool))
-        nums = sorted(nums)
-        # 3連番禁止条件
-        if not (any(b - a == 1 for a, b in zip(nums, nums[1:])) and nums[2] - nums[0] == 2):
-            pattern_predictions.append(nums)
-
-# 電卓式予想
-def calculate_number_with_formula(numbers, weights):
-    total = sum(numbers)
-    predicted_numbers = [min(round(total / w), 31) for w in weights]
-    return sorted(set(predicted_numbers))[:5]
-
-calc_results = []
-weights_list = [[2.5, 5, 3.2, 2.3, 1.8], [3, 2, 3, 2, 2]]
-for weights in weights_list:
-    numbers = random.sample(range(1, 32), 5)
-    calc_results.append(calculate_number_with_formula(numbers, weights))
-
-basic_df = pd.DataFrame(pattern_predictions[:8] + calc_results, columns=["第1数字", "第2数字", "第3数字", "第4数字", "第5数字"])
-st.markdown(style_table(basic_df), unsafe_allow_html=True)
-# 【3/3】全コード：後半部（セレクト予想・検証機能）
-import itertools
-
-# A/B/C分類表示
-st.header("⑥ A・B・C数字（出現頻度分類）")
-
-from collections import Counter
-
-# 最新24回の本数字を取得
-latest24_numbers = df_recent[[f"第{i}数字" for i in range(1, 6)]].values.flatten()
-
-# 出現回数をカウント → pandas.Series へ変換
-counts = Counter(latest24_numbers)
-counts_series = pd.Series(counts)
-
-# ABC分類ルールに基づいて分類
-A = counts_series[(counts_series >= 3) & (counts_series <= 4)].index.tolist()
-B = counts_series[counts_series >= 5].index.tolist()
-C = [num for num in range(1, 32) if num not in A + B]
-
-# 表形式に整形
-max_len = max(len(A), len(B), len(C))
-A += [""] * (max_len - len(A))
-B += [""] * (max_len - len(B))
-C += [""] * (max_len - len(C))
-
-abc_class_df = pd.DataFrame({
-    "A（3〜4回）": sorted(A, key=lambda x: (x == "", x)),
-    "B（5回以上）": sorted(B, key=lambda x: (x == "", x)),
-    "C（その他）": sorted(C, key=lambda x: (x == "", x))
-})
-
-st.markdown(style_table(abc_class_df), unsafe_allow_html=True)
-# 基本予想（頻出パターン×ランダム）
-import pandas as pd
-import random
-from collections import Counter
-import streamlit as st
-
-# ---- 必要な関数定義 ----
-def calculate_number_with_formula(numbers):
-    weights = [4.1, 6.3, 5.7, 7.2, 5.5]
-    total = sum(numbers)
-    pred = [min(round(total / w), 31) for w in weights]
-    return sorted(set(pred))[:5]
-
-def pad_pattern(pattern):
-    parts = pattern.split('-')
-    return parts + [''] * (5 - len(parts))
-
-# ---- 分布パターン定義 ----
+# --- 必要定義 ---
 range_map = {
     "1": list(range(1, 10)),
     "10": list(range(10, 20)),
     "20": list(range(20, 32)),
-    
 }
 
-# ---- 分布パターンのランキング取得（1 / 10 / 20 の3区分に統一） ----
-pattern_series = df_recent[[f"第{i}数字" for i in range(1, 6)]].apply(lambda row: '-'.join([
-    "1" if 1 <= n <= 9 else
-    "10" if 10 <= n <= 19 else
-    "20"  # ✅ 20〜31 すべてを20に分類
-    for n in sorted(row)
-]), axis=1)
+patterns = [
+    ["1", "10", "10", "20", "20"],
+    ["1", "1", "10", "20", "20"],
+    ["1", "1", "1", "20", "20"],
+    ["1", "10", "20", "20", "20"],
+    ["10", "10", "20", "20", "20"],
+    ["10", "10", "10", "20", "20"],
+]
 
-pattern_counts = pattern_series.value_counts().reset_index()
-pattern_counts.columns = ["パターン", "出現回数"]
-
-# ---- 上位3パターン（3個, 2個, 2個） + ランダム3個 ----
-top_patterns = pattern_counts["パターン"].tolist()
-used_patterns = (
-    [top_patterns[0]] * 3 +
-    [top_patterns[1]] * 2 +
-    [top_patterns[2]] * 2 +
-    random.sample(top_patterns[3:], 3)
-)
-
-# ---- ABC情報（A+Bのみ使用） ----
-all_numbers = df_recent[[f"第{i}数字" for i in range(1, 6)]].values.flatten()
-counts = pd.Series(all_numbers).value_counts()
+# --- ABC数字（出現回数ベース） ---
+latest24 = df_recent[[f"第{i}数字" for i in range(1, 6)]].values.flatten()
+counts = pd.Series(latest24).value_counts()
 A = counts[(counts >= 3) & (counts <= 4)].index.tolist()
 B = counts[counts >= 5].index.tolist()
 AB_pool = set(A + B)
 
-# ---- 出現TOP5（位置別） ----
+# --- 各位の出現TOP5 ---
 top_by_pos = {}
 for i in range(1, 6):
     top_by_pos[i] = df_recent[f"第{i}数字"].value_counts().head(5).index.tolist()
 
-# ---- パターンに基づく予想生成 ----
+# --- 予想生成 ---
 predicts = []
-for p in used_patterns:
+for p in patterns:
     nums = []
     used = set()
-    parts = pad_pattern(p)
-    for idx, part in enumerate(parts):
+    for idx, part in enumerate(p):
         pool = list(set(range_map[part]) & AB_pool - used)
-        # 位置ごとのTOP数字優先
-        if top_by_pos[idx + 1]:
+        if top_by_pos.get(idx + 1):
             pool = sorted(pool, key=lambda x: x not in top_by_pos[idx + 1])
         if pool:
             pick = random.choice(pool)
             nums.append(pick)
             used.add(pick)
-    # 保険：不足時にAB内から補充
+    # 不足分をAB_poolから補完
     while len(nums) < 5:
-        candidate = random.choice(list(AB_pool - used))
-        nums.append(candidate)
-        used.add(candidate)
-    predicts.append(sorted(nums))
+        remain = list(AB_pool - used)
+        if not remain:
+            break
+        pick = random.choice(remain)
+        nums.append(pick)
+        used.add(pick)
+    nums = sorted(nums)[:5]
+    predicts.append(nums)
 
-# ---- DataFrameにして表示 ----
-predict_df = pd.DataFrame(predicts, columns=["第1", "第2", "第3", "第4", "第5"])
-st.header("⑦ 基本予想（構成・出現・ABC優先）")
-st.markdown(style_table(predict_df), unsafe_allow_html=True)
+# --- DataFrameとして表示 ---
+basic_df = pd.DataFrame(predicts, columns=["第1", "第2", "第3", "第4", "第5"])
+st.dataframe(basic_df.astype("Int64"))
 
 # セレクト予想
 st.header("⑧ セレクト予想")
