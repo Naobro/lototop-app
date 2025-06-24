@@ -1,6 +1,9 @@
 import streamlit as st
 import datetime
-import hashlib
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+from line import generate_password, send_broadcast_message  # ✅ line.pyの関数を使用
 
 # ✅ ページ設定
 st.set_page_config(page_title="🔐 NAOLoto 会員専用ページ", layout="wide")
@@ -8,20 +11,16 @@ st.set_page_config(page_title="🔐 NAOLoto 会員専用ページ", layout="wide
 st.title("🔐 NAOLoto月額サブスク 会員ページ")
 st.markdown("月額会員様向けの限定ページです。以下に今月のパスワードをご入力ください。")
 
-# ✅ 今月のパスワードを動的に生成（例：年月 + ハッシュの一部）
-def generate_password(target_date=None):
-    if target_date is None:
-        now = datetime.datetime.now()
-    else:
-        now = target_date
-    base = f"NAOsecure-{now.year}{now.month:02d}"
-    hashed = hashlib.sha256(base.encode()).hexdigest()
-    return hashed[:10]  # 最初の10文字
-
-# ✅ 今月のパスワード
+# ✅ 今月のパスワードを取得（line.pyから）
 valid_password = generate_password()
 
-# ✅ 🔐 管理者向け表示（必要に応じてコメントアウトOK）
+# ✅ 🔐 管理者用ボタン：LINE通知
+if st.sidebar.button("📩 LINEに今月のパスワードを送信（管理者用）"):
+    msg = f"🔐【NAOLoto】今月の会員パスワード：{valid_password}"
+    send_broadcast_message(msg)
+    st.sidebar.success("✅ LINEに送信しました")
+
+# ✅ 管理者確認用パス表示（必要に応じてコメントアウトOK）
 st.markdown(f"🛠 **今月のパスワード（管理者確認用）**: `{valid_password}`")
 
 # ✅ 入力欄
