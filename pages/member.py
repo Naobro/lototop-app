@@ -2,8 +2,10 @@ import streamlit as st
 import datetime
 import sys
 import os
+
+# line.py を読み込むためのパス追加
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-from line import generate_password, send_broadcast_message  # ✅ line.pyの関数を使用
+from line import generate_password, send_private_message  # ✅ 関数名を Push 用に変更
 
 # ✅ ページ設定
 st.set_page_config(page_title="🔐 NAOLoto 会員専用ページ", layout="wide")
@@ -11,13 +13,13 @@ st.set_page_config(page_title="🔐 NAOLoto 会員専用ページ", layout="wide
 st.title("🔐 NAOLoto月額サブスク 会員ページ")
 st.markdown("月額会員様向けの限定ページです。以下に今月のパスワードをご入力ください。")
 
-# ✅ 今月のパスワードを取得（line.pyから）
+# ✅ 今月のパスワードを取得
 valid_password = generate_password()
 
-# ✅ 🔐 管理者用ボタン：LINE通知
+# ✅ 🔐 管理者用ボタン：LINE通知（あなただけにPush）
 if st.sidebar.button("📩 LINEに今月のパスワードを送信（管理者用）"):
     msg = f"🔐【NAOLoto】今月の会員パスワード：{valid_password}"
-    send_broadcast_message(msg)
+    send_private_message(msg)
     st.sidebar.success("✅ LINEに送信しました")
 
 # ✅ 管理者確認用パス表示（必要に応じてコメントアウトOK）
