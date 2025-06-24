@@ -122,10 +122,19 @@ st.markdown(style_table(abc_df), unsafe_allow_html=True)
 A_nums = [int(n) for n in abc_class_df['A（3〜4回）'] if n != '']
 B_nums = [int(n) for n in abc_class_df['B（5回以上）'] if n != '']
 
-# ⑥-A A数字・B数字の位別分類
+# ⑥-A A数字・B数字の位別分類（最新当選番号に応じて赤文字強調）
 st.header("⑥-A A数字・B数字の位別分類")
 
-# A数字・B数字を直接使って位別に分類（A_set, B_set は定義済み）
+# 最新当選番号（df の先頭行を参照）
+latest_numbers = [df.iloc[0][f"第{i}数字"] for i in range(1, 6)]
+
+# 赤文字で強調する関数
+def highlight_number(n):
+    if n in latest_numbers:
+        return f"<span style='color:red; font-weight:bold'>{n}</span>"
+    return str(n)
+
+# 位別に分類
 def classify_numbers_by_digit_group(numbers):
     bins = {'1の位': [], '10の位': [], '20/30の位': []}
     for n in numbers:
@@ -140,25 +149,19 @@ def classify_numbers_by_digit_group(numbers):
 A_bins = classify_numbers_by_digit_group(A_set)
 B_bins = classify_numbers_by_digit_group(B_set)
 
-# 表示用テーブルに整形
+# 表示用テーブル（赤文字に整形）
 digit_table = pd.DataFrame({
     "位": ['1の位', '10の位', '20/30の位'],
-    "A数字": [', '.join(map(str, A_bins[k])) for k in ['1の位', '10の位', '20/30の位']],
-    "B数字": [', '.join(map(str, B_bins[k])) for k in ['1の位', '10の位', '20/30の位']]
+    "A数字": [
+        ', '.join([highlight_number(n) for n in A_bins[k]]) for k in ['1の位', '10の位', '20/30の位']
+    ],
+    "B数字": [
+        ', '.join([highlight_number(n) for n in B_bins[k]]) for k in ['1の位', '10の位', '20/30の位']
+    ]
 })
 
-# スタイルを整えて表示
+# 表示（HTMLスタイルで）
 st.markdown(style_table(digit_table), unsafe_allow_html=True)
-
-# 最新回（前回）の当選番号だけを表示
-st.header("⑥-B 前回の当選番号（ひっぱり検討用）")
-
-latest_numbers = [df_latest[f"第{i}数字"] for i in range(1, 6)]
-latest_df = pd.DataFrame({
-    "前回当選番号": latest_numbers
-})
-
-st.markdown(style_table(latest_df), unsafe_allow_html=True)
 
 # 出現傾向分析
 total_abc = sum(abc_counts.values())
@@ -462,15 +465,3 @@ def generate_selected(axis, remove, count=10):
 if st.button("予想を生成"):
     pred = generate_selected(axis, remove)
     st.markdown(style_table(pd.DataFrame(pred, columns=["第1","第2","第3","第4","第5"])), unsafe_allow_html=True)
-
-# 検証機能
-st.header("⑨ 予想検証機能")
-uploaded = st.file_uploader("検証する予想CSVファイルをアップロード（5列・各行予想）")
-if uploaded is not None:
-    test_df = pd.read_csv(uploaded)
-    win_numbers = set([df_latest[f"第{i}数字"] for i in range(1, 6)])
-    def match_count(row):
-        return len(set(row) & win_numbers)
-    test_df['一致数'] = test_df.apply(match_count, axis=1)
-    st.markdown("#### 検証結果：")
-    st.markdown(style_table(test_df), unsafe_allow_html=True)
