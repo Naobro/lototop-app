@@ -31,7 +31,7 @@ st.markdown("""
 
 # ✅ 会員専用ページへのリンク（マルチページ用）
 st.markdown("### 🔐 会員専用ページ（月額予想サブスク）")
-st.page_link("member", label="🔐 会員ページはこちら", icon="🔐")
+st.page_link("pages/member.py", label="🔐 会員ページはこちら", icon="🔐")
 
 # マネタイズ案内
 st.markdown("### 💡 今後　サブスク & 単発予想販売（予定）")
