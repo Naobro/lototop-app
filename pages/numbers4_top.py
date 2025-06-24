@@ -169,38 +169,41 @@ for _, row in df_recent.iterrows():
 sum_df = pd.DataFrame(sum_counts.items(), columns=["合計値", "出現回数"]).sort_values(by="出現回数", ascending=False)
 st.dataframe(sum_df)
 
-# ⑪ スキップ回数分析（数字ごとに直近3回の出現回号を表示）
-st.subheader("⑪ スキップ回数分析（数字ごとに直近3回の出現回号を表示）")
+# ⑪ スキップ回数分析（数字ごとに直近3回の出現位置を「◯回前」で表示）
+st.subheader("⑪ スキップ回数分析（数字ごとに直近3回の出現：◯回前）")
 
 try:
-    # 各数字の出現履歴（回号）を記録
-    skip_info = {i: [] for i in range(10)}
+    # 各数字の出現位置（インデックス）を記録（0が最新）
+    history_map = {i: [] for i in range(10)}
 
-    for _, row in df_recent.iterrows():
-        round_no = row["回号"]
-        for i in range(1, 5):
-            num = row[f"第{i}数字"]
-            if round_no not in skip_info[num]:
-                skip_info[num].append(round_no)
+    for idx in range(len(df_recent)):
+        row = df_recent.iloc[idx]
+        for d in range(1, 5):
+            num = row[f"第{d}数字"]
+            if idx not in history_map[num]:
+                history_map[num].append(idx)
 
-    # 表示用整形（0〜9の昇順）
-    rows = []
+    # 表示用に「◯回前」形式に変換（なければ「出現なし」）
+    def format_rank(n):
+        return f"{n}回前" if isinstance(n, int) else "出現なし"
+
+    display_rows = []
     for num in range(10):
-        last_1 = skip_info[num][0] if len(skip_info[num]) > 0 else "出現なし"
-        last_2 = skip_info[num][1] if len(skip_info[num]) > 1 else "出現なし"
-        last_3 = skip_info[num][2] if len(skip_info[num]) > 2 else "出現なし"
-        rows.append({
+        last_1 = format_rank(history_map[num][0]) if len(history_map[num]) > 0 else "出現なし"
+        last_2 = format_rank(history_map[num][1]) if len(history_map[num]) > 1 else "出現なし"
+        last_3 = format_rank(history_map[num][2]) if len(history_map[num]) > 2 else "出現なし"
+        display_rows.append({
             "数字": num,
-            "直近出現（回号）": last_1,
-            "2回前出現（回号）": last_2,
-            "3回前出現（回号）": last_3
+            "直近出現": last_1,
+            "2回前出現": last_2,
+            "3回前出現": last_3
         })
 
-    skip_df = pd.DataFrame(rows)
+    skip_df = pd.DataFrame(display_rows)
     st.dataframe(skip_df)
 
 except Exception as e:
-    st.error(f"スキップ回号分析の表示に失敗しました: {e}")
+    st.error(f\"スキップ分析の表示に失敗しました: {e}\")
 
 # ⑨ 軸数字から予想
 st.header("⑨ ナンバーズ4予想（軸数字指定）")
