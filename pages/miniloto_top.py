@@ -371,15 +371,21 @@ abc_class_df = pd.DataFrame({
 
 # Streamlit用：テーブル表示（style_table関数が必要）
 # st.markdown(style_table(abc_class_df), unsafe_allow_html=True)
-st.header("⑦ 基本予想（構成・出現・ABC優先）")
+st.header("⑦ 基本予想（構成ルール＆A/B数字限定・固定）")
 
-# --- 必要定義 ---
-range_map = {
-    "1": list(range(1, 10)),
-    "10": list(range(10, 20)),
-    "20": list(range(20, 32)),
-}
+import os
+import matplotlib.pyplot as plt
 
+# 保存先ファイル
+PREDICT_CSV = "miniloto_predictions.csv"
+PREDICT_IMG = "miniloto_predictions.png"
+
+# -----------------------
+# A・B数字の準備（すでに定義済みのA_set/B_setを利用）
+ab_numbers = sorted(list(set(A_set + B_set)))
+ab_pool = set(ab_numbers)
+
+# 構成パターン（固定6パターン）
 patterns = [
     ["1", "10", "10", "20", "20"],
     ["1", "1", "10", "20", "20"],
@@ -389,45 +395,61 @@ patterns = [
     ["10", "10", "10", "20", "20"],
 ]
 
-# --- ABC数字（出現回数ベース） ---
-latest24 = df_recent[[f"第{i}数字" for i in range(1, 6)]].values.flatten()
-counts = pd.Series(latest24).value_counts()
-A = counts[(counts >= 3) & (counts <= 4)].index.tolist()
-B = counts[counts >= 5].index.tolist()
-AB_pool = set(A + B)
+range_map = {
+    "1": list(range(1, 10)),
+    "10": list(range(10, 20)),
+    "20": list(range(20, 32))
+}
 
-# --- 各位の出現TOP5 ---
+# 出現TOP5（位置別） ※ df_recent 使用前提
 top_by_pos = {}
 for i in range(1, 6):
     top_by_pos[i] = df_recent[f"第{i}数字"].value_counts().head(5).index.tolist()
 
-# --- 予想生成 ---
-predicts = []
-for p in patterns:
-    nums = []
-    used = set()
-    for idx, part in enumerate(p):
-        pool = list(set(range_map[part]) & AB_pool - used)
-        if top_by_pos.get(idx + 1):
-            pool = sorted(pool, key=lambda x: x not in top_by_pos[idx + 1])
-        if pool:
-            pick = random.choice(pool)
-            nums.append(pick)
-            used.add(pick)
-    # 不足分をAB_poolから補完
-    while len(nums) < 5:
-        remain = list(AB_pool - used)
-        if not remain:
-            break
-        pick = random.choice(remain)
-        nums.append(pick)
-        used.add(pick)
-    nums = sorted(nums)[:5]
-    predicts.append(nums)
+# -----------------------
+# ファイルがあれば読み込み、それ以外は生成
+if os.path.exists(PREDICT_CSV):
+    df_pred = pd.read_csv(PREDICT_CSV)
+else:
+    # 予想生成
+    predicts = []
+    while len(predicts) < 20:
+        pattern = random.choice(patterns)
+        nums = []
+        used = set()
+        for i, area in enumerate(pattern):
+            pool = list(set(range_map[area]) & ab_pool - used)
+            if top_by_pos.get(i + 1):
+                pool = sorted(pool, key=lambda x: x not in top_by_pos[i + 1])
+            if pool:
+                pick = random.choice(pool)
+                nums.append(pick)
+                used.add(pick)
+        if len(nums) < 5:
+            remain = list(ab_pool - used)
+            while len(nums) < 5 and remain:
+                pick = random.choice(remain)
+                nums.append(pick)
+                used.add(pick)
+        predicts.append(sorted(nums))
+    df_pred = pd.DataFrame(predicts, columns=["第1", "第2", "第3", "第4", "第5"])
+    df_pred.to_csv(PREDICT_CSV, index=False)
 
-# --- DataFrameとして表示 ---
-basic_df = pd.DataFrame(predicts, columns=["第1", "第2", "第3", "第4", "第5"])
-st.dataframe(basic_df.astype("Int64"))
+# 表示と画像保存
+st.dataframe(df_pred)
+
+# ダウンロード画像を保存（matplotlibで作成）
+fig, ax = plt.subplots(figsize=(6, len(df_pred)*0.5))
+ax.axis('off')
+table = ax.table(cellText=df_pred.values, colLabels=df_pred.columns, cellLoc='center', loc='center')
+table.auto_set_font_size(False)
+table.set_fontsize(12)
+fig.tight_layout()
+plt.savefig(PREDICT_IMG)
+
+# ダウンロードリンク表示
+with open(PREDICT_IMG, "rb") as f:
+    st.download_button("📸 この予想を画像でダウンロード", f, file_name="miniloto_predictions.png", mime="image/png")
 
 # セレクト予想
 st.header("⑧ セレクト予想")
