@@ -4,21 +4,19 @@ import requests
 import datetime
 import hashlib
 
-# 🔐 LINEチャネル アクセストークン（長期）
-ACCESS_TOKEN = "+HMYlGC9ttjEo1MrJ8Wi4XmXpzJvss+3OpFdIn6LJhlGG26wxrzIUSPfpu7URIc8NkrEz6LR6dRW2geYSTDiVSZv3RpS/icR9OXDYokmaa/vgbcyeOLhjpZERlDWPkG77esxKwhtHFjtSkmxR6PTLQdB04t89/1O/w1cDnyilFU="
+# あなたの長期チャネルアクセストークン
+ACCESS_TOKEN = "あなたのトークン"
 
-# 🔐 あなたのLINE userId（Webhookから取得したもの）
-USER_ID = "U65332dba1dd92fae81532e458c130a63"
+# あなたの LINE User ID（Webhook.site で取得済の userId）
+USER_ID = "U65332dba1dd92fae81532e458c130a63"  # ←例です。あなたのIDに必ず差し替えて
 
-# ✅ パスワード生成
 def generate_password():
     now = datetime.datetime.now()
     base = f"NAOsecure-{now.year}{now.month:02d}"
     hashed = hashlib.sha256(base.encode()).hexdigest()
     return hashed[:10]
 
-# ✅ あなた1人宛に通知を送信
-def send_private_message(message):
+def send_push_message(message):
     url = "https://api.line.me/v2/bot/message/push"
     headers = {
         "Authorization": f"Bearer {ACCESS_TOKEN}",
