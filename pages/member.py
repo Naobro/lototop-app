@@ -1,34 +1,35 @@
-# pages/member.py
+# pages/member.py - 緊急対応版（通知なし）
 
 import streamlit as st
 import datetime
-import sys
-import os
+import hashlib
 
-# line.py をインポートするためのパス設定
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-from line import generate_password, send_push_message
-
+# ✅ ページ設定
 st.set_page_config(page_title="🔐 NAOLoto 会員専用ページ", layout="wide")
+
 st.title("🔐 NAOLoto月額サブスク 会員ページ")
 st.markdown("月額会員様向けの限定ページです。以下に今月のパスワードをご入力ください。")
 
-# 今月のパスワード生成
+# ✅ 今月のパスワード生成
+def generate_password():
+    now = datetime.datetime.now()
+    base = f"NAOsecure-{now.year}{now.month:02d}"
+    hashed = hashlib.sha256(base.encode()).hexdigest()
+    return hashed[:10]
+
 valid_password = generate_password()
 
-# 🔐 管理者用 LINE通知ボタン（あなた1人宛）
-if st.sidebar.button("📩 LINEにパスワードを送信（管理者用）"):
-    msg = f"🔐【NAOLoto】今月の会員パスワード：{valid_password}"
-    send_push_message(msg)
-    st.sidebar.success("✅ あなたのLINEに送信しました")
+# ✅ 管理者用確認（削除可）
+st.markdown(f"🛠 **今月のパスワード（確認用）**: `{valid_password}`")
 
-# 入力欄
+# ✅ 入力欄
 input_password = st.text_input("🔑 パスワードを入力", type="password")
 
-# パスワード判定
+# ✅ チェック
 if input_password == valid_password:
     st.success("✅ 認証成功！以下の予想ページにアクセスできます。")
     st.markdown("### 🔗 各予想ページへ")
+
     col1, col2, col3 = st.columns(3)
     with col1:
         st.page_link("pages/loto6_top.py", label="🔵 ロト6")
