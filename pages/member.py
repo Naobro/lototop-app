@@ -8,18 +8,24 @@ st.set_page_config(page_title="🔐 NAOLoto 会員専用ページ", layout="wide
 st.title("🔐 NAOLoto月額サブスク 会員ページ")
 st.markdown("月額会員様向けの限定ページです。以下に今月のパスワードをご入力ください。")
 
-# ✅ 入力欄
-input_password = st.text_input("🔑 パスワードを入力", type="password")
-
 # ✅ 今月のパスワードを動的に生成（例：年月 + ハッシュの一部）
-def generate_password():
-    now = datetime.datetime.now()
+def generate_password(target_date=None):
+    if target_date is None:
+        now = datetime.datetime.now()
+    else:
+        now = target_date
     base = f"NAOsecure-{now.year}{now.month:02d}"
     hashed = hashlib.sha256(base.encode()).hexdigest()
-    return hashed[:10]  # 最初の10文字のみを使用
+    return hashed[:10]  # 最初の10文字
 
-# ✅ 正解パスワード
+# ✅ 今月のパスワード
 valid_password = generate_password()
+
+# ✅ 🔐 管理者向け表示（必要に応じてコメントアウトOK）
+st.markdown(f"🛠 **今月のパスワード（管理者確認用）**: `{valid_password}`")
+
+# ✅ 入力欄
+input_password = st.text_input("🔑 パスワードを入力", type="password")
 
 # ✅ チェック
 if input_password == valid_password:
