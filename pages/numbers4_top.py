@@ -203,7 +203,7 @@ try:
     st.dataframe(skip_df)
 
 except Exception as e:
-    st.error(f\"スキップ分析の表示に失敗しました: {e}\")
+    st.error(f"スキップ分析の表示に失敗しました: {e}")
 
 # ⑨ 軸数字から予想
 st.header("⑨ ナンバーズ4予想（軸数字指定）")
