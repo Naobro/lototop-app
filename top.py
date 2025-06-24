@@ -35,9 +35,10 @@ st.markdown("""
 以下のリンクから会員ページへアクセスしてください。  
 毎月変わるパスワードを入力すると、各宝くじ予想ページが開放されます。
 
-st.markdown("""
-👉 [🔐 会員ページはこちら](https://naoloto-win.streamlit.app/pages/member)
-""")
+import streamlit as st
+
+st.markdown("👉 [🔐 会員ページはこちら](https://naoloto-win.streamlit.app/pages/member)")
+
 
 # マネタイズ案内
 st.markdown("### 💡 サブスク & 単発予想販売（予定）")
