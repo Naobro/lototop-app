@@ -29,19 +29,14 @@ st.markdown("""コンテンツ内容
 - 基本予想
 """)
 
-col1, col2, col3 = st.columns(3)
+# ✅ 会員専用ページへの導線だけを残す
+st.markdown("### 🔐 会員専用ページ（月額予想サブスク）")
+st.markdown("""
+以下のリンクから会員ページへアクセスしてください。  
+毎月変わるパスワードを入力すると、各宝くじ予想ページが開放されます。
 
-with col1:
-    st.page_link("pages/loto6_top.py", label="🔵 ロト6")
-    st.page_link("pages/loto7_top.py", label="🟣 ロト7")
-
-with col2:
-    st.page_link("pages/miniloto_top.py", label="🟢 ミニロト")
-    st.page_link("pages/numbers3_top.py", label="🟡 ナンバーズ3")
-
-with col3:
-    st.page_link("pages/numbers4_top.py", label="🟠 ナンバーズ4")
-
+👉 [🔐 会員ページはこちら](https://naoloto-win.streamlit.app/member)
+""")
 # マネタイズ案内
 st.markdown("### 💡 サブスク & 単発予想販売（予定）")
 st.markdown("""
