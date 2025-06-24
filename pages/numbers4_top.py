@@ -169,6 +169,37 @@ for _, row in df_recent.iterrows():
 sum_df = pd.DataFrame(sum_counts.items(), columns=["合計値", "出現回数"]).sort_values(by="出現回数", ascending=False)
 st.dataframe(sum_df)
 
+# ⑪ スキップ回数分析（2回前まで表示）
+st.subheader("⑪ スキップ回数分析（直近2回の出現回）")
+
+try:
+    # 各数字が出た回数インデックスを記録
+    history_map = {i: [] for i in range(10)}
+
+    for idx in range(len(df_recent)):
+        row = df_recent.iloc[idx]
+        for d in range(1, 5):
+            num = row[f"第{d}数字"]
+            if idx not in history_map[num]:
+                history_map[num].append(idx)
+
+    # 最新から見て何回前に出たかを2回分記録（未出は24として扱う）
+    skip_data = []
+    for num in range(10):
+        last_1 = history_map[num][0] if len(history_map[num]) > 0 else len(df_recent)
+        last_2 = history_map[num][1] if len(history_map[num]) > 1 else len(df_recent)
+        skip_data.append({
+            "数字": num,
+            "直近出現": last_1,
+            "2回前出現": last_2
+        })
+
+    skip_df = pd.DataFrame(skip_data).sort_values(by="直近出現", ascending=False, ignore_index=True)
+    st.dataframe(skip_df)
+
+except Exception as e:
+    st.error(f"スキップ分析の表示に失敗しました: {e}")
+
 # ⑨ 軸数字から予想
 st.header("⑨ ナンバーズ4予想（軸数字指定）")
 axis = st.selectbox("軸数字を選んでください（0〜9）", list(range(10)))
@@ -180,3 +211,65 @@ if st.button("20通りを表示"):
         if combo not in preds:
             preds.append(combo)
     st.dataframe(pd.DataFrame(preds, columns=["予測1", "予測2", "予測3", "予測4"]))
+
+# ⑩ 高度予想：合計値・スキップ・ABCバランスを考慮
+st.header("⑩ ナンバーズ4予想（AI風ロジック）")
+
+if st.button("AI風ロジックで20通り生成"):
+    # 合計値の平均・中央値・モードを取得
+    total_sums = df_recent[[f"第{i}数字" for i in range(1, 5)]].sum(axis=1)
+    avg = total_sums.mean()
+    med = total_sums.median()
+    mode_vals = total_sums.mode().tolist()
+
+    # スキップ回数（最後に出てから何回出ていないか）
+    recent_flat = []
+    for _, row in df_recent.iterrows():
+        recent_flat.extend([row[f"第{i}数字"] for i in range(1, 5)])
+    skip_count = {i: None for i in range(10)}
+    for idx in range(len(df_recent)):
+        row = df_recent.iloc[idx]
+        for d in range(1, 5):
+            num = row[f"第{d}数字"]
+            if skip_count[num] is None:
+                skip_count[num] = idx
+
+    # ABC分類関数
+    def classify_abc(n):
+        if n <= 3:
+            return "A"
+        elif n <= 6:
+            return "B"
+        else:
+            return "C"
+
+    # 予想生成
+    def is_valid_combo(combo):
+        total = sum(combo)
+        if not (med - 4 <= total <= med + 4):  # 合計値を中央値±4以内に制限
+            return False
+        abc_counts = {"A": 0, "B": 0, "C": 0}
+        for n in combo:
+            abc_counts[classify_abc(n)] += 1
+        if max(abc_counts.values()) >= 3:  # ABCが1種類に偏りすぎていればNG
+            return False
+        if all(skip_count[n] is not None and skip_count[n] < 3 for n in combo):
+            return False  # 全部最近出ている数字だけ → NG
+        return True
+
+    predictions = []
+    tries = 0
+    while len(predictions) < 20 and tries < 1000:
+        cand = sorted(random.sample(range(10), 4))
+        if cand not in predictions and is_valid_combo(cand):
+            predictions.append(cand)
+        tries += 1
+
+    if predictions:
+        st.success("以下の条件で絞り込まれた予想を表示します：")
+        st.markdown("- 合計値：中央値 ±4")
+        st.markdown("- ABCバランス（偏りすぎNG）")
+        st.markdown("- 最近出ていない数字を優先")
+        st.dataframe(pd.DataFrame(predictions, columns=["予測1", "予測2", "予測3", "予測4"]))
+    else:
+        st.warning("条件に合致する予測が生成できませんでした。")
