@@ -169,36 +169,38 @@ for _, row in df_recent.iterrows():
 sum_df = pd.DataFrame(sum_counts.items(), columns=["合計値", "出現回数"]).sort_values(by="出現回数", ascending=False)
 st.dataframe(sum_df)
 
-# ⑪ スキップ回数分析（2回前まで表示）
-st.subheader("⑪ スキップ回数分析（直近2回の出現回）")
+# ⑪ スキップ回数分析（数字ごとに直近3回の出現回号を表示）
+st.subheader("⑪ スキップ回数分析（数字ごとに直近3回の出現回号を表示）")
 
 try:
-    # 各数字が出た回数インデックスを記録
-    history_map = {i: [] for i in range(10)}
+    # 各数字の出現履歴（回号）を記録
+    skip_info = {i: [] for i in range(10)}
 
-    for idx in range(len(df_recent)):
-        row = df_recent.iloc[idx]
-        for d in range(1, 5):
-            num = row[f"第{d}数字"]
-            if idx not in history_map[num]:
-                history_map[num].append(idx)
+    for _, row in df_recent.iterrows():
+        round_no = row["回号"]
+        for i in range(1, 5):
+            num = row[f"第{i}数字"]
+            if round_no not in skip_info[num]:
+                skip_info[num].append(round_no)
 
-    # 最新から見て何回前に出たかを2回分記録（未出は24として扱う）
-    skip_data = []
+    # 表示用整形（0〜9の昇順）
+    rows = []
     for num in range(10):
-        last_1 = history_map[num][0] if len(history_map[num]) > 0 else len(df_recent)
-        last_2 = history_map[num][1] if len(history_map[num]) > 1 else len(df_recent)
-        skip_data.append({
+        last_1 = skip_info[num][0] if len(skip_info[num]) > 0 else "出現なし"
+        last_2 = skip_info[num][1] if len(skip_info[num]) > 1 else "出現なし"
+        last_3 = skip_info[num][2] if len(skip_info[num]) > 2 else "出現なし"
+        rows.append({
             "数字": num,
-            "直近出現": last_1,
-            "2回前出現": last_2
+            "直近出現（回号）": last_1,
+            "2回前出現（回号）": last_2,
+            "3回前出現（回号）": last_3
         })
 
-    skip_df = pd.DataFrame(skip_data).sort_values(by="直近出現", ascending=False, ignore_index=True)
+    skip_df = pd.DataFrame(rows)
     st.dataframe(skip_df)
 
 except Exception as e:
-    st.error(f"スキップ分析の表示に失敗しました: {e}")
+    st.error(f"スキップ回号分析の表示に失敗しました: {e}")
 
 # ⑨ 軸数字から予想
 st.header("⑨ ナンバーズ4予想（軸数字指定）")
