@@ -76,20 +76,49 @@ def format_yen(x):
 def format_count(x):
     return f"{int(x):,}口" if pd.notna(x) else "—"
 
-# 表示：① 最新の当選番号
+# ① 最新の当選番号
 st.header("① 最新の当選番号")
 
+def format_yen(x):
+    if pd.isna(x) or str(x) in ["—", "該当なし"]:
+        return "—円"
+    return f"{int(x):,}円"
+
+def format_count(x):
+    if pd.isna(x) or str(x) in ["—", "該当なし"]:
+        return "該当なし"
+    return f"{int(x):,}口"
+
 st.markdown(f"""
-<table style='width:100%; border-collapse:collapse; text-align:right; font-size:16px;'>
-<tr><th>回号</th><td><b>第{latest['回号']}回</b></td><th>抽せん日</th><td>{latest['抽せん日'].strftime('%Y年%m月%d日')}</td></tr>
-<tr><th>本数字</th><td colspan='3'>{main_numbers}</td></tr>
-<tr><th>ボーナス数字</th><td colspan='3'>{bonus_number}</td></tr>
-<tr><th>1等</th><td>{format_count(latest['1等口数'])}</td><td colspan='2'>{format_yen(latest['1等賞金'])}</td></tr>
-<tr><th>2等</th><td>{format_count(latest['2等口数'])}</td><td colspan='2'>{format_yen(latest['2等賞金'])}</td></tr>
-<tr><th>3等</th><td>{format_count(latest['3等口数'])}</td><td colspan='2'>{format_yen(latest['3等賞金'])}</td></tr>
-<tr><th>4等</th><td>{format_count(latest['4等口数'])}</td><td colspan='2'>{format_yen(latest['4等賞金'])}</td></tr>
-<tr><th>5等</th><td>{format_count(latest['5等口数'])}</td><td colspan='2'>{format_yen(latest['5等賞金'])}</td></tr>
-<tr><th>キャリーオーバー</th><td colspan='3' style='text-align:right'>{format_yen(latest['キャリーオーバー'])}</td></tr>
+<style>
+.custom-table {{
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 16px;
+}}
+.custom-table th, .custom-table td {{
+    border: 1px solid #ccc;
+    padding: 8px 10px;
+    text-align: left;
+    background-color: #f9f9f9;
+}}
+.custom-table th {{
+    background-color: #eef2f7;
+    width: 25%;
+}}
+</style>
+
+<table class='custom-table'>
+<tr><th>回別</th><td>第{latest['回号']}回</td></tr>
+<tr><th>抽せん日</th><td>{latest['抽せん日'].strftime('%Y年%m月%d日')}</td></tr>
+<tr><th>本数字</th><td>{main_numbers}</td></tr>
+<tr><th>ボーナス数字</th><td>{bonus_number}</td></tr>
+<tr><th>1等</th><td>{format_count(latest['1等口数'])} ／ {format_yen(latest['1等賞金'])}</td></tr>
+<tr><th>2等</th><td>{format_count(latest['2等口数'])} ／ {format_yen(latest['2等賞金'])}</td></tr>
+<tr><th>3等</th><td>{format_count(latest['3等口数'])} ／ {format_yen(latest['3等賞金'])}</td></tr>
+<tr><th>4等</th><td>{format_count(latest['4等口数'])} ／ {format_yen(latest['4等賞金'])}</td></tr>
+<tr><th>5等</th><td>{format_count(latest['5等口数'])} ／ {format_yen(latest['5等賞金'])}</td></tr>
+<tr><th>キャリーオーバー</th><td>{format_yen(latest['キャリーオーバー'])}</td></tr>
 </table>
 """, unsafe_allow_html=True)
 
