@@ -251,7 +251,7 @@ for label, pattern in pattern_list:
 
     pred_df = pd.DataFrame(predictions, columns=[f"第{i}数字" for i in range(1, 7)])
     st.markdown(style_table(pred_df), unsafe_allow_html=True)
-    remove_numbers = st.multiselect("除外したい数字", list(range(1, 44)))
+    remove_numbers = st.multiselect("除外したい数字", list(range(1, 44)), key="remove_numbers")
 axis_numbers = st.multiselect("起点としたい数字", list(range(1, 44)))
 if st.button("予想を生成"):
     available_numbers = set(range(1, 44)) - set(remove_numbers)  # ロト6は1〜43
