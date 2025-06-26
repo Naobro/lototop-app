@@ -78,6 +78,13 @@ df.columns = df.columns.str.strip()
 df["抽せん日"] = pd.to_datetime(df["抽せん日"], errors="coerce")
 df = df[df["抽せん日"].notna()].copy().sort_values("抽せん日").reset_index(drop=True)
 
+# ✅ 数値化と欠損除去（該当なしや不正データ対策）
+for i in range(1, 7):
+    df[f"第{i}数字"] = pd.to_numeric(df[f"第{i}数字"], errors="coerce")
+
+# NaNを含む行（"該当なし"など不正データ）を削除
+df = df.dropna(subset=[f"第{i}数字" for i in range(1, 7)]).copy()
+
 int_cols = ['回号', '第1数字', '第2数字', '第3数字', '第4数字', '第5数字', '第6数字', 'ボーナス数字']
 yen_cols = ['1等賞金', '2等賞金', '3等賞金', '4等賞金', '5等賞金', 'キャリーオーバー']
 for col in int_cols:
