@@ -75,6 +75,16 @@ def format_yen(val):
         return f"{int(float(str(val).replace(',', '').replace('円',''))):,}円"
     except:
         return "該当なし"
+    # ✅ 横スクロール可能なテーブル表示
+def render_scrollable_table(df):
+    st.markdown(
+        f"""
+        <div style='overflow-x:auto;'>
+            {df.to_html(index=False)}
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
 # ✅ HTMLテーブル構築
 main_number_cells = ''.join([f"<td>{int(latest[f'第{i}数字'])}</td>" for i in range(1, 7)])
