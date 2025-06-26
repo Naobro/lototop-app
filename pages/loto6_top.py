@@ -1,5 +1,6 @@
 import sys
 import os
+from tkinter.ttk import Style
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 import streamlit as st
@@ -72,9 +73,9 @@ st.title("ロト6 AI予想サイト")
 # ヘルパー関数
 def format_yen(x):
     try:
-        if pd.isna(x) or str(x).strip() == "":
-            return "—"
         x_str = str(x).strip()
+        if x_str == "" or x_str.lower() in ["nan", "none"]:
+            return "—"
         if x_str == "該当なし":
             return "該当なし"
         if x_str in ["0", "0.0"]:
@@ -85,9 +86,9 @@ def format_yen(x):
 
 def format_count(x):
     try:
-        if pd.isna(x) or str(x).strip() == "":
-            return "—"
         x_str = str(x).strip()
+        if x_str == "" or x_str.lower() in ["nan", "none"]:
+            return "—"
         if x_str == "該当なし":
             return "該当なし"
         if x_str in ["0", "0.0"]:
@@ -109,7 +110,8 @@ def format_count(x):
         return "該当なし"
     return f"{int(x):,}口"
 
-st.markdown(f"""
+# ✅ 1. CSSは別で定義（この部分が約112行目の直前に入るべき）
+custom_table_css = """
 <style>
 .custom-table {
     width: 100%;
@@ -131,6 +133,21 @@ st.markdown(f"""
     width: 25%;
 }
 </style>
+"""
+st.markdown(custom_table_css, unsafe_allow_html=True)
+
+# ✅ 2. そのあとにテーブル表示（約115〜130行目）
+st.markdown(f"""
+<table class='custom-table'>
+<tr><th>回別</th><td>第{latest['回号']}回</td></tr>
+<tr><th>抽せん日</th><td>{latest['抽せん日'].strftime('%Y年%m月%d日')}</td></tr>
+<tr><th>本数字</th><td>{main_numbers}</td></tr>
+<tr><th>ボーナス数字</th><td>{bonus_number}</td></tr>
+<tr><th>1等</th><td>{format_count(latest['1等口数'])} ／ {format_yen(latest['1等賞金'])}</td></tr>
+<tr><th>2等</th><td>{format_count(latest['2等口数'])} ／ {format_yen(latest['2等賞金'])}</td></tr>
+...
+</table>
+""", unsafe_allow_html=True)
 
 <table class='custom-table'>
 <tr><th>回別</th><td>第{latest['回号']}回</td></tr>
