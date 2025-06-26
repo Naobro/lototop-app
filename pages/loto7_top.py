@@ -1,7 +1,16 @@
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
+import streamlit as st
+from auth import check_password
+
+st.set_page_config(layout="centered")
+check_password()  # ✅ これが必須です
+
 import ssl
 import pandas as pd
 import random
-import streamlit as st
 
 ssl._create_default_https_context = ssl._create_unverified_context
 
