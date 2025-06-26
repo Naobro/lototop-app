@@ -1,7 +1,16 @@
-# 【1/3】全コード：前半部（データ取得～出現傾向分析）
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
+import streamlit as st
+from auth import check_password
+
+check_password()
+st.set_page_config(layout="centered")
+
+import ssl
 import pandas as pd
 import random
-import streamlit as st
 
 st.set_page_config(layout="wide")
 st.title("ミニロト AI予想サイト")
