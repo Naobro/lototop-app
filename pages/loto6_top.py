@@ -1,6 +1,5 @@
 import sys
 import os
-from tkinter.ttk import Style
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 import streamlit as st
@@ -14,10 +13,35 @@ import pandas as pd
 import random
 from collections import Counter
 
-# SSL対策
 ssl._create_default_https_context = ssl._create_unverified_context
 
-# ✅ CSS（すべての表に共通）
+# ✅ CSS（ダークモード対応）
+custom_table_css = """
+<style>
+.custom-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 16px;
+    background-color: var(--background-color);
+    color: var(--text-color);
+}
+.custom-table th, .custom-table td {
+    border: 1px solid #ccc;
+    padding: 8px 10px;
+    text-align: left;
+    background-color: var(--background-color);
+    color: var(--text-color);
+}
+.custom-table th {
+    background-color: #444;
+    font-weight: bold;
+    width: 25%;
+}
+</style>
+"""
+st.markdown(custom_table_css, unsafe_allow_html=True)
+
+# ✅ テーブル出力用CSS
 wide_table_css = """
 <style>
 .wide-table {
@@ -39,7 +63,6 @@ wide_table_css = """
 """
 st.markdown(wide_table_css, unsafe_allow_html=True)
 
-# ✅ テーブル表示関数
 def wide_table(df):
     return df.to_html(index=False, escape=False, classes="wide-table")
 
@@ -57,24 +80,17 @@ df = df[df["抽せん日"].notna()].copy().sort_values("抽せん日").reset_ind
 
 int_cols = ['回号', '第1数字', '第2数字', '第3数字', '第4数字', '第5数字', '第6数字', 'ボーナス数字']
 yen_cols = ['1等賞金', '2等賞金', '3等賞金', '4等賞金', '5等賞金', 'キャリーオーバー']
-
 for col in int_cols:
     df[col] = df[col].astype(str).str.strip()
-
 for col in yen_cols:
     df[col] = df[col].astype(str).str.replace(",", "").str.strip()
 
-# ✅ 最新当選結果
-latest = df.iloc[-1]
-main_numbers = ' '.join([f"<b style='font-size:16px'>{latest[f'第{i}数字']}</b>" for i in range(1, 7)])
-bonus_number = f"<b style='font-size:14px; color:red'>({latest['ボーナス数字']:02})</b>"
+# ✅ ヘルパー関数
 
-st.title("ロト6 AI予想サイト")
-# ヘルパー関数
 def format_yen(x):
     try:
         x_str = str(x).strip()
-        if x_str == "" or x_str.lower() in ["nan", "none"]:
+        if x_str in ["", "nan", "none", "—"]:
             return "—"
         if x_str == "該当なし":
             return "該当なし"
@@ -87,7 +103,7 @@ def format_yen(x):
 def format_count(x):
     try:
         x_str = str(x).strip()
-        if x_str == "" or x_str.lower() in ["nan", "none"]:
+        if x_str in ["", "nan", "none", "—"]:
             return "—"
         if x_str == "該当なし":
             return "該当なし"
@@ -97,58 +113,14 @@ def format_count(x):
     except:
         return "—"
 
-# ① 最新の当選番号
+# ✅ 最新当選番号表示
+latest = df.iloc[-1]
+main_numbers = ' '.join([f"<b style='font-size:16px'>{latest[f'第{i}数字']}</b>" for i in range(1, 7)])
+bonus_number = f"<b style='font-size:14px; color:red'>({latest['ボーナス数字']:02})</b>"
+
+st.title("ロト6 AI予想サイト")
 st.header("① 最新の当選番号")
-
-def format_yen(x):
-    if pd.isna(x) or str(x) in ["—", "該当なし"]:
-        return "—円"
-    return f"{int(x):,}円"
-
-def format_count(x):
-    if pd.isna(x) or str(x) in ["—", "該当なし"]:
-        return "該当なし"
-    return f"{int(x):,}口"
-
-# ✅ 1. CSSは別で定義（この部分が約112行目の直前に入るべき）
-custom_table_css = """
-<style>
-.custom-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 16px;
-    background-color: #fff !important;
-    color: #000 !important;
-}
-.custom-table th, .custom-table td {
-    border: 1px solid #ccc;
-    padding: 8px 10px;
-    text-align: left;
-    background-color: #fff !important;
-    color: #000 !important;
-}
-.custom-table th {
-    background-color: #eef2f7 !important;
-    font-weight: bold;
-    width: 25%;
-}
-</style>
-"""
-st.markdown(custom_table_css, unsafe_allow_html=True)
-
-# ✅ 2. そのあとにテーブル表示（約115〜130行目）
 st.markdown(f"""
-<table class='custom-table'>
-<tr><th>回別</th><td>第{latest['回号']}回</td></tr>
-<tr><th>抽せん日</th><td>{latest['抽せん日'].strftime('%Y年%m月%d日')}</td></tr>
-<tr><th>本数字</th><td>{main_numbers}</td></tr>
-<tr><th>ボーナス数字</th><td>{bonus_number}</td></tr>
-<tr><th>1等</th><td>{format_count(latest['1等口数'])} ／ {format_yen(latest['1等賞金'])}</td></tr>
-<tr><th>2等</th><td>{format_count(latest['2等口数'])} ／ {format_yen(latest['2等賞金'])}</td></tr>
-...
-</table>
-""", unsafe_allow_html=True)
-
 <table class='custom-table'>
 <tr><th>回別</th><td>第{latest['回号']}回</td></tr>
 <tr><th>抽せん日</th><td>{latest['抽せん日'].strftime('%Y年%m月%d日')}</td></tr>
@@ -162,6 +134,7 @@ st.markdown(f"""
 <tr><th>キャリーオーバー</th><td>{format_yen(latest['キャリーオーバー'])}</td></tr>
 </table>
 """, unsafe_allow_html=True)
+
 
 # ✅ ② ABC分類
 st.header("② 直近24回の当選番号（ABC分類）")
