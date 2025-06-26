@@ -139,6 +139,10 @@ if st.button("CSV保存＋GitHub反映"):
     if not text_input:
         st.warning("⚠️ 抽選結果を貼り付けてください")
     else:
+        # ✅ テキストの事前整形（空白統一、改行調整）
+        text_input = re.sub(r'\s+', ' ', text_input)  # 複数空白→1つの空白へ
+        text_input = text_input.replace('\n', ' ')    # 改行も空白化
+
         round_no = extract_round(text_input)
         date = extract_date(text_input)
         file_path = ""
