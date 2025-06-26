@@ -88,20 +88,46 @@ def show_page():
 # ✅ 修正後（この1行だけにする）
 show_page()
 
-# **② 直近24回の当選番号**を表示
-st.header("② 直近24回の当選番号")
+import pandas as pd
+import streamlit as st
+
+st.header("② 直近24回の当選番号（ABC分類付き）")
 
 def generate_recent_numbers3_table(csv_path):
     try:
-        # CSVを読み込む
+        # CSV読み込みと整形
         df = pd.read_csv(csv_path)
-
-        # 不要な列を除外し、日付整形
+        df = df.dropna(subset=["第1数字", "第2数字", "第3数字"])
         df["抽せん日"] = pd.to_datetime(df["抽せん日"], errors="coerce").dt.strftime("%Y-%m-%d")
         df = df[["回号", "抽せん日", "第1数字", "第2数字", "第3数字"]]
+        df[["第1数字", "第2数字", "第3数字"]] = df[["第1数字", "第2数字", "第3数字"]].astype(int)
 
-        # 回号で降順ソートして24件に絞る
-        df = df.sort_values(by="回号", ascending=False).head(24)
+        # 直近24件に絞る（回号降順）
+        df = df.sort_values(by="回号", ascending=False).head(24).reset_index(drop=True)
+
+        # 各桁の出現回数に基づきABCランク分類辞書を作成
+        def classify_abc(series):
+            counts = series.value_counts().sort_values(ascending=False)
+            ranked = counts.reset_index()
+            ranked.columns = ["数字", "出現回数"]
+            ranked["順位"] = ranked["出現回数"].rank(method="dense", ascending=False).astype(int)
+
+            abc_map = {}
+            for _, row in ranked.iterrows():
+                if row["順位"] <= 4:
+                    abc_map[row["数字"]] = "A"
+                elif row["順位"] <= 7:
+                    abc_map[row["数字"]] = "B"
+                else:
+                    abc_map[row["数字"]] = "C"
+            return abc_map
+
+        abc_1 = classify_abc(df["第1数字"])
+        abc_2 = classify_abc(df["第2数字"])
+        abc_3 = classify_abc(df["第3数字"])
+
+        # ABC分類列を追加
+        df["ABC分類"] = df["第1数字"].map(abc_1) + "," + df["第2数字"].map(abc_2) + "," + df["第3数字"].map(abc_3)
 
         # 表示
         st.dataframe(df, use_container_width=True)
@@ -109,10 +135,9 @@ def generate_recent_numbers3_table(csv_path):
     except Exception as e:
         st.error(f"エラーが発生しました: {e}")
 
-# CSVのパス
+# 実行パス
 recent_csv_path = "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/numbers3_24.csv"
 generate_recent_numbers3_table(recent_csv_path)
-
 
 # **③ ランキングの作成**
 st.header("③ ランキング")
