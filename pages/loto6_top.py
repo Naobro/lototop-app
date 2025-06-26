@@ -181,3 +181,108 @@ abc_df = pd.DataFrame({
     "C数字（その他）": C_pad
 })
 st.markdown(style_table(abc_df), unsafe_allow_html=True)
+# ⑧ 基本予想（パターンごとに2通り×5種類 = 合計10通り）
+st.header("基本予想（パターン別 2通り×5種類）")
+
+# A・B数字からグループ分け
+group_dict = {
+    "1": list(range(1, 10)),
+    "10": list(range(10, 20)),
+    "20": list(range(20, 30)),
+    "30": list(range(30, 40)),
+    "40": list(range(40, 44)),
+}
+group_map = {}
+for g, nums in group_dict.items():
+    for n in nums:
+        group_map[n] = g
+
+A_set = set(A_numbers)
+B_set = set(B_numbers)
+
+# 前回の数字（ひっぱり用）
+last_numbers = df_recent.iloc[0][[f"第{i}数字" for i in range(1, 7)]].tolist()
+
+# パターン構成とラベル
+pattern_list = [
+    ("1-10-10-20-20-30", ["1", "10", "10", "20", "20", "30"]),
+    ("1-10-20-20-30-40", ["1", "10", "20", "20", "30", "40"]),
+    ("10-10-10-20-30-30", ["10", "10", "10", "20", "30", "30"]),
+    ("1-1-10-20-20-30",   ["1", "1", "10", "20", "20", "30"]),
+    ("1-10-20-20-20-30",  ["1", "10", "20", "20", "20", "30"]),
+]
+
+# 予想生成ロジック
+def generate_from_group(group_key):
+    candidates = [n for n in group_dict[group_key] if n in A_set] * 6 + \
+                 [n for n in group_dict[group_key] if n in B_set] * 4
+    return random.choice(candidates) if candidates else random.choice(group_dict[group_key])
+
+# 出力開始
+for label, pattern in pattern_list:
+    st.markdown(f"**パターン: {label}**")
+    predictions = []
+
+    for _ in range(2):  # 各パターンで2通り
+        nums = [generate_from_group(g) for g in pattern]
+
+        # 引っ張り50%
+        if random.random() < 0.5:
+            pulls = random.sample(last_numbers, k=random.choice([1, 2]))
+            replace_indices = random.sample(range(6), k=len(pulls))
+            for i, val in zip(replace_indices, pulls):
+                val_group = group_map.get(val)
+                if val_group == pattern[i]:  # グループ一致時のみ置換
+                    nums[i] = val
+
+        # 重複除去＋補充
+        unique = sorted(set(nums))
+        while len(unique) < 6:
+            extra = random.randint(1, 43)
+            if extra not in unique and group_map.get(extra) in pattern:
+                group_counts = {g: pattern.count(g) for g in set(pattern)}
+                current_counts = {g: sum(1 for n in unique if group_map.get(n) == g) for g in group_counts}
+                for g in group_counts:
+                    if current_counts.get(g, 0) < group_counts[g] and group_map.get(extra) == g:
+                        unique.append(extra)
+                        break
+        unique = sorted(unique)[:6]
+        predictions.append(unique)
+
+    pred_df = pd.DataFrame(predictions, columns=[f"第{i}数字" for i in range(1, 7)])
+    st.markdown(style_table(pred_df), unsafe_allow_html=True)
+    remove_numbers = st.multiselect("除外したい数字", list(range(1, 44)))
+axis_numbers = st.multiselect("起点としたい数字", list(range(1, 44)))
+if st.button("予想を生成"):
+    available_numbers = set(range(1, 44)) - set(remove_numbers)  # ロト6は1〜43
+    ranges = [
+        list(range(1, 14)),
+        list(range(2, 18)),
+        list(range(5, 23)),
+        list(range(8, 28)),
+        list(range(14, 34)),
+        list(range(20, 37))
+    ]
+
+    def fill_numbers(selected, available_in_range):
+        pool = list(available_in_range)
+        random.shuffle(pool)
+        for num in pool:
+            if num not in selected:
+                selected.append(num)
+                break
+
+    predictions = []
+    for _ in range(20):
+        selected = list(axis_numbers)
+        used = set(selected)
+        for r in ranges:
+            available_in_range = set(r) & available_numbers - used
+            fill_numbers(selected, available_in_range)
+            used = set(selected)
+        selected = selected[:6]  # ロト6は6数字
+        selected.sort()
+        predictions.append(selected)
+
+    pred_df = pd.DataFrame(predictions, columns=[f"第{i}数字" for i in range(1, 7)])
+    st.markdown(style_table(pred_df), unsafe_allow_html=True)
