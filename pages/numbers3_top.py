@@ -91,6 +91,9 @@ show_page()
 import pandas as pd
 import streamlit as st
 
+import pandas as pd
+import streamlit as st
+
 st.header("② 直近24回の当選番号（ABC分類付き）")
 
 def generate_recent_numbers3_table(csv_path):
@@ -98,15 +101,14 @@ def generate_recent_numbers3_table(csv_path):
         # CSV読み込みと整形
         df = pd.read_csv(csv_path)
         df = df.dropna(subset=["第1数字", "第2数字", "第3数字"])
-        df["抽せん日"] = pd.to_datetime(df["抽せん日"], errors="coerce").dt.strftime("%Y-%m-%d")
-        df = df[["回号", "抽せん日", "第1数字", "第2数字", "第3数字"]]
         df[["第1数字", "第2数字", "第3数字"]] = df[["第1数字", "第2数字", "第3数字"]].astype(int)
+        df["抽せん日"] = pd.to_datetime(df["抽せん日"], errors="coerce").dt.strftime("%Y-%m-%d")
 
-        # 直近24件に絞る（回号降順）
-        df = df.sort_values(by="回号", ascending=False).head(24).reset_index(drop=True)
+        # 直近24回に絞って昇順リセット
+        df_recent = df.sort_values("回号", ascending=False).head(24).reset_index(drop=True)
 
-        # 各桁の出現回数に基づきABCランク分類辞書を作成
-        def classify_abc(series):
+        # 各桁ごとに出現回数をカウントし、順位付け（dense）
+        def create_abc_map(series):
             counts = series.value_counts().sort_values(ascending=False)
             ranked = counts.reset_index()
             ranked.columns = ["数字", "出現回数"]
@@ -118,27 +120,34 @@ def generate_recent_numbers3_table(csv_path):
                     abc_map[row["数字"]] = "A"
                 elif row["順位"] <= 7:
                     abc_map[row["数字"]] = "B"
-                else:
+                elif row["順位"] <= 10:
                     abc_map[row["数字"]] = "C"
             return abc_map
 
-        abc_1 = classify_abc(df["第1数字"])
-        abc_2 = classify_abc(df["第2数字"])
-        abc_3 = classify_abc(df["第3数字"])
+        # ABCマップを作成（直近24回のランキングを元に）
+        abc_map_1 = create_abc_map(df_recent["第1数字"])
+        abc_map_2 = create_abc_map(df_recent["第2数字"])
+        abc_map_3 = create_abc_map(df_recent["第3数字"])
 
         # ABC分類列を追加
-        df["ABC分類"] = df["第1数字"].map(abc_1) + "," + df["第2数字"].map(abc_2) + "," + df["第3数字"].map(abc_3)
+        df_recent["ABC分類"] = (
+            df_recent["第1数字"].map(abc_map_1).fillna("-") + "," +
+            df_recent["第2数字"].map(abc_map_2).fillna("-") + "," +
+            df_recent["第3数字"].map(abc_map_3).fillna("-")
+        )
 
         # 表示
-        st.dataframe(df, use_container_width=True)
+        st.dataframe(
+            df_recent[["回号", "抽せん日", "第1数字", "第2数字", "第3数字", "ABC分類"]],
+            use_container_width=True
+        )
 
     except Exception as e:
         st.error(f"エラーが発生しました: {e}")
 
-# 実行パス
+# 実行
 recent_csv_path = "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/numbers3_24.csv"
 generate_recent_numbers3_table(recent_csv_path)
-
 # **③ ランキングの作成**
 st.header("③ ランキング")
 
