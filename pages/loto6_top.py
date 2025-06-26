@@ -15,134 +15,98 @@ from collections import Counter
 
 ssl._create_default_https_context = ssl._create_unverified_context
 
-# ✅ CSS（ダークモード対応）
-custom_table_css = """
+import pandas as pd
+import streamlit as st
+
+# ✅ スタイル調整（見やすい色分け＋ダークモード）
+custom_css = """
 <style>
-.custom-table {
+.loto-table {
     width: 100%;
     border-collapse: collapse;
     font-size: 16px;
-    background-color: var(--background-color);
-    color: var(--text-color);
+    background-color: #222;
+    color: yellow;
 }
-.custom-table th, .custom-table td {
-    border: 1px solid #ccc;
-    padding: 8px 10px;
+.loto-table th {
+    background-color: #dde6f0;
+    color: #000;
+    font-weight: bold;
     text-align: left;
-    background-color: var(--background-color);
-    color: var(--text-color);
-}
-.custom-table th {
-    background-color: #444;
-    font-weight: bold;
-    width: 25%;
-}
-</style>
-"""
-st.markdown(custom_table_css, unsafe_allow_html=True)
-
-# ✅ テーブル出力用CSS
-wide_table_css = """
-<style>
-.wide-table {
-    width: max-content;
-    border-collapse: collapse;
-    font-size: 14px;
-}
-.wide-table th, .wide-table td {
-    border: 1px solid #ccc;
-    padding: 8px;
-    text-align: center;
+    padding: 8px 12px;
     white-space: nowrap;
+    border: 1px solid #999;
 }
-.wide-table thead {
-    background-color: #f2f2f2;
+.loto-table td {
+    border: 1px solid #999;
+    padding: 8px 12px;
+    text-align: left;
+    color: yellow;
+}
+.loto-table td.center {
+    text-align: center;
+}
+.yellow-bold {
     font-weight: bold;
+    color: yellow;
 }
 </style>
 """
-st.markdown(wide_table_css, unsafe_allow_html=True)
-
-def wide_table(df):
-    return df.to_html(index=False, escape=False, classes="wide-table")
-
-def render_scrollable_table(df):
-    st.markdown("<div style='overflow-x:auto;'>", unsafe_allow_html=True)
-    st.markdown(wide_table(df), unsafe_allow_html=True)
-    st.markdown("</div>", unsafe_allow_html=True)
+st.markdown(custom_css, unsafe_allow_html=True)
 
 # ✅ データ読み込み
 url = "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/loto6_50.csv"
-df = pd.read_csv(url, encoding="utf-8")
+df = pd.read_csv(url)
 df.columns = df.columns.str.strip()
 df["抽せん日"] = pd.to_datetime(df["抽せん日"], errors="coerce")
-df = df[df["抽せん日"].notna()].copy().sort_values("抽せん日").reset_index(drop=True)
+df = df[df["抽せん日"].notna()].copy()
 
-# ✅ 数値化と欠損除去（該当なしや不正データ対策）
+# 不正データ対策
 for i in range(1, 7):
     df[f"第{i}数字"] = pd.to_numeric(df[f"第{i}数字"], errors="coerce")
+df["ボーナス数字"] = pd.to_numeric(df["ボーナス数字"], errors="coerce")
+df = df.dropna(subset=[f"第{i}数字" for i in range(1, 7)])
 
-# NaNを含む行（"該当なし"など不正データ）を削除
-df = df.dropna(subset=[f"第{i}数字" for i in range(1, 7)]).copy()
-
-int_cols = ['回号', '第1数字', '第2数字', '第3数字', '第4数字', '第5数字', '第6数字', 'ボーナス数字']
-yen_cols = ['1等賞金', '2等賞金', '3等賞金', '4等賞金', '5等賞金', 'キャリーオーバー']
-for col in int_cols:
-    df[col] = df[col].astype(str).str.strip()
-for col in yen_cols:
-    df[col] = df[col].astype(str).str.replace(",", "").str.strip()
-
-# ✅ ヘルパー関数
-
-def format_yen(x):
-    try:
-        x_str = str(x).strip()
-        if x_str in ["", "nan", "none", "—"]:
-            return "—"
-        if x_str == "該当なし":
-            return "該当なし"
-        if x_str in ["0", "0.0"]:
-            return "0円"
-        return f"{int(float(x_str)):,}円"
-    except:
-        return "—"
-
-def format_count(x):
-    try:
-        x_str = str(x).strip()
-        if x_str in ["", "nan", "none", "—"]:
-            return "—"
-        if x_str == "該当なし":
-            return "該当なし"
-        if x_str in ["0", "0.0"]:
-            return "0口"
-        return f"{int(float(x_str)):,}口"
-    except:
-        return "—"
-
-# ✅ 最新当選番号表示
+# 最新データ
 latest = df.iloc[-1]
-main_numbers = ' '.join([f"<b style='font-size:16px'>{latest[f'第{i}数字']}</b>" for i in range(1, 7)])
-bonus_number = f"<b style='font-size:14px; color:red'>({latest['ボーナス数字']:02})</b>"
 
-st.title("ロト6 AI予想サイト")
-st.header("① 最新の当選番号")
+# 整形関数
+def format_count(val):
+    try:
+        if pd.isna(val) or val in ["該当なし", "—", ""]:
+            return "該当なし"
+        return f"{int(float(val)):,}口"
+    except:
+        return "該当なし"
+
+def format_yen(val):
+    try:
+        if pd.isna(val) or val in ["該当なし", "—", ""]:
+            return "該当なし"
+        return f"{int(float(str(val).replace(',', '').replace('円', ''))):,}円"
+    except:
+        return "該当なし"
+
+# 表示構成
+main_numbers = ''.join([f"<span class='yellow-bold'>{int(latest[f'第{i}数字']):02}</span>　" for i in range(1, 7)])
+bonus_number = f"<span class='yellow-bold'>（{int(latest['ボーナス数字']):02}）</span>"
+
+st.markdown("## 💡 最新の当選結果（ロト6）", unsafe_allow_html=True)
+
 st.markdown(f"""
-<table class='custom-table'>
-<tr><th>回別</th><td>第{latest['回号']}回</td></tr>
-<tr><th>抽せん日</th><td>{latest['抽せん日'].strftime('%Y年%m月%d日')}</td></tr>
-<tr><th>本数字</th><td>{main_numbers}</td></tr>
-<tr><th>ボーナス数字</th><td>{bonus_number}</td></tr>
-<tr><th>1等</th><td>{format_count(latest['1等口数'])} ／ {format_yen(latest['1等賞金'])}</td></tr>
-<tr><th>2等</th><td>{format_count(latest['2等口数'])} ／ {format_yen(latest['2等賞金'])}</td></tr>
-<tr><th>3等</th><td>{format_count(latest['3等口数'])} ／ {format_yen(latest['3等賞金'])}</td></tr>
-<tr><th>4等</th><td>{format_count(latest['4等口数'])} ／ {format_yen(latest['4等賞金'])}</td></tr>
-<tr><th>5等</th><td>{format_count(latest['5等口数'])} ／ {format_yen(latest['5等賞金'])}</td></tr>
-<tr><th>キャリーオーバー</th><td>{format_yen(latest['キャリーオーバー'])}</td></tr>
+<table class='loto-table'>
+<tr><th>回別</th><td colspan="2">第{latest['回号']}回</td></tr>
+<tr><th>抽せん日</th><td colspan="2">{latest['抽せん日'].strftime('%Y年%m月%d日')}</td></tr>
+<tr><th>本数字</th><td colspan="2">{main_numbers}</td></tr>
+<tr><th>ボーナス数字</th><td colspan="2">{bonus_number}</td></tr>
+<tr><th>1等</th><td class="center">{format_count(latest['1等口数'])}</td><td class="center">{format_yen(latest['1等賞金'])}</td></tr>
+<tr><th>2等</th><td class="center">{format_count(latest['2等口数'])}</td><td class="center">{format_yen(latest['2等賞金'])}</td></tr>
+<tr><th>3等</th><td class="center">{format_count(latest['3等口数'])}</td><td class="center">{format_yen(latest['3等賞金'])}</td></tr>
+<tr><th>4等</th><td class="center">{format_count(latest['4等口数'])}</td><td class="center">{format_yen(latest['4等賞金'])}</td></tr>
+<tr><th>5等</th><td class="center">{format_count(latest['5等口数'])}</td><td class="center">{format_yen(latest['5等賞金'])}</td></tr>
+<tr><th>キャリーオーバー</th><td colspan="2" class="center">{format_yen(latest['キャリーオーバー'])}</td></tr>
 </table>
 """, unsafe_allow_html=True)
-
-
 # ✅ ② ABC分類
 st.header("② 直近24回の当選番号（ABC分類）")
 
