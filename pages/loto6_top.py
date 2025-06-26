@@ -145,8 +145,21 @@ st.markdown(f"""
 
 # ✅ ② ABC分類
 st.header("② 直近24回の当選番号（ABC分類）")
+
+# ✅ 念のため当選数字を再数値化（不正値対策）
+for i in range(1, 7):
+    df[f"第{i}数字"] = pd.to_numeric(df[f"第{i}数字"], errors="coerce")
+df["ボーナス数字"] = pd.to_numeric(df["ボーナス数字"], errors="coerce")
+
+# ✅ 欠損のある行は除外
+df = df.dropna(subset=[f"第{i}数字" for i in range(1, 7)])
+
+# ✅ 直近24回
 df_recent = df.sort_values("回号", ascending=False).head(24).copy()
+
+# ✅ ABC分類のための頻度集計
 digits = df_recent[[f"第{i}数字" for i in range(1, 7)]].values.flatten()
+digits = pd.to_numeric(digits, errors="coerce")
 counts = pd.Series(digits).value_counts()
 A_set = set(counts[(counts >= 3) & (counts <= 4)].index)
 B_set = set(counts[counts >= 5].index)
@@ -157,7 +170,7 @@ for _, row in df_recent.iterrows():
     abc = [ "B" if n in B_set else "A" if n in A_set else "C" for n in nums ]
     abc_rows.append({
         "回号": row["回号"],
-        **{f"第{i}数字": row[f"第{i}数字"] for i in range(1, 7)},
+        **{f"第{i}数字": int(row[f"第{i}数字"]) for i in range(1, 7)},
         "ABC構成": ",".join(abc)
     })
 abc_df = pd.DataFrame(abc_rows)
@@ -165,6 +178,7 @@ render_scrollable_table(abc_df)
 
 # ✅ ③ パターン分析
 st.header("③ パターン分析")
+
 def get_distribution(row):
     pattern = []
     for val in row:
@@ -178,6 +192,7 @@ def get_distribution(row):
         except:
             pattern.append("不明")
     return '-'.join(sorted(pattern))
+
 pattern_series = df_recent[[f"第{i}数字" for i in range(1, 7)]].apply(get_distribution, axis=1)
 pattern_counts = pattern_series.value_counts().reset_index()
 pattern_counts.columns = ['パターン', '出現回数']
@@ -187,10 +202,12 @@ render_scrollable_table(pattern_counts)
 st.header("④ 各位の出現回数TOP5")
 number_groups = {'1': [], '10': [], '20': [], '30': []}
 for i in range(1, 7):
-    number_groups['1'].extend(df_recent[f'第{i}数字'][df_recent[f'第{i}数字'].between(1, 9)].values)
-    number_groups['10'].extend(df_recent[f'第{i}数字'][df_recent[f'第{i}数字'].between(10, 19)].values)
-    number_groups['20'].extend(df_recent[f'第{i}数字'][df_recent[f'第{i}数字'].between(20, 29)].values)
-    number_groups['30'].extend(df_recent[f'第{i}数字'][df_recent[f'第{i}数字'].between(30, 43)].values)
+    col = f'第{i}数字'
+    col_values = pd.to_numeric(df_recent[col], errors="coerce")
+    number_groups['1'].extend(col_values[col_values.between(1, 9)].dropna().astype(int).tolist())
+    number_groups['10'].extend(col_values[col_values.between(10, 19)].dropna().astype(int).tolist())
+    number_groups['20'].extend(col_values[col_values.between(20, 29)].dropna().astype(int).tolist())
+    number_groups['30'].extend(col_values[col_values.between(30, 43)].dropna().astype(int).tolist())
 
 top5_df = pd.DataFrame({
     '1の位': pd.Series(number_groups['1']).value_counts().head(5).index.tolist(),
@@ -205,7 +222,8 @@ st.header("⑤ 各数字の出現回数TOP5")
 results = {'順位': ['1位', '2位', '3位', '4位', '5位']}
 for i in range(1, 7):
     col = f'第{i}数字'
-    counts = pd.Series(df_recent[col]).value_counts().sort_values(ascending=False)
+    col_values = pd.to_numeric(df_recent[col], errors="coerce").dropna().astype(int)
+    counts = col_values.value_counts().sort_values(ascending=False)
     top5 = counts.head(5)
     results[col] = [f"{n}（{c}回）" for n, c in zip(top5.index, top5.values)]
     while len(results[col]) < 5:
@@ -215,7 +233,9 @@ render_scrollable_table(top5_df)
 
 # ✅ ⑥ A・B・C数字分類
 st.header("⑥ A・B・C数字（出現頻度分類）")
-count_series = pd.Series(df_recent[[f'第{i}数字' for i in range(1, 7)]].values.flatten()).value_counts()
+count_series = pd.Series(
+    df_recent[[f'第{i}数字' for i in range(1, 7)]].values.flatten()
+).dropna().astype(int).value_counts()
 A_numbers = count_series[(count_series >= 3) & (count_series <= 4)].index.tolist()
 B_numbers = count_series[count_series >= 5].index.tolist()
 C_numbers = sorted(list(set(range(1, 44)) - set(A_numbers) - set(B_numbers)))
