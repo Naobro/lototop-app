@@ -8,15 +8,9 @@ from auth import check_password
 st.set_page_config(layout="centered")
 check_password()
 
-import streamlit as st
-from auth import check_password # type: ignore
-
-st.set_page_config(layout="centered")  # ✅ 最初にページ設定
-check_password()  # ✅ 認証（失敗ならここで止まる）
 import ssl
 import pandas as pd
 import random
-
 # 表に左寄せスタイルを適用する関数
 def style_table(df):
     return df.style.set_table_styles(
