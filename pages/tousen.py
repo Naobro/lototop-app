@@ -47,25 +47,33 @@ def extract_bonus(text):
     return re.findall(r'\(\s*(\d{1,2})\s*\)', text)
 
 def extract_prize_info(text, grade):
-    # 「セット（ストレート）」などに対応するため表記を置き換える
+    # ✅ 等級名の統一（ナンバーズのカッコ表記に対応）
     grade_map = {
         "セットストレート": "セット（ストレート）",
         "セットボックス": "セット（ボックス）"
     }
     actual_grade = grade_map.get(grade, grade)
 
-    # カンマ付き数字にも対応
-    pattern = fr"{actual_grade}[\s\S]*?([\d,]+)口[\s\S]*?([\d,]+)円"
+    # ✅ 該当なしパターンを事前チェック（例：1等 該当なし）
+    pattern_none = fr"{actual_grade}[^\n\d]*該当なし"
+    if re.search(pattern_none, text):
+        return "0", "0"
+
+    # ✅ カンマ対応＋柔軟な空白対応で抽出（口数／賞金）
+    pattern = fr"{actual_grade}[^\d\n]*([\d,]+)口[^\d\n]*([\d,]+)円"
     match = re.search(pattern, text)
 
-    # ✅ ミニ専用の補正（改行・タブ等のズレ対応）
+    # ✅ ミニロト用の特例処理（ズレ対策）
     if actual_grade == "ミニ" and (not match or match.group(1) == "0"):
         match = re.search(r"ミニ[ \t]*([\d,]+)口[ \t\n]*([\d,]+)円", text)
 
+    # ✅ 通常パターンでマッチした場合
     if match:
         count, prize = match.groups()
         return count.replace(",", ""), prize.replace(",", "")
-    return ("0", "0")
+
+    # ✅ 最終手段：マッチしなければ「0口／0円」として返す
+    return "0", "0"
 def extract_carry(text):
     match = re.search(r'キャリーオーバー\s*([\d,]+)円', text)
     return match.group(1).replace(",", "") if match else "0"
