@@ -85,15 +85,68 @@ def show_latest_results(csv_path):
 # 最新結果と df_recent 定義
 show_latest_results(CSV_PATH)
 
-# ② 直近24回の当選番号（数字のみ）
-st.header("② 直近24回の当選番号")
-try:
-    df_disp = df_recent.copy()
-    df_disp["抽せん日"] = pd.to_datetime(df_disp["抽せん日"], errors="coerce").dt.strftime("%Y-%m-%d")
-    st.dataframe(df_disp[["回号", "抽せん日", "第1数字", "第2数字", "第3数字", "第4数字"]], use_container_width=True)
-except Exception as e:
-    st.error(f"直近24回の表示に失敗しました: {e}")
+import pandas as pd
+import streamlit as st
 
+st.header("② 直近24回の当選番号（ABC分類付き）")
+
+def generate_recent_numbers4_table(csv_path):
+    try:
+        # CSV読み込みと整形
+        df = pd.read_csv(csv_path)
+        df = df.dropna(subset=["第1数字", "第2数字", "第3数字", "第4数字"])
+        df[["第1数字", "第2数字", "第3数字", "第4数字"]] = df[["第1数字", "第2数字", "第3数字", "第4数字"]].astype(int)
+        df["抽せん日"] = pd.to_datetime(df["抽せん日"], errors="coerce").dt.strftime("%Y-%m-%d")
+
+        # 直近24回に絞る
+        df_recent = df.sort_values("回号", ascending=False).head(24).reset_index(drop=True)
+
+        # ABC分類マップ作成（各桁ごと）
+        def get_abc_rank_map(series):
+            counts = series.value_counts().sort_values(ascending=False)
+            digits = counts.index.tolist()
+            abc_map = {}
+            for i, num in enumerate(digits[:10]):
+                if i < 4:
+                    abc_map[num] = "A"
+                elif i < 7:
+                    abc_map[num] = "B"
+                else:
+                    abc_map[num] = "C"
+            return abc_map
+
+        abc_map_1 = get_abc_rank_map(df_recent["第1数字"])
+        abc_map_2 = get_abc_rank_map(df_recent["第2数字"])
+        abc_map_3 = get_abc_rank_map(df_recent["第3数字"])
+        abc_map_4 = get_abc_rank_map(df_recent["第4数字"])
+
+        # ABC分類列（Aだけ赤文字で強調）
+        def abc_with_color(d1, d2, d3, d4):
+            def colorize(x):
+                return f'<span style="color:red;font-weight:bold">{x}</span>' if x == "A" else x
+            a1 = colorize(abc_map_1.get(d1, "-"))
+            a2 = colorize(abc_map_2.get(d2, "-"))
+            a3 = colorize(abc_map_3.get(d3, "-"))
+            a4 = colorize(abc_map_4.get(d4, "-"))
+            return f"{a1},{a2},{a3},{a4}"
+
+        df_recent["ABC分類"] = df_recent.apply(
+            lambda row: abc_with_color(
+                row["第1数字"], row["第2数字"], row["第3数字"], row["第4数字"]
+            ),
+            axis=1
+        )
+
+        # 表示テーブル（HTML形式）
+        df_display = df_recent[["回号", "抽せん日", "第1数字", "第2数字", "第3数字", "第4数字", "ABC分類"]]
+        st.write(df_display.to_html(escape=False, index=False), unsafe_allow_html=True)
+
+    except Exception as e:
+        st.error(f"エラーが発生しました: {e}")
+
+# 実行
+numbers4_csv_path = "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/numbers4_24.csv"
+generate_recent_numbers4_table(numbers4_csv_path)
 # ③ 各桁の出現ランキング
 st.header("③ 各桁の出現ランキング")
 try:
