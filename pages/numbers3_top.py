@@ -12,6 +12,7 @@ import ssl
 import pandas as pd
 import random
 from collections import Counter
+import html  # ← これを最上部の import 群に追加
 
 # GitHub上のCSVパス
 CSV_PATH = "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/numbers3_24.csv"
