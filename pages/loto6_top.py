@@ -73,22 +73,30 @@ bonus_number = f"<b style='font-size:14px; color:red'>({latest['ボーナス数�
 st.title("ロト6 AI予想サイト")
 # ヘルパー関数
 def format_yen(x):
-    if pd.isna(x):
+    if pd.isna(x) or str(x).strip().lower() in ["—", "nan"]:
         return "—"
-    if str(x).strip() in ["0", "0.0"]:
-        return "0円"
-    if str(x).strip() == "該当なし":
+    x_str = str(x).strip()
+    if x_str == "該当なし":
         return "該当なし"
-    return f"{int(float(x)):,}円"
+    if x_str in ["0", "0.0"]:
+        return "0円"
+    try:
+        return f"{int(float(x_str)):,}円"
+    except ValueError:
+        return str(x_str)
 
 def format_count(x):
-    if pd.isna(x):
+    if pd.isna(x) or str(x).strip().lower() in ["—", "nan"]:
         return "—"
-    if str(x).strip() in ["0", "0.0"]:
-        return "0口"
-    if str(x).strip() == "該当なし":
+    x_str = str(x).strip()
+    if x_str == "該当なし":
         return "該当なし"
-    return f"{int(float(x)):,}口"
+    if x_str in ["0", "0.0"]:
+        return "0口"
+    try:
+        return f"{int(float(x_str)):,}口"
+    except ValueError:
+        return str(x_str)
 
 # ① 最新の当選番号
 st.header("① 最新の当選番号")
