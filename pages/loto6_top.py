@@ -160,14 +160,17 @@ render_scrollable_table(abc_df)
 st.header("③ パターン分析")
 def get_distribution(row):
     pattern = []
-    for n in sorted(row):
-        if 1 <= n <= 9: pattern.append("1")
-        elif 10 <= n <= 19: pattern.append("10")
-        elif 20 <= n <= 29: pattern.append("20")
-        elif 30 <= n <= 39: pattern.append("30")
-        elif 40 <= n <= 43: pattern.append("40")
-    return '-'.join(pattern)
-
+    for val in row:
+        try:
+            num = int(val)
+            if 1 <= num <= 9: pattern.append("1")
+            elif 10 <= num <= 19: pattern.append("10")
+            elif 20 <= num <= 29: pattern.append("20")
+            elif 30 <= num <= 39: pattern.append("30")
+            elif 40 <= num <= 43: pattern.append("40")
+        except:
+            pattern.append("不明")
+    return '-'.join(sorted(pattern))
 pattern_series = df_recent[[f"第{i}数字" for i in range(1, 7)]].apply(get_distribution, axis=1)
 pattern_counts = pattern_series.value_counts().reset_index()
 pattern_counts.columns = ['パターン', '出現回数']
