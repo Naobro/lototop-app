@@ -94,7 +94,8 @@ wide_table_css = """
     border: 1px solid #ccc;
     padding: 12px;
     text-align: center;
-    white-space: nowrap;
+    white-space: normal;  /* ← 折り返しを許可 */
+    word-break: break-word;
 }
 .wide-table thead {
     background-color: #f2f2f2;
@@ -102,7 +103,6 @@ wide_table_css = """
 }
 </style>
 """
-
 def wide_table(df):
     return df.to_html(index=False, escape=False, classes="wide-table")
 
