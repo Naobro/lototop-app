@@ -57,11 +57,9 @@ df = df[df["抽せん日"].notna()].copy().sort_values("抽せん日").reset_ind
 int_cols = ['回号', '第1数字', '第2数字', '第3数字', '第4数字', '第5数字', '第6数字', 'ボーナス数字']
 yen_cols = ['1等賞金', '2等賞金', '3等賞金', '4等賞金', '5等賞金', 'キャリーオーバー']
 
-# int_cols: 数値変換せず、文字列として保持（該当なしを潰さない）
 for col in int_cols:
     df[col] = df[col].astype(str).str.strip()
 
-# yen_cols: カンマ除去＋文字列として保持（該当なしを潰さない）
 for col in yen_cols:
     df[col] = df[col].astype(str).str.replace(",", "").str.strip()
 
@@ -74,20 +72,28 @@ st.title("ロト6 AI予想サイト")
 # ヘルパー関数
 def format_yen(x):
     try:
-        x_str = str(x).strip()
-        if x_str in ["", "—", "nan", "NaN"]:
+        if pd.isna(x) or str(x).strip() == "":
             return "—"
+        x_str = str(x).strip()
+        if x_str == "該当なし":
+            return "該当なし"
+        if x_str in ["0", "0.0"]:
+            return "0円"
         return f"{int(float(x_str)):,}円"
-    except Exception:
+    except:
         return "—"
 
 def format_count(x):
     try:
-        x_str = str(x).strip()
-        if x_str in ["", "—", "nan", "NaN"]:
+        if pd.isna(x) or str(x).strip() == "":
             return "—"
+        x_str = str(x).strip()
+        if x_str == "該当なし":
+            return "該当なし"
+        if x_str in ["0", "0.0"]:
+            return "0口"
         return f"{int(float(x_str)):,}口"
-    except Exception:
+    except:
         return "—"
 
 # ① 最新の当選番号
@@ -105,21 +111,25 @@ def format_count(x):
 
 st.markdown(f"""
 <style>
-.custom-table {{
+.custom-table {
     width: 100%;
     border-collapse: collapse;
     font-size: 16px;
-}}
-.custom-table th, .custom-table td {{
+    background-color: #fff !important;
+    color: #000 !important;
+}
+.custom-table th, .custom-table td {
     border: 1px solid #ccc;
     padding: 8px 10px;
     text-align: left;
-    background-color: #f9f9f9;
-}}
-.custom-table th {{
-    background-color: #eef2f7;
+    background-color: #fff !important;
+    color: #000 !important;
+}
+.custom-table th {
+    background-color: #eef2f7 !important;
+    font-weight: bold;
     width: 25%;
-}}
+}
 </style>
 
 <table class='custom-table'>
