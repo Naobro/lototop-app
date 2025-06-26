@@ -57,11 +57,13 @@ df = df[df["抽せん日"].notna()].copy().sort_values("抽せん日").reset_ind
 int_cols = ['回号', '第1数字', '第2数字', '第3数字', '第4数字', '第5数字', '第6数字', 'ボーナス数字']
 yen_cols = ['1等賞金', '2等賞金', '3等賞金', '4等賞金', '5等賞金', 'キャリーオーバー']
 
+# int_cols: 数値変換せず、文字列として保持（該当なしを潰さない）
 for col in int_cols:
-    df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0).astype(int)
+    df[col] = df[col].astype(str).str.strip()
+
+# yen_cols: カンマ除去＋文字列として保持（該当なしを潰さない）
 for col in yen_cols:
-    df[col] = df[col].astype(str).str.replace(",", "").replace("該当なし", "0")
-    df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0).astype(int)
+    df[col] = df[col].astype(str).str.replace(",", "").str.strip()
 
 # ✅ 最新当選結果
 latest = df.iloc[-1]
@@ -71,10 +73,22 @@ bonus_number = f"<b style='font-size:14px; color:red'>({latest['ボーナス数�
 st.title("ロト6 AI予想サイト")
 # ヘルパー関数
 def format_yen(x):
-    return f"{int(x):,}円" if pd.notna(x) else "—"
+    if pd.isna(x):
+        return "—"
+    if str(x).strip() in ["0", "0.0"]:
+        return "0円"
+    if str(x).strip() == "該当なし":
+        return "該当なし"
+    return f"{int(float(x)):,}円"
 
 def format_count(x):
-    return f"{int(x):,}口" if pd.notna(x) else "—"
+    if pd.isna(x):
+        return "—"
+    if str(x).strip() in ["0", "0.0"]:
+        return "0口"
+    if str(x).strip() == "該当なし":
+        return "該当なし"
+    return f"{int(float(x)):,}口"
 
 # ① 最新の当選番号
 st.header("① 最新の当選番号")
