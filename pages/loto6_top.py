@@ -233,3 +233,98 @@ for label, pattern in pattern_list:
         predictions.append(unique)
     pred_df = pd.DataFrame(predictions, columns=[f"第{i}数字" for i in range(1, 7)])
     render_scrollable_table(pred_df)
+# ✅ ⑨ セレクト予想ルーレット
+st.header("⑨ セレクト予想ルーレット")
+
+# --- 数字グループ定義 ---
+group_dict = {
+    "1": list(range(1, 10)),
+    "10": list(range(10, 20)),
+    "20": list(range(20, 30)),
+    "30": list(range(30, 44)),
+}
+
+# --- UI：選択条件 ---
+st.markdown("#### 🔢 候補にする数字群を選択")
+use_position_groups = st.checkbox("各位の出現回数TOP5（1の位〜30の位）", value=True)
+use_position_top5 = st.checkbox("各第n位のTOP5（第1〜第6数字ごと）", value=True)
+use_A = st.checkbox("A数字", value=True)
+use_B = st.checkbox("B数字", value=True)
+use_C = st.checkbox("C数字")
+use_last = st.checkbox("前回数字を除外", value=True)
+
+# --- UI：任意数字追加 ---
+select_manual = st.multiselect("任意で追加したい数字 (1-43)", list(range(1, 44)))
+
+# --- UI：パターン入力 ---
+pattern_input = st.text_input("パターンを入力 (例: 1-10-20-20-30-30)", value="1-10-20-20-30-30")
+pattern = pattern_input.strip().split("-")
+
+# --- 除外対象（前回数字） ---
+last_numbers = latest[[f"第{i}数字" for i in range(1, 7)]].tolist() if use_last else []
+
+# --- 候補数字の生成 ---
+candidate_set = set(select_manual)
+
+# 各位の出現回数TOP5（1の位〜30の位）
+if use_position_groups:
+    number_groups = {'1': [], '10': [], '20': [], '30': []}
+    for i in range(1, 7):
+        col = f'第{i}数字'
+        col_values = pd.to_numeric(df_recent[col], errors="coerce")
+        number_groups['1'].extend(col_values[col_values.between(1, 9)].dropna().astype(int).tolist())
+        number_groups['10'].extend(col_values[col_values.between(10, 19)].dropna().astype(int).tolist())
+        number_groups['20'].extend(col_values[col_values.between(20, 29)].dropna().astype(int).tolist())
+        number_groups['30'].extend(col_values[col_values.between(30, 43)].dropna().astype(int).tolist())
+    for key in number_groups:
+        top5 = pd.Series(number_groups[key]).value_counts().head(5).index.tolist()
+        candidate_set.update(top5)
+
+# 各第n位のTOP5（第1〜6数字ごと）
+if use_position_top5:
+    seen = set()
+    for i in range(1, 7):
+        col = f'第{i}数字'
+        col_values = pd.to_numeric(df_recent[col], errors="coerce").dropna().astype(int)
+        counts = col_values.value_counts().sort_values(ascending=False)
+        for num in counts.index:
+            if num not in seen:
+                candidate_set.add(num)
+                seen.add(num)
+            if len(seen) >= 5:
+                break
+
+# ABC分類
+if use_A:
+    candidate_set.update(A_set)
+if use_B:
+    candidate_set.update(B_set)
+if use_C:
+    C_numbers = sorted(list(set(range(1, 44)) - A_set - B_set))
+    candidate_set.update(C_numbers)
+
+# 最終候補から前回数字を除外
+candidate_set = sorted(set(candidate_set) - set(last_numbers))
+
+# --- パターンに沿って数字を選出 ---
+def generate_select_prediction():
+    prediction = []
+    used = set()
+    for group_key in pattern:
+        group_nums = [n for n in group_dict.get(group_key, []) if n in candidate_set and n not in used]
+        if not group_nums:
+            group_nums = [n for n in group_dict.get(group_key, []) if n not in used]
+        if not group_nums:
+            continue
+        chosen = random.choice(group_nums)
+        prediction.append(chosen)
+        used.add(chosen)
+    return sorted(prediction) if len(prediction) == 6 else []
+
+# --- ボタンで実行 ---
+if st.button("🎯 セレクト予想を出す"):
+    result = generate_select_prediction()
+    if result:
+        st.success(f"🎉 セレクト予想: {result}")
+    else:
+        st.error("条件に合致する数字が不足しています。候補を増やしてください。")
