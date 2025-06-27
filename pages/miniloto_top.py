@@ -62,16 +62,20 @@ st.header("① 最新の当選番号")
 # ✅ 最新回のデータを取得
 df_latest = df.iloc[-1]
 
-# ✅ 金額フォーマット
-def format_yen(val):
-    if pd.isnull(val):
-        return "-"
+# ✅ フォーマット関数（口数＋金額）
+def format_count(val):
     try:
-        return f"{int(str(val).replace(',', '').replace('円','').strip()):,}円"
+        return f"{int(float(val)):,}口"
     except:
-        return str(val)
+        return "-"
 
-# ✅ CSS（すでに記述済みなら省略可）
+def format_yen(val):
+    try:
+        return f"{int(float(val)):,}円"
+    except:
+        return "-"
+
+# ✅ CSS（上書きOK・色とレイアウト調整）
 st.markdown("""
 <style>
 .loto-table {
@@ -94,27 +98,30 @@ st.markdown("""
     background-color: #fff;
     color: #000;
     padding: 8px 10px;
-    text-align: center;
+    text-align: right;
     border: 1px solid #ccc;
+}
+.loto-table td.left {
+    text-align: left;
 }
 </style>
 """, unsafe_allow_html=True)
 
-# ✅ 本数字をセルで分割
+# ✅ 本数字とボーナス数字（セル分割）
 main_number_cells = ''.join([f"<td>{int(df_latest[f'第{i}数字'])}</td>" for i in range(1, 6)])
 bonus_cell = f"<td colspan='5' style='color:red; font-weight:bold;'>{int(df_latest['ボーナス数字'])}</td>"
 
-# ✅ HTML表示（本数字・ボーナス）
+# ✅ HTML表示
 st.markdown(f"""
 <table class='loto-table'>
-<tr><th>回号</th><td colspan='5'>第{df_latest['回号']}回</td></tr>
-<tr><th>抽せん日</th><td colspan='5'>{df_latest['抽せん日'].strftime('%Y年%m月%d日')}</td></tr>
+<tr><th>回号</th><td colspan='5' class='left'>第{df_latest['回号']}回</td></tr>
+<tr><th>抽せん日</th><td colspan='5' class='left'>{df_latest['抽せん日'].strftime('%Y年%m月%d日')}</td></tr>
 <tr><th>本数字</th>{main_number_cells}</tr>
 <tr><th>ボーナス数字</th>{bonus_cell}</tr>
-<tr><th>1等</th><td colspan='2'>{df_latest['1等口数']}口</td><td colspan='3'>{format_yen(df_latest['1等賞金'])}</td></tr>
-<tr><th>2等</th><td colspan='2'>{df_latest['2等口数']}口</td><td colspan='3'>{format_yen(df_latest['2等賞金'])}</td></tr>
-<tr><th>3等</th><td colspan='2'>{df_latest['3等口数']}口</td><td colspan='3'>{format_yen(df_latest['3等賞金'])}</td></tr>
-<tr><th>4等</th><td colspan='2'>{df_latest['4等口数']}口</td><td colspan='3'>{format_yen(df_latest['4等賞金'])}</td></tr>
+<tr><th>1等</th><td colspan='2'>{format_count(df_latest['1等口数'])}</td><td colspan='3'>{format_yen(df_latest['1等賞金'])}</td></tr>
+<tr><th>2等</th><td colspan='2'>{format_count(df_latest['2等口数'])}</td><td colspan='3'>{format_yen(df_latest['2等賞金'])}</td></tr>
+<tr><th>3等</th><td colspan='2'>{format_count(df_latest['3等口数'])}</td><td colspan='3'>{format_yen(df_latest['3等賞金'])}</td></tr>
+<tr><th>4等</th><td colspan='2'>{format_count(df_latest['4等口数'])}</td><td colspan='3'>{format_yen(df_latest['4等賞金'])}</td></tr>
 </table>
 """, unsafe_allow_html=True)
 
