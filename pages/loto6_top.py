@@ -313,9 +313,7 @@ def generate_select_prediction():
     for group_key in pattern:
         group_nums = [n for n in group_dict.get(group_key, []) if n in candidate_set and n not in used]
         if not group_nums:
-            group_nums = [n for n in group_dict.get(group_key, []) if n not in used]
-        if not group_nums:
-            continue
+            return []  # 候補が足りないため予想失敗とする
         chosen = random.choice(group_nums)
         prediction.append(chosen)
         used.add(chosen)
