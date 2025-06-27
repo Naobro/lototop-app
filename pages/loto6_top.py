@@ -14,33 +14,25 @@ import random
 from collections import Counter
 ssl._create_default_https_context = ssl._create_unverified_context
 
-# ✅ CSS（中央・右揃えのスタイル付与）
 st.markdown("""
 <style>
-.loto-table {
+table {
     width: 100%;
+    font-size: 14px;
     border-collapse: collapse;
-    font-size: 16px;
-    background-color: #fff;
-    color: #000;
+    margin: auto;
 }
-.loto-table th {
-    background-color: #e0ebf7;
-    color: red;
-    font-weight: bold;
-    padding: 8px 10px;
+thead th {
     text-align: center;
-    border: 1px solid #ccc;
+    padding: 6px;
+    background-color: #222;
+    color: white;
 }
-.loto-table td {
-    padding: 8px 10px;
-    border: 1px solid #ccc;
-}
-.loto-table td.center {
+tbody td {
     text-align: center;
-}
-.loto-table td.right {
-    text-align: right;
+    padding: 4px;
+    color: white;
+    background-color: #111;
 }
 </style>
 """, unsafe_allow_html=True)
