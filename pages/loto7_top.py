@@ -15,27 +15,33 @@ import random
 ssl._create_default_https_context = ssl._create_unverified_context
 
 # CSSスタイル（テーブルを広げて見やすくする）
-css_style = """
+st.markdown("""
 <style>
-table {
+.loto-table {
     width: 100%;
     border-collapse: collapse;
-    text-align: center;
     font-size: 16px;
-    table-layout: auto;
+    background-color: #fff;
+    color: #000;
 }
-th, td {
-    border: 1px solid #ccc;
-    padding: 12px 16px;
-    white-space: nowrap;
-}
-thead {
-    background-color: #f2f2f2;
+.loto-table th {
+    background-color: #e0ebf7;
+    color: red;
     font-weight: bold;
+    padding: 8px 10px;
+    text-align: left;
+    white-space: nowrap;
+    border: 1px solid #ccc;
+}
+.loto-table td {
+    background-color: #fff;
+    color: #000;
+    padding: 8px 10px;
+    text-align: center;
+    border: 1px solid #ccc;
 }
 </style>
-"""
-st.markdown(css_style, unsafe_allow_html=True)
+""", unsafe_allow_html=True)
 # 表示用関数
 def style_table(df):
     return df.to_html(index=False, escape=False)
@@ -51,38 +57,48 @@ df = load_data()
 latest = df.iloc[-1]
 
 # 最新の当選番号（①）
+# タイトル
 st.title("ロト7 AI予想サイト")
 st.header(" 最新の当選番号")
 
+# 最新データ取得
 latest = df.iloc[-1]
-main_numbers = ' '.join(str(latest[f"第{i}数字"]) for i in range(1, 8))
-bonus_numbers = f"{latest['BONUS数字1']}, {latest['BONUS数字2']}"
 
-# 金額整形
+# 金額整形関数
 def format_yen(val):
     if pd.notnull(val):
         try:
-            return f"{int(str(val).replace(',', '').strip()):,}円"
+            return f"{int(str(val).replace(',', '').replace('円','').strip()):,}円"
         except ValueError:
             return str(val)
     else:
         return "-"
 
+# ✅ 本数字・ボーナス数字をセルで分割
+main_number_cells = ''.join([f"<td>{int(latest[f'第{i}数字'])}</td>" for i in range(1, 8)])
+bonus_cells = ''.join([
+    f"<td style='color:red; font-weight:bold;'>{int(latest['BONUS数字1'])}</td>",
+    f"<td style='color:red; font-weight:bold;'>{int(latest['BONUS数字2'])}</td>"
+])
+
+
+
+# ✅ HTMLテーブル表示
 st.markdown(f"""
-<table style='width: 100%; border-collapse: collapse; text-align: right;'>
-<tr><th>回号</th><td style="font-weight: bold;">第{latest['回号']}回</td><th>抽選日</th><td>{latest['抽せん日'].strftime('%Y-%m-%d')}</td></tr>
-<tr><th>本数字</th><td colspan='3' style='color:#e74c3c; font-weight: bold; font-size: 18px;'>{main_numbers}</td></tr>
-<tr><th>ボーナス数字</th><td colspan='3' style='color:#e74c3c; font-weight: bold;'>({bonus_numbers})</td></tr>
-<tr><th>1等</th><td>{latest['1等口数']}口</td><td colspan='2' style='text-align: right; font-weight: bold;'>{format_yen(latest['1等賞金'])}</td></tr>
-<tr><th>2等</th><td>{latest['2等口数']}口</td><td colspan='2' style='text-align: right; font-weight: bold;'>{format_yen(latest['2等賞金'])}</td></tr>
-<tr><th>3等</th><td>{latest['3等口数']}口</td><td colspan='2' style='text-align: right; font-weight: bold;'>{format_yen(latest['3等賞金'])}</td></tr>
-<tr><th>4等</th><td>{latest['4等口数']}口</td><td colspan='2' style='text-align: right; font-weight: bold;'>{format_yen(latest['4等賞金'])}</td></tr>
-<tr><th>5等</th><td>{latest['5等口数']}口</td><td colspan='2' style='text-align: right; font-weight: bold;'>{format_yen(latest['5等賞金'])}</td></tr>
-<tr><th>6等</th><td>{latest['6等口数']}口</td><td colspan='2' style='text-align: right; font-weight: bold;'>{format_yen(latest['6等賞金'])}</td></tr>
-<tr><th>キャリーオーバー</th><td colspan='3' style='text-align: right; font-weight: bold;'>{format_yen(latest['キャリーオーバー'])}</td></tr>
+<table class='loto-table'>
+<tr><th>回別</th><td colspan='7'>第{latest['回号']}回</td></tr>
+<tr><th>抽せん日</th><td colspan='7'>{latest['抽せん日'].strftime('%Y年%m月%d日')}</td></tr>
+<tr><th>本数字</th>{main_number_cells}</tr>
+<tr><th>ボーナス数字</th>{bonus_cells}</tr>
+<tr><th>1等</th><td colspan='3'>{latest['1等口数']}口</td><td colspan='4'>{format_yen(latest['1等賞金'])}</td></tr>
+<tr><th>2等</th><td colspan='3'>{latest['2等口数']}口</td><td colspan='4'>{format_yen(latest['2等賞金'])}</td></tr>
+<tr><th>3等</th><td colspan='3'>{latest['3等口数']}口</td><td colspan='4'>{format_yen(latest['3等賞金'])}</td></tr>
+<tr><th>4等</th><td colspan='3'>{latest['4等口数']}口</td><td colspan='4'>{format_yen(latest['4等賞金'])}</td></tr>
+<tr><th>5等</th><td colspan='3'>{latest['5等口数']}口</td><td colspan='4'>{format_yen(latest['5等賞金'])}</td></tr>
+<tr><th>6等</th><td colspan='3'>{latest['6等口数']}口</td><td colspan='4'>{format_yen(latest['6等賞金'])}</td></tr>
+<tr><th>キャリーオーバー</th><td colspan='7'>{format_yen(latest['キャリーオーバー'])}</td></tr>
 </table>
 """, unsafe_allow_html=True)
-
 # ② 直近24回の当選番号（ABC構成・ひっぱり・連続分析付き）
 st.header(" 直近24回の当選番号")
 
