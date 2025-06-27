@@ -61,42 +61,72 @@ latest = df.iloc[-1]
 st.title("ロト7 AI予想サイト")
 st.header(" 最新の当選番号")
 
-# 最新データ取得
+# ✅ 最新データ取得
 latest = df.iloc[-1]
 
-# 金額整形関数
-def format_yen(val):
-    if pd.notnull(val):
-        try:
-            return f"{int(str(val).replace(',', '').replace('円','').strip()):,}円"
-        except ValueError:
-            return str(val)
-    else:
+# ✅ フォーマット関数（口数＋金額）
+def format_count(val):
+    try:
+        return f"{int(float(val)):,}口"
+    except:
         return "-"
 
+def format_yen(val):
+    try:
+        return f"{int(float(val)):,}円"
+    except:
+        return "-"
+
+# ✅ CSS（共通スタイル）
+st.markdown("""
+<style>
+.loto-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 16px;
+}
+.loto-table th {
+    background-color: #e0ebf7;
+    color: red;
+    font-weight: bold;
+    padding: 8px 10px;
+    text-align: center;
+    border: 1px solid #ccc;
+}
+.loto-table td {
+    padding: 8px 10px;
+    border: 1px solid #ccc;
+}
+.loto-table td.center {
+    text-align: center;
+}
+.loto-table td.right {
+    text-align: right;
+}
+</style>
+""", unsafe_allow_html=True)
+
 # ✅ 本数字・ボーナス数字をセルで分割
-main_number_cells = ''.join([f"<td>{int(latest[f'第{i}数字'])}</td>" for i in range(1, 8)])
+main_number_cells = ''.join([f"<td class='center'>{int(latest[f'第{i}数字'])}</td>" for i in range(1, 8)])
 bonus_cells = ''.join([
-    f"<td style='color:red; font-weight:bold;'>{int(latest['BONUS数字1'])}</td>",
-    f"<td style='color:red; font-weight:bold;'>{int(latest['BONUS数字2'])}</td>"
+    f"<td class='center' style='color:red; font-weight:bold;'>{int(latest['BONUS数字1'])}</td>",
+    f"<td class='center' style='color:red; font-weight:bold;'>{int(latest['BONUS数字2'])}</td>"
 ])
 
-
-
-# ✅ HTMLテーブル表示
+# ✅ HTML表示
 st.markdown(f"""
 <table class='loto-table'>
-<tr><th>回別</th><td colspan='7'>第{latest['回号']}回</td></tr>
-<tr><th>抽せん日</th><td colspan='7'>{latest['抽せん日'].strftime('%Y年%m月%d日')}</td></tr>
+<tr><th>回号</th><td colspan='7' class='center'>第{latest['回号']}回</td></tr>
+<tr><th>抽せん日</th><td colspan='7' class='center'>{latest['抽せん日'].strftime('%Y年%m月%d日')}</td></tr>
 <tr><th>本数字</th>{main_number_cells}</tr>
 <tr><th>ボーナス数字</th>{bonus_cells}</tr>
-<tr><th>1等</th><td colspan='3'>{latest['1等口数']}口</td><td colspan='4'>{format_yen(latest['1等賞金'])}</td></tr>
-<tr><th>2等</th><td colspan='3'>{latest['2等口数']}口</td><td colspan='4'>{format_yen(latest['2等賞金'])}</td></tr>
-<tr><th>3等</th><td colspan='3'>{latest['3等口数']}口</td><td colspan='4'>{format_yen(latest['3等賞金'])}</td></tr>
-<tr><th>4等</th><td colspan='3'>{latest['4等口数']}口</td><td colspan='4'>{format_yen(latest['4等賞金'])}</td></tr>
-<tr><th>5等</th><td colspan='3'>{latest['5等口数']}口</td><td colspan='4'>{format_yen(latest['5等賞金'])}</td></tr>
-<tr><th>6等</th><td colspan='3'>{latest['6等口数']}口</td><td colspan='4'>{format_yen(latest['6等賞金'])}</td></tr>
-<tr><th>キャリーオーバー</th><td colspan='7'>{format_yen(latest['キャリーオーバー'])}</td></tr>
+<tr><th>1等</th><td colspan='3' class='right'>{format_count(latest['1等口数'])}</td><td colspan='4' class='right'>{format_yen(latest['1等賞金'])}</td></tr>
+<tr><th>2等</th><td colspan='3' class='right'>{format_count(latest['2等口数'])}</td><td colspan='4' class='right'>{format_yen(latest['2等賞金'])}</td></tr>
+<tr><th>3等</th><td colspan='3' class='right'>{format_count(latest['3等口数'])}</td><td colspan='4' class='right'>{format_yen(latest['3等賞金'])}</td></tr>
+<tr><th>4等</th><td colspan='3' class='right'>{format_count(latest['4等口数'])}</td><td colspan='4' class='right'>{format_yen(latest['4等賞金'])}</td></tr>
+<tr><th>5等</th><td colspan='3' class='right'>{format_count(latest['5等口数'])}</td><td colspan='4' class='right'>{format_yen(latest['5等賞金'])}</td></tr>
+<tr><th>6等</th><td colspan='3' class='right'>{format_count(latest['6等口数'])}</td><td colspan='4' class='right'>{format_yen(latest['6等賞金'])}</td></tr>
+<tr><th>キャリーオーバー</th><td colspan='7' class='right'>{format_yen(latest['キャリーオーバー'])}</td></tr>
 </table>
 """, unsafe_allow_html=True)
 # ② 直近24回の当選番号（ABC構成・ひっぱり・連続分析付き）

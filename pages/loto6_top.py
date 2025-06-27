@@ -18,7 +18,7 @@ ssl._create_default_https_context = ssl._create_unverified_context
 import pandas as pd
 import streamlit as st
 
-# ✅ CSS（ラベル列：薄青、ラベル文字：赤、内容：黒、背景：白）
+# ✅ CSS（中央・右揃えのスタイル付与）
 st.markdown("""
 <style>
 .loto-table {
@@ -33,16 +33,18 @@ st.markdown("""
     color: red;
     font-weight: bold;
     padding: 8px 10px;
-    text-align: left;
-    white-space: nowrap;
+    text-align: center;
     border: 1px solid #ccc;
 }
 .loto-table td {
-    background-color: #fff;
-    color: #000;
     padding: 8px 10px;
-    text-align: center;
     border: 1px solid #ccc;
+}
+.loto-table td.center {
+    text-align: center;
+}
+.loto-table td.right {
+    text-align: right;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -54,16 +56,14 @@ df.columns = df.columns.str.strip()
 df["抽せん日"] = pd.to_datetime(df["抽せん日"], errors="coerce")
 df = df[df["抽せん日"].notna()].copy()
 
-# 数値化（本数字とボーナス）
 for i in range(1, 7):
     df[f"第{i}数字"] = pd.to_numeric(df[f'第{i}数字'], errors='coerce')
 df["ボーナス数字"] = pd.to_numeric(df["ボーナス数字"], errors="coerce")
 df = df.dropna(subset=[f"第{i}数字" for i in range(1, 7)])
 
-# 最新の当選回を取得
 latest = df.iloc[-1]
 
-# フォーマッター関数
+# ✅ フォーマッター関数（カンマ・整数・右揃え対応）
 def format_count(val):
     try:
         return f"{int(float(val)):,}口"
@@ -75,36 +75,26 @@ def format_yen(val):
         return f"{int(float(str(val).replace(',', '').replace('円',''))):,}円"
     except:
         return "該当なし"
-    # ✅ 横スクロール可能なテーブル表示
-def render_scrollable_table(df):
-    st.markdown(
-        f"""
-        <div style='overflow-x:auto;'>
-            {df.to_html(index=False)}
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
 
-# ✅ HTMLテーブル構築
-main_number_cells = ''.join([f"<td>{int(latest[f'第{i}数字'])}</td>" for i in range(1, 7)])
-bonus_cell = f"<td colspan='6' style='color:red; font-weight:bold;'>{int(latest['ボーナス数字']):02}</td>"
+# ✅ 数字セル分割
+main_number_cells = ''.join([f"<td class='center'>{int(latest[f'第{i}数字'])}</td>" for i in range(1, 7)])
+bonus_cell = f"<td colspan='6' class='center' style='color:red; font-weight:bold;'>{int(latest['ボーナス数字'])}</td>"
 
+# ✅ HTMLテーブル表示
 st.markdown(f"""
 <table class='loto-table'>
-<tr><th>回別</th><td colspan='6'>第{latest['回号']}回</td></tr>
-<tr><th>抽せん日</th><td colspan='6'>{latest['抽せん日'].strftime('%Y年%m月%d日')}</td></tr>
+<tr><th>回号</th><td colspan='6' class='center'>第{latest['回号']}回</td></tr>
+<tr><th>抽せん日</th><td colspan='6' class='center'>{latest['抽せん日'].strftime('%Y年%m月%d日')}</td></tr>
 <tr><th>本数字</th>{main_number_cells}</tr>
 <tr><th>ボーナス数字</th>{bonus_cell}</tr>
-<tr><th>1等</th><td colspan='3'>{format_count(latest['1等口数'])}</td><td colspan='3'>{format_yen(latest['1等賞金'])}</td></tr>
-<tr><th>2等</th><td colspan='3'>{format_count(latest['2等口数'])}</td><td colspan='3'>{format_yen(latest['2等賞金'])}</td></tr>
-<tr><th>3等</th><td colspan='3'>{format_count(latest['3等口数'])}</td><td colspan='3'>{format_yen(latest['3等賞金'])}</td></tr>
-<tr><th>4等</th><td colspan='3'>{format_count(latest['4等口数'])}</td><td colspan='3'>{format_yen(latest['4等賞金'])}</td></tr>
-<tr><th>5等</th><td colspan='3'>{format_count(latest['5等口数'])}</td><td colspan='3'>{format_yen(latest['5等賞金'])}</td></tr>
-<tr><th>キャリーオーバー</th><td colspan='6'>{format_yen(latest['キャリーオーバー'])}</td></tr>
+<tr><th>1等</th><td colspan='3' class='right'>{format_count(latest['1等口数'])}</td><td colspan='3' class='right'>{format_yen(latest['1等賞金'])}</td></tr>
+<tr><th>2等</th><td colspan='3' class='right'>{format_count(latest['2等口数'])}</td><td colspan='3' class='right'>{format_yen(latest['2等賞金'])}</td></tr>
+<tr><th>3等</th><td colspan='3' class='right'>{format_count(latest['3等口数'])}</td><td colspan='3' class='right'>{format_yen(latest['3等賞金'])}</td></tr>
+<tr><th>4等</th><td colspan='3' class='right'>{format_count(latest['4等口数'])}</td><td colspan='3' class='right'>{format_yen(latest['4等賞金'])}</td></tr>
+<tr><th>5等</th><td colspan='3' class='right'>{format_count(latest['5等口数'])}</td><td colspan='3' class='right'>{format_yen(latest['5等賞金'])}</td></tr>
+<tr><th>キャリーオーバー</th><td colspan='6' class='right'>{format_yen(latest['キャリーオーバー'])}</td></tr>
 </table>
 """, unsafe_allow_html=True)
-
 # ✅ ② ABC分類
 st.header("② 直近24回の当選番号（ABC分類）")
 
