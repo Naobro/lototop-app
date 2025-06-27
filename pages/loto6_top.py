@@ -12,11 +12,7 @@ import ssl
 import pandas as pd
 import random
 from collections import Counter
-
 ssl._create_default_https_context = ssl._create_unverified_context
-
-import pandas as pd
-import streamlit as st
 
 # ✅ CSS（中央・右揃えのスタイル付与）
 st.markdown("""
@@ -49,38 +45,40 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# ✅ データ読み込み
+# ✅ テーブル表示関数
+def render_scrollable_table(df):
+    st.markdown(f"""
+    <div style='overflow-x:auto;'>
+    {df.to_html(index=False, escape=False)}
+    </div>
+    """, unsafe_allow_html=True)
+
+# ✅ データ取得・整形
 url = "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/loto6_50.csv"
 df = pd.read_csv(url)
 df.columns = df.columns.str.strip()
 df["抽せん日"] = pd.to_datetime(df["抽せん日"], errors="coerce")
 df = df[df["抽せん日"].notna()].copy()
-
 for i in range(1, 7):
-    df[f"第{i}数字"] = pd.to_numeric(df[f'第{i}数字'], errors='coerce')
+    df[f"第{i}数字"] = pd.to_numeric(df[f"第{i}数字"], errors='coerce')
 df["ボーナス数字"] = pd.to_numeric(df["ボーナス数字"], errors="coerce")
 df = df.dropna(subset=[f"第{i}数字" for i in range(1, 7)])
 
 latest = df.iloc[-1]
 
-# ✅ フォーマッター関数（カンマ・整数・右揃え対応）
+# ✅ 整形関数
 def format_count(val):
-    try:
-        return f"{int(float(val)):,}口"
-    except:
-        return "該当なし"
+    try: return f"{int(float(val)):,}口"
+    except: return "該当なし"
 
 def format_yen(val):
-    try:
-        return f"{int(float(str(val).replace(',', '').replace('円',''))):,}円"
-    except:
-        return "該当なし"
+    try: return f"{int(float(str(val).replace(',', '').replace('円',''))):,}円"
+    except: return "該当なし"
 
-# ✅ 数字セル分割
+# ✅ 表示① 最新結果
 main_number_cells = ''.join([f"<td class='center'>{int(latest[f'第{i}数字'])}</td>" for i in range(1, 7)])
 bonus_cell = f"<td colspan='6' class='center' style='color:red; font-weight:bold;'>{int(latest['ボーナス数字'])}</td>"
 
-# ✅ HTMLテーブル表示
 st.markdown(f"""
 <table class='loto-table'>
 <tr><th>回号</th><td colspan='6' class='center'>第{latest['回号']}回</td></tr>
@@ -98,18 +96,7 @@ st.markdown(f"""
 # ✅ ② ABC分類
 st.header("② 直近24回の当選番号（ABC分類）")
 
-# ✅ 念のため当選数字を再数値化（不正値対策）
-for i in range(1, 7):
-    df[f"第{i}数字"] = pd.to_numeric(df[f"第{i}数字"], errors="coerce")
-df["ボーナス数字"] = pd.to_numeric(df["ボーナス数字"], errors="coerce")
-
-# ✅ 欠損のある行は除外
-df = df.dropna(subset=[f"第{i}数字" for i in range(1, 7)])
-
-# ✅ 直近24回
 df_recent = df.sort_values("回号", ascending=False).head(24).copy()
-
-# ✅ ABC分類のための頻度集計
 digits = df_recent[[f"第{i}数字" for i in range(1, 7)]].values.flatten()
 digits = pd.to_numeric(digits, errors="coerce")
 counts = pd.Series(digits).value_counts()
