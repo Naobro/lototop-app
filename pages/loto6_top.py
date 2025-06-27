@@ -18,21 +18,28 @@ st.markdown("""
 <style>
 table {
     width: 100%;
-    font-size: 14px;
+    font-size: 12px;  /* 小さくする */
     border-collapse: collapse;
     margin: auto;
+    table-layout: fixed;  /* 幅を固定化して揃える */
+    word-break: keep-all;
+    white-space: nowrap;  /* 折り返し防止 */
+    overflow-x: auto;      /* 横スクロール対応 */
+    max-width: 100%;       /* 表のはみ出し防止 */
 }
 thead th {
     text-align: center;
-    padding: 6px;
+    padding: 4px;
     background-color: #222;
     color: white;
+    font-size: 11px;
 }
 tbody td {
     text-align: center;
-    padding: 4px;
+    padding: 3px;
     color: white;
     background-color: #111;
+    font-size: 12px;
 }
 </style>
 """, unsafe_allow_html=True)

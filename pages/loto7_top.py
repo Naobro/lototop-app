@@ -14,31 +14,33 @@ import random
 
 ssl._create_default_https_context = ssl._create_unverified_context
 
-# CSSスタイル（テーブルを広げて見やすくする）
+# ✅ すでにあるCSSを削除 or コメントアウトして、以下を貼り付ける
 st.markdown("""
 <style>
-.loto-table {
+table {
     width: 100%;
+    font-size: 12px;
     border-collapse: collapse;
-    font-size: 16px;
-    background-color: #fff;
-    color: #000;
-}
-.loto-table th {
-    background-color: #e0ebf7;
-    color: red;
-    font-weight: bold;
-    padding: 8px 10px;
-    text-align: left;
+    margin: auto;
+    table-layout: fixed;
+    word-break: keep-all;
     white-space: nowrap;
-    border: 1px solid #ccc;
+    overflow-x: auto;
+    max-width: 100%;
 }
-.loto-table td {
-    background-color: #fff;
-    color: #000;
-    padding: 8px 10px;
+thead th {
     text-align: center;
-    border: 1px solid #ccc;
+    padding: 4px;
+    background-color: #222;
+    color: white;
+    font-size: 11px;
+}
+tbody td {
+    text-align: center;
+    padding: 3px;
+    color: white;
+    background-color: #111;
+    font-size: 12px;
 }
 </style>
 """, unsafe_allow_html=True)
