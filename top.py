@@ -1,4 +1,5 @@
 import streamlit as st
+from PIL import Image
 
 st.set_page_config(page_title="宝くじAI予想", layout="wide")
 
@@ -8,6 +9,36 @@ st.image("https://raw.githubusercontent.com/Naobro/lototop-app/main/header.png",
 # タイトル・説明
 st.markdown("## 🎯 NAOKIの宝くじAI予想")
 st.markdown("データ分析＋AIで宝くじ予想")
+
+# サイトの目的（NAOKIの思いを反映）
+st.markdown("### 🎯 当サイトの目的（開設の想い）")
+st.markdown("""
+このサイトは、**4年間・毎日宝くじを買い続けてきた男「NAOKI」**の集大成として誕生しました。
+
+これまでに、
+- **ロト7で3等（80万円）**
+- **ナンバーズ4でストレート2回的中**
+
+などの実績を積み上げ、**半年以上かけて構築したAI×統計の宝くじ予想サイト**です。  
+過去の出現傾向、スキップ、ABC分類、連続数字、そして自作のファクターを組み合わせ、  
+少しでも当選確率を上げるための「選択の材料」を提供しています。
+
+---
+
+🔥 **ロト1等当選 → FIRE を本気で目指す方へ**
+
+私は、
+> 選択式宝くじは「99% 分析・統計、1% 運」
+
+だと考えています。  
+**A/B数字の傾向を軸に選ぶ**ことが多く、  
+「ただ買う」のではなく、「根拠を持って買う」ことが最短ルートです。
+
+---
+
+このサイトが、  
+📈 **あなたの“買うべき数字”を決める一つの材料**になれば嬉しいです。
+""")
 
 # 高額当選実績
 st.markdown("### 💰 高額当選実績")
@@ -33,6 +64,30 @@ st.markdown("""
 st.markdown("### 🔐 会員専用ページ（月額予想サブスク）")
 st.page_link("pages/member.py", label="🔐 会員ページはこちら", icon="🔐")
 
+# 今だけ無料案内とLINE誘導
+st.markdown("### 🟢 今だけ無料！LINEでパスワードをGET")
+st.markdown("""
+このページに来てくれたあなたには、**今だけ無料で限定予想を公開中！**
+
+以下のLINEから登録するだけで、今月のパスワードが届きます。
+""")
+
+# スマホ用LINE登録ボタン
+st.markdown("""
+<a href="https://lin.ee/uCn26Ig">
+  <img src="https://scdn.line-apps.com/n/line_add_friends/btn/ja.png" alt="友だち追加" height="36" border="0">
+</a>
+""", unsafe_allow_html=True)
+
+# QRコード画像（ローカルファイル）
+image = Image.open("/mnt/data/L_gainfriends_2dbarcodes_GW.png")
+st.image(image, caption="QRコードからも登録できます", width=180)
+
+# 限定ページリンク
+st.markdown("""
+🔐 [➡ 限定予想ページはこちら（パスワード入力）](https://naoloto-win.streamlit.app/member)
+""")
+
 # マネタイズ案内
 st.markdown("### 💡 今後　サブスク & 単発予想販売（予定）")
 st.markdown("""
@@ -43,8 +98,8 @@ st.markdown("""
 # SNSリンク
 st.markdown("### 📣 最新情報はこちらから")
 st.markdown("""
-- 🐦 [X（旧Twitter）で最新予想をチェック](https://x.com/naobillionaire?s=21&t=KpcTrZ6ZAmmyanT1g9425Q)  
-- 📘 [Noteで予想の根拠を読む](https://note.com/naobillion)
+- 🐦 [X（旧Twitter）ギャンブル全般呟いてます](https://x.com/naobillionaire?s=21&t=KpcTrZ6ZAmmyanT1g9425Q)  
+- 📘 [Noteはこちら](https://note.com/naobillion)
 """)
 
 # 注意事項
@@ -57,14 +112,12 @@ st.markdown("""
 - 的中する場合もあれば外れる場合もあります。**参考程度**にご活用ください。
 """)
 
-# サイト目的
-st.markdown("### 🎯 当サイトの目的")
-st.markdown("""
-過去の出現傾向や統計処理を活用し、**当選確率のわずかな向上を狙う**ことを目的としています。
-""")
-
 # 確率改善表
 st.markdown("### 📊 削除法による確率イメージ（参考）")
+st.markdown("""
+実際に削除法を使った場合、**当せん確率がどれほど改善されるか？**  
+以下にロト各種での比較イメージを載せています。
+""")
 st.markdown("""
 | 宝くじ種別 | 通常の1等当せん確率 | 数字削除後の選択 | 絞込み後の通り数 | 改善後の確率（目安） |
 |:-----------|:----------------------|:------------------|:------------------|:-------------------|
