@@ -30,7 +30,7 @@ st.markdown("""
 
 <span style='color:#e63946; font-weight:bold; font-size:20px;'>
 選択式宝くじは「99% 分析・統計、1% 運」
-</span>  
+</span><br>
 だと考えています。
 """, unsafe_allow_html=True)
 
