@@ -228,16 +228,36 @@ st.markdown(style_table(consec_df), unsafe_allow_html=True)
 st.subheader("🔄 ひっぱり回数とひっぱり率")
 st.markdown(style_table(pull_df), unsafe_allow_html=True)
 
-# ③ 出現回数ランキング
-st.header(" 直近24回 出現回数 ランキング")
+# ③ 出現回数ランキング（2列表示：左19件＋右18件）
+st.header("③ 直近24回 出現回数ランキング")
+
+# 出現回数カウント
 numbers = df_recent[[f"第{i}数字" for i in range(1, 8)]].values.flatten()
 number_counts = pd.Series(numbers).value_counts().sort_values(ascending=False)
+
+# ランキングDataFrame作成
 ranking_df = pd.DataFrame({
     "順位": range(1, len(number_counts) + 1),
     "出現回数": number_counts.values,
     "数字": number_counts.index
 })
-st.markdown(style_table(ranking_df), unsafe_allow_html=True)
+
+# 左右分割（左19行・右残り）
+left_df = ranking_df.head(19).reset_index(drop=True)
+right_df = ranking_df.iloc[19:].reset_index(drop=True)
+
+# 表示用のHTML整形関数（CSS付きテーブル表示）
+def format_html_table(df):
+    return df.to_html(index=False, classes="loto-table", escape=False)
+
+# 2列に分割して横並び表示
+left_col, right_col = st.columns(2)
+with left_col:
+    st.markdown("#### 🔵 ランキング（1位〜19位）")
+    st.markdown(format_html_table(left_df), unsafe_allow_html=True)
+with right_col:
+    st.markdown("#### 🟢 ランキング（20位〜）")
+    st.markdown(format_html_table(right_df), unsafe_allow_html=True)
 
 import pandas as pd
 from collections import Counter
