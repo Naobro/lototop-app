@@ -379,8 +379,6 @@ import pandas as pd
 import random
 import streamlit as st
 
-# ✅ Mac用の日本語フォントを明示的に指定（AppleGothicが無難）
-plt.rcParams['font.family'] = 'AppleGothic'  # または 'Hiragino Sans', 'YuGothic'
 
 # --- 定数と準備 ---
 RANGES = {
