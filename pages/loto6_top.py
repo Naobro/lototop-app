@@ -20,7 +20,7 @@ table {
     width: 100%;
     border-collapse: collapse;
     font-size: 14px;
-    white-space: nowrap;
+    white-space: nowrap;       /* 折り返し防止 */
     overflow-x: auto;
     max-width: 100%;
     text-align: center;
@@ -30,6 +30,7 @@ table {
 th, td {
     border: 1px solid #ccc;
     padding: 8px;
+    white-space: nowrap;
 }
 thead {
     background-color: #f2f2f2;

@@ -14,14 +14,13 @@ import random
 
 ssl._create_default_https_context = ssl._create_unverified_context
 
-# ✅ 共通CSS（ロト6・ロト7・ミニロト用、スマホ対応＋ナイトモードも考慮）
 st.markdown("""
 <style>
 table {
     width: 100%;
     border-collapse: collapse;
     font-size: 14px;
-    white-space: nowrap;
+    white-space: nowrap;       /* 折り返し防止 */
     overflow-x: auto;
     max-width: 100%;
     text-align: center;
@@ -31,6 +30,7 @@ table {
 th, td {
     border: 1px solid #ccc;
     padding: 8px;
+    white-space: nowrap;
 }
 thead {
     background-color: #f2f2f2;
@@ -38,9 +38,7 @@ thead {
 }
 </style>
 """, unsafe_allow_html=True)
-
-
-# 表示用関数
+# ✅ 表示用関数（DataFrame → HTMLテーブル）
 def style_table(df):
     return df.to_html(index=False, escape=False)
 
