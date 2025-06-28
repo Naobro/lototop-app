@@ -20,7 +20,7 @@ st.markdown("""
 - **ナンバーズ4でストレート2回的中**
 
 などの実績を積み上げ、**半年以上かけて構築したAI×統計の宝くじ予想サイト**です。  
-過去の出現傾向、スキップ、ABC分類、連続数字、そして自作のファクターを組み合わせ、  
+直近24回の出現傾向、ABC分類、連続数字、そして自作のファクターを組み合わせ、（今後50回など拡張予定）
 少しでも当選確率を上げるための「選択の材料」を提供しています。
 
 ---
@@ -72,27 +72,25 @@ st.markdown("""
 以下のLINEから登録するだけで、今月のパスワードが届きます。
 """)
 
-# スマホ用LINE登録ボタン
+# ✅ LINE登録ボタン（スマホ対応）
 st.markdown("""
 <a href="https://lin.ee/uCn26Ig">
   <img src="https://scdn.line-apps.com/n/line_add_friends/btn/ja.png" alt="友だち追加" height="36" border="0">
 </a>
 """, unsafe_allow_html=True)
 
-# QRコード画像（ローカルファイル）
-image = Image.open("/mnt/data/L_gainfriends_2dbarcodes_GW.png")
-st.image(image, caption="QRコードからも登録できます", width=180)
-
+# ✅ QRコード画像をGitHubから表示
+st.image("https://raw.githubusercontent.com/Naobro/lototop-app/main/L_gainfriends_2dbarcodes_GW.png", caption="QRコードからも登録できます", width=180)
 # 限定ページリンク
 st.markdown("""
 🔐 [➡ 限定予想ページはこちら（パスワード入力）](https://naoloto-win.streamlit.app/member)
 """)
 
-# マネタイズ案内
+
 st.markdown("### 💡 今後　サブスク & 単発予想販売（予定）")
 st.markdown("""
 - ✅ 単発予想：200円 / 回（Noteにて販売予定）  
-- ✅ 月額サブスク：プラン① 保証なし　500円 / 月、プラン② 保証あり　2000円 / 月
+- ✅ 月額サブスク：プラン　500円 
 """)
 
 # SNSリンク
