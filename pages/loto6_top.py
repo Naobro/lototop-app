@@ -18,32 +18,25 @@ st.markdown("""
 <style>
 table {
     width: 100%;
-    font-size: 12px;  /* 小さくする */
     border-collapse: collapse;
-    margin: auto;
-    table-layout: fixed;  /* 幅を固定化して揃える */
-    word-break: keep-all;
-    white-space: nowrap;  /* 折り返し防止 */
-    overflow-x: auto;      /* 横スクロール対応 */
-    max-width: 100%;       /* 表のはみ出し防止 */
-}
-thead th {
+    font-size: 14px;
+    white-space: nowrap;
+    overflow-x: auto;
+    max-width: 100%;
     text-align: center;
-    padding: 4px;
-    background-color: #222;
-    color: white;
-    font-size: 11px;
+    color: #000;
+    background-color: #fff;
 }
-tbody td {
-    text-align: center;
-    padding: 3px;
-    color: white;
-    background-color: #111;
-    font-size: 12px;
+th, td {
+    border: 1px solid #ccc;
+    padding: 8px;
+}
+thead {
+    background-color: #f2f2f2;
+    font-weight: bold;
 }
 </style>
 """, unsafe_allow_html=True)
-
 # ✅ テーブル表示関数
 def render_scrollable_table(df):
     st.markdown(f"""

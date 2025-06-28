@@ -512,3 +512,113 @@ def generate_selected(axis, remove, count=10):
 if st.button("予想を生成"):
     pred = generate_selected(axis, remove)
     st.markdown(style_table(pd.DataFrame(pred, columns=["第1","第2","第3","第4","第5"])), unsafe_allow_html=True)
+import streamlit as st
+import pandas as pd
+import random
+
+st.header("⑨ セレクト予想ルーレット（ミニロト）")
+
+# --- 数字グループ定義（ミニロトは1〜31） ---
+group_dict = {
+    "1": list(range(1, 10)),
+    "10": list(range(10, 20)),
+    "20": list(range(20, 32)),  # ✅ 20〜31まで含める
+}
+
+# --- UI：選択条件 ---
+st.markdown("#### 🔢 候補にする数字群を選択")
+use_position_groups = st.checkbox("各位の出現回数TOP5（1の位〜30の位）", value=True)
+use_position_top5 = st.checkbox("各第n位のTOP5（第1〜第5数字ごと）", value=True)
+use_A = st.checkbox("A数字", value=True)
+use_B = st.checkbox("B数字", value=True)
+use_C = st.checkbox("C数字")
+use_last = st.checkbox("前回数字を除外", value=True)
+
+# --- UI：任意数字追加 ---
+select_manual = st.multiselect("任意で追加したい数字 (1-31)", list(range(1, 32)))
+
+# --- UI：パターン入力 ---
+pattern_input = st.text_input("パターンを入力 (例: 1-10-20-30-10)", value="1-10-20-30-10")
+pattern = pattern_input.strip().split("-")
+
+# --- データ取得（ミニロトCSV） ---
+url = "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/miniloto_50.csv"
+df = pd.read_csv(url)
+df.columns = df.columns.str.strip()
+df["抽せん日"] = pd.to_datetime(df["抽せん日"], errors="coerce")
+df = df[df["抽せん日"].notna()].copy()
+
+for i in range(1, 6):
+    df[f"第{i}数字"] = pd.to_numeric(df[f"第{i}数字"], errors="coerce")
+df = df.dropna(subset=[f"第{i}数字" for i in range(1, 6)])
+df_recent = df.sort_values("回号", ascending=False).head(24).copy()
+latest = df_recent.iloc[0]
+
+# --- 除外対象（前回数字） ---
+last_numbers = latest[[f"第{i}数字" for i in range(1, 6)]].tolist() if use_last else []
+
+# --- ABC分類（頻度ベース） ---
+digits = df_recent[[f"第{i}数字" for i in range(1, 6)]].values.flatten()
+counts = pd.Series(digits).value_counts()
+A_set = set(counts[(counts >= 3) & (counts <= 4)].index)
+B_set = set(counts[counts >= 5].index)
+C_set = set(range(1, 32)) - A_set - B_set
+
+# --- 候補生成 ---
+candidate_set = set(select_manual)
+
+if use_position_groups:
+    number_groups = {'1': [], '10': [], '20': []}  # ← '30' を削除
+    for i in range(1, 6):
+        col = f"第{i}数字"
+        col_values = pd.to_numeric(df_recent[col], errors="coerce")
+        number_groups['1'].extend(col_values[col_values.between(1, 9)].tolist())
+        number_groups['10'].extend(col_values[col_values.between(10, 19)].tolist())
+        number_groups['20'].extend(col_values[col_values.between(20, 31)].tolist())  # ✅ 20〜31を1グループに統合
+
+    for key in number_groups:
+        top5 = pd.Series(number_groups[key]).value_counts().head(5).index.tolist()
+        candidate_set.update(top5)
+
+if use_position_top5:
+    seen = set()
+    for i in range(1, 6):
+        col = f"第{i}数字"
+        col_values = pd.to_numeric(df_recent[col], errors="coerce").dropna().astype(int)
+        counts = col_values.value_counts()
+        for num in counts.index:
+            if num not in seen:
+                candidate_set.add(num)
+                seen.add(num)
+            if len(seen) >= 5:
+                break
+
+if use_A:
+    candidate_set.update(A_set)
+if use_B:
+    candidate_set.update(B_set)
+if use_C:
+    candidate_set.update(C_set)
+
+candidate_set = sorted(set(candidate_set) - set(last_numbers))
+
+# --- 予想生成 ---
+def generate_select_prediction():
+    prediction = []
+    used = set()
+    for group_key in pattern:
+        group_nums = [n for n in group_dict.get(group_key, []) if n in candidate_set and n not in used]
+        if not group_nums:
+            return []  # 候補が足りない場合
+        chosen = random.choice(group_nums)
+        prediction.append(chosen)
+        used.add(chosen)
+    return sorted(prediction) if len(prediction) == 5 else []
+
+# --- 実行ボタン ---
+if st.button("🎯 セレクト予想を出す（ミニロト）"):
+    result = generate_select_prediction()
+    if result:
+        st.success(f"🎉 セレクト予想: {result}")
+    else:
+        st.error("条件に合致する数字が不足しています。候補を増やしてください。")

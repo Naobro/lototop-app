@@ -14,36 +14,76 @@ import random
 
 ssl._create_default_https_context = ssl._create_unverified_context
 
-# ✅ すでにあるCSSを削除 or コメントアウトして、以下を貼り付ける
+# ✅ 共通CSS（ロト6・ロト7・ミニロト用、スマホ対応＋ナイトモードも考慮）
 st.markdown("""
 <style>
 table {
     width: 100%;
-    font-size: 12px;
+    font-size: 14px;  /* 12〜16pxの中間で統一 */
     border-collapse: collapse;
     margin: auto;
-    table-layout: fixed;
+    table-layout: auto;
     word-break: keep-all;
-    white-space: nowrap;
-    overflow-x: auto;
-    max-width: 100%;
+    white-space: nowrap;  /* 折り返し防止 */
+    overflow-x: auto;      /* 横スクロール対応 */
+    max-width: 100%;       /* はみ出し防止 */
+    background-color: white;  /* ダークモードでも白背景を維持 */
+    color: black;  /* 文字色も黒で見やすく */
 }
 thead th {
     text-align: center;
-    padding: 4px;
-    background-color: #222;
-    color: white;
-    font-size: 11px;
+    padding: 6px;
+    background-color: #f2f2f2;  /* ミニロトと同じ背景 */
+    color: black;
+    font-size: 13px;
+    border: 1px solid #ccc;
 }
 tbody td {
     text-align: center;
-    padding: 3px;
-    color: white;
-    background-color: #111;
-    font-size: 12px;
+    padding: 6px;
+    color: black;
+    background-color: white;
+    font-size: 14px;
+    border: 1px solid #ccc;
+}
+.wide-table th, .wide-table td {
+    padding: 12px 16px;
+    font-size: 14px;
 }
 </style>
 """, unsafe_allow_html=True)
+
+# ✅ loto-tableクラス（左赤・中央右揃えなどは任意で継続）
+st.markdown("""
+<style>
+.loto-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+    background-color: white;
+}
+.loto-table th {
+    background-color: #e0ebf7;
+    color: red;
+    font-weight: bold;
+    padding: 8px 10px;
+    text-align: center;
+    border: 1px solid #ccc;
+}
+.loto-table td {
+    padding: 8px 10px;
+    border: 1px solid #ccc;
+    color: black;
+}
+.loto-table td.center {
+    text-align: center;
+}
+.loto-table td.right {
+    text-align: right;
+}
+</style>
+""", unsafe_allow_html=True)
+
 # 表示用関数
 def style_table(df):
     return df.to_html(index=False, escape=False)
@@ -79,34 +119,6 @@ def format_yen(val):
     except:
         return "-"
 
-# ✅ CSS（共通スタイル）
-st.markdown("""
-<style>
-.loto-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 16px;
-}
-.loto-table th {
-    background-color: #e0ebf7;
-    color: red;
-    font-weight: bold;
-    padding: 8px 10px;
-    text-align: center;
-    border: 1px solid #ccc;
-}
-.loto-table td {
-    padding: 8px 10px;
-    border: 1px solid #ccc;
-}
-.loto-table td.center {
-    text-align: center;
-}
-.loto-table td.right {
-    text-align: right;
-}
-</style>
-""", unsafe_allow_html=True)
 
 # ✅ 本数字・ボーナス数字をセルで分割
 main_number_cells = ''.join([f"<td class='center'>{int(latest[f'第{i}数字'])}</td>" for i in range(1, 8)])
@@ -187,29 +199,7 @@ for _, row in df_recent.iterrows():
 
 abc_df = pd.DataFrame(abc_rows)
 
-# 💡 横幅を広げるCSS（wide-tableクラス使用）
-wide_table_css = """
-<style>
-.wide-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 16px;
-    table-layout: auto;
-}
-.wide-table th, .wide-table td {
-    border: 1px solid #ccc;
-    padding: 14px 18px;
-    white-space: nowrap;
-    text-align: center;
-}
-.wide-table thead {
-    background-color: #f2f2f2;
-    font-weight: bold;
-}
-</style>
-"""
-def wide_table(df):
-    return df.to_html(index=False, escape=False, classes="wide-table")
+
 
 st.markdown(wide_table_css, unsafe_allow_html=True)
 st.markdown(wide_table(abc_df), unsafe_allow_html=True)
@@ -227,29 +217,7 @@ summary_df = pd.DataFrame({
     "値": [f"{a_perc}%", f"{b_perc}%", f"{c_perc}%", f"{pull_rate}%", f"{cont_rate}%" ]
 })
 
-# 💡 分析テーブル中央揃え用スタイル
-center_css = """
-<style>
-.center-table {
-    width: 50%;
-    margin-left: auto;
-    margin-right: auto;
-    border-collapse: collapse;
-    font-size: 16px;
-}
-.center-table th, .center-table td {
-    border: 1px solid #ccc;
-    padding: 12px 16px;
-    text-align: center;
-}
-.center-table thead {
-    background-color: #f2f2f2;
-    font-weight: bold;
-}
-</style>
-"""
-def center_table(df):
-    return df.to_html(index=False, escape=False, classes="center-table")
+
 
 st.markdown("#### 🔎 出現傾向（ABC割合・ひっぱり率・連続率）")
 st.markdown(center_css, unsafe_allow_html=True)
@@ -587,3 +555,114 @@ if st.button("予想を生成"):
 
     pred_df = pd.DataFrame(predictions, columns=[f"第{i}数字" for i in range(1, 8)])
     st.markdown(style_table(pred_df), unsafe_allow_html=True)
+import streamlit as st
+import pandas as pd
+import random
+
+st.header("⑨ セレクト予想ルーレット（ロト7）")
+
+# --- 数字グループ定義（ロト7は1〜37） ---
+group_dict = {
+    "1": list(range(1, 10)),
+    "10": list(range(10, 20)),
+    "20": list(range(20, 30)),
+    "30": list(range(30, 38)),
+}
+
+# --- UI：選択条件 ---
+st.markdown("#### 🔢 候補にする数字群を選択")
+use_position_groups = st.checkbox("各位の出現回数TOP5（1の位〜30の位）", value=True)
+use_position_top5 = st.checkbox("各第n位のTOP5（第1〜第7数字ごと）", value=True)
+use_A = st.checkbox("A数字", value=True)
+use_B = st.checkbox("B数字", value=True)
+use_C = st.checkbox("C数字")
+use_last = st.checkbox("前回数字を除外", value=True)
+
+# --- UI：任意数字追加 ---
+select_manual = st.multiselect("任意で追加したい数字 (1-37)", list(range(1, 38)))
+
+# --- UI：パターン入力 ---
+pattern_input = st.text_input("パターンを入力 (例: 1-10-20-20-30-30-1)", value="1-10-20-20-30-30-1")
+pattern = pattern_input.strip().split("-")
+
+# --- データ取得（ロト7のCSV） ---
+url = "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/loto7_50.csv"
+df = pd.read_csv(url)
+df.columns = df.columns.str.strip()
+df["抽せん日"] = pd.to_datetime(df["抽せん日"], errors="coerce")
+df = df[df["抽せん日"].notna()].copy()
+
+for i in range(1, 8):
+    df[f"第{i}数字"] = pd.to_numeric(df[f"第{i}数字"], errors="coerce")
+df = df.dropna(subset=[f"第{i}数字" for i in range(1, 8)])
+df_recent = df.sort_values("回号", ascending=False).head(24).copy()
+latest = df_recent.iloc[0]
+
+# --- 除外対象（前回数字） ---
+last_numbers = latest[[f"第{i}数字" for i in range(1, 8)]].tolist() if use_last else []
+
+# --- ABC分類（頻度ベース） ---
+digits = df_recent[[f"第{i}数字" for i in range(1, 8)]].values.flatten()
+counts = pd.Series(digits).value_counts()
+A_set = set(counts[(counts >= 3) & (counts <= 4)].index)
+B_set = set(counts[counts >= 5].index)
+C_set = set(range(1, 38)) - A_set - B_set
+
+# --- 候補生成 ---
+candidate_set = set(select_manual)
+
+if use_position_groups:
+    number_groups = {'1': [], '10': [], '20': [], '30': []}
+    for i in range(1, 8):
+        col = f"第{i}数字"
+        col_values = pd.to_numeric(df_recent[col], errors="coerce")
+        number_groups['1'].extend(col_values[col_values.between(1, 9)].tolist())
+        number_groups['10'].extend(col_values[col_values.between(10, 19)].tolist())
+        number_groups['20'].extend(col_values[col_values.between(20, 29)].tolist())
+        number_groups['30'].extend(col_values[col_values.between(30, 37)].tolist())
+    for key in number_groups:
+        top5 = pd.Series(number_groups[key]).value_counts().head(5).index.tolist()
+        candidate_set.update(top5)
+
+if use_position_top5:
+    seen = set()
+    for i in range(1, 8):
+        col = f"第{i}数字"
+        col_values = pd.to_numeric(df_recent[col], errors="coerce").dropna().astype(int)
+        counts = col_values.value_counts()
+        for num in counts.index:
+            if num not in seen:
+                candidate_set.add(num)
+                seen.add(num)
+            if len(seen) >= 5:
+                break
+
+if use_A:
+    candidate_set.update(A_set)
+if use_B:
+    candidate_set.update(B_set)
+if use_C:
+    candidate_set.update(C_set)
+
+candidate_set = sorted(set(candidate_set) - set(last_numbers))
+
+# --- 予想生成 ---
+def generate_select_prediction():
+    prediction = []
+    used = set()
+    for group_key in pattern:
+        group_nums = [n for n in group_dict.get(group_key, []) if n in candidate_set and n not in used]
+        if not group_nums:
+            return []  # 候補が足りない場合
+        chosen = random.choice(group_nums)
+        prediction.append(chosen)
+        used.add(chosen)
+    return sorted(prediction) if len(prediction) == 7 else []
+
+# --- 実行ボタン ---
+if st.button("🎯 セレクト予想を出す（ロト7）"):
+    result = generate_select_prediction()
+    if result:
+        st.success(f"🎉 セレクト予想: {result}")
+    else:
+        st.error("条件に合致する数字が不足しています。候補を増やしてください。")
