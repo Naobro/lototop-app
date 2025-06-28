@@ -155,11 +155,6 @@ for _, row in df_recent.iterrows():
 
 abc_df = pd.DataFrame(abc_rows)
 
-
-
-st.markdown(wide_table_css, unsafe_allow_html=True)
-st.markdown(wide_table(abc_df), unsafe_allow_html=True)
-
 # --- 出現傾向（ABC割合・ひっぱり率・連続率）テーブル ---
 total_abc = sum(abc_counts.values())
 a_perc = round(abc_counts['A'] / total_abc * 100, 1)
