@@ -377,11 +377,8 @@ st.markdown(style_table(abc_df), unsafe_allow_html=True)
 import os
 import pandas as pd
 import random
-import matplotlib
 import matplotlib.pyplot as plt
 import streamlit as st
-from datetime import datetime
-import matplotlib.font_manager as fm
 
 # ✅ Mac用の日本語フォントを明示的に指定（AppleGothicが無難）
 plt.rcParams['font.family'] = 'AppleGothic'  # または 'Hiragino Sans', 'YuGothic'
