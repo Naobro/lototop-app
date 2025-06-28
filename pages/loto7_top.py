@@ -377,7 +377,6 @@ st.markdown(style_table(abc_df), unsafe_allow_html=True)
 import os
 import pandas as pd
 import random
-import matplotlib.pyplot as plt
 import streamlit as st
 
 # ✅ Mac用の日本語フォントを明示的に指定（AppleGothicが無難）
@@ -468,25 +467,6 @@ st.header("基本予想（パターン構成＋出現頻度＋レンジ構成＋
 st.markdown("この予想は最新の当選結果に基づいて固定され、当選番号が更新されるまで変わりません。")
 st.dataframe(pred_df)
 
-# 画像として保存（matplotlibで）
-fig, ax = plt.subplots(figsize=(6, 6))
-ax.axis('off')
-table = ax.table(cellText=pred_df.values,
-                 colLabels=pred_df.columns,
-                 loc='center',
-                 cellLoc='center')
-table.scale(1, 2)
-plt.title(f"{latest_round}回 ロト7予想", fontsize=16)
-plt.savefig(image_file, bbox_inches='tight')
-
-# --- ダウンロードボタン ---
-with open(image_file, "rb") as f:
-    st.download_button(
-        label="📥 この予想を画像でダウンロード",
-        data=f,
-        file_name=f"{latest_round}回ロト7予想.png",
-        mime="image/png"
-    )
 
 # ⑧ セレクト予想
 st.header("セレクト予想")
