@@ -377,6 +377,7 @@ st.markdown(style_table(abc_df), unsafe_allow_html=True)
 import os
 import pandas as pd
 import random
+import matplotlib
 import matplotlib.pyplot as plt
 import streamlit as st
 from datetime import datetime
