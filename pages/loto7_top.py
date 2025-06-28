@@ -19,70 +19,26 @@ st.markdown("""
 <style>
 table {
     width: 100%;
-    font-size: 14px;  /* 12〜16pxの中間で統一 */
     border-collapse: collapse;
-    margin: auto;
-    table-layout: auto;
-    word-break: keep-all;
-    white-space: nowrap;  /* 折り返し防止 */
-    overflow-x: auto;      /* 横スクロール対応 */
-    max-width: 100%;       /* はみ出し防止 */
-    background-color: white;  /* ダークモードでも白背景を維持 */
-    color: black;  /* 文字色も黒で見やすく */
-}
-thead th {
-    text-align: center;
-    padding: 6px;
-    background-color: #f2f2f2;  /* ミニロトと同じ背景 */
-    color: black;
-    font-size: 13px;
-    border: 1px solid #ccc;
-}
-tbody td {
-    text-align: center;
-    padding: 6px;
-    color: black;
-    background-color: white;
     font-size: 14px;
-    border: 1px solid #ccc;
+    white-space: nowrap;
+    overflow-x: auto;
+    max-width: 100%;
+    text-align: center;
+    color: #000;
+    background-color: #fff;
 }
-.wide-table th, .wide-table td {
-    padding: 12px 16px;
-    font-size: 14px;
+th, td {
+    border: 1px solid #ccc;
+    padding: 8px;
+}
+thead {
+    background-color: #f2f2f2;
+    font-weight: bold;
 }
 </style>
 """, unsafe_allow_html=True)
 
-# ✅ loto-tableクラス（左赤・中央右揃えなどは任意で継続）
-st.markdown("""
-<style>
-.loto-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 14px;
-    background-color: white;
-}
-.loto-table th {
-    background-color: #e0ebf7;
-    color: red;
-    font-weight: bold;
-    padding: 8px 10px;
-    text-align: center;
-    border: 1px solid #ccc;
-}
-.loto-table td {
-    padding: 8px 10px;
-    border: 1px solid #ccc;
-    color: black;
-}
-.loto-table td.center {
-    text-align: center;
-}
-.loto-table td.right {
-    text-align: right;
-}
-</style>
-""", unsafe_allow_html=True)
 
 # 表示用関数
 def style_table(df):
