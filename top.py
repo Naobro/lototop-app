@@ -25,14 +25,16 @@ st.markdown("""
 
 ---
 
-st.markdown("### 🔥 ロト1等当選 → FIRE を本気で目指す方へ", unsafe_allow_html=True)
+st.markdown("""
+### 🔥 ロト1等当選 → FIRE を本気で目指す方へ
+""")
 
-st.markdown(
-    "<span style='color:#e63946; font-weight:bold; font-size:20px;'>"
-    "選択式宝くじは「99% 分析・統計、1% 運」"
-    "</span><br>だと考えています。",
-    unsafe_allow_html=True
-)
+st.markdown("""
+<div style='color:#e63946; font-weight:bold; font-size:20px;'>
+選択式宝くじは「99% 分析・統計、1% 運」
+</div>
+<p>だと考えています。</p>
+""", unsafe_allow_html=True)
 
 **A/B数字の傾向を軸に選ぶ**ことが多く、  
 「ただ買う」のではなく、「根拠を持って買う」ことが最短ルートです。
