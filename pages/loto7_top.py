@@ -97,15 +97,18 @@ st.markdown(f"""
 <tr><th>キャリーオーバー</th><td colspan='7' class='right'>{format_yen(latest['キャリーオーバー'])}</td></tr>
 </table>
 """, unsafe_allow_html=True)
-# ② 直近24回の当選番号（ABC構成・ひっぱり・連続分析付き）
-st.header(" 直近24回の当選番号")
+# ✅ ② 直近24回の当選番号（ABC構成・ひっぱり・連続分析付き）
+st.header("② 直近24回の当選番号（ABC構成・ひっぱり・連続分析付き）")
 
 # 最新データから直近24回を取得
-df_recent = df.tail(24).sort_values(by="抽せん日", ascending=False)
+df_recent = df.tail(24).sort_values(by="抽せん日", ascending=False).copy()
+df_recent["抽せん日"] = pd.to_datetime(df_recent["抽せん日"], errors="coerce")
 
 # 出現回数でABC分類セット作成（7数字分に対応）
 all_numbers = df_recent[[f"第{i}数字" for i in range(1, 8)]].values.flatten()
+all_numbers = pd.to_numeric(all_numbers, errors="coerce")
 counts = pd.Series(all_numbers).value_counts()
+
 A_set = set(counts[(counts >= 3) & (counts <= 4)].index)
 B_set = set(counts[counts >= 5].index)
 
@@ -143,7 +146,7 @@ for _, row in df_recent.iterrows():
         cont_total += 1
 
     abc_rows.append({
-        '抽選日': row['抽せん日'].strftime('%Y-%m-%d'),
+        '抽せん日': row['抽せん日'].strftime('%Y-%m-%d'),
         '第1数字': row['第1数字'], '第2数字': row['第2数字'], '第3数字': row['第3数字'],
         '第4数字': row['第4数字'], '第5数字': row['第5数字'], '第6数字': row['第6数字'],
         '第7数字': row['第7数字'], 'ABC構成': abc_str,
@@ -152,6 +155,9 @@ for _, row in df_recent.iterrows():
     })
 
 abc_df = pd.DataFrame(abc_rows)
+
+# ✅ スクロール可能なテーブル表示（共通スタイルで）
+st.markdown(abc_df.to_html(index=False), unsafe_allow_html=True)
 
 # --- 出現傾向（ABC割合・ひっぱり率・連続率）テーブル ---
 total_abc = sum(abc_counts.values())
