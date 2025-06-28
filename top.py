@@ -26,10 +26,6 @@ st.markdown("""
 ---
 
 st.markdown("""
-### 🔥 ロト1等当選 → FIRE を本気で目指す方へ
-""")
-
-st.markdown("""
 <div style='color:#e63946; font-weight:bold; font-size:20px;'>
 選択式宝くじは「99% 分析・統計、1% 運」
 </div>
