@@ -22,9 +22,15 @@ st.markdown("""
 などの実績を積み上げ、**半年以上かけて構築したAI×統計の宝くじ予想サイト**です。  
 直近24回の出現傾向、ABC分類、連続数字、そして自作のファクターを組み合わせ、（今後50回など拡張予定）
 少しでも当選確率を上げるための「選択の材料」を提供しています。
+""")
 
----
+st.markdown("---")
 
+st.markdown("""
+### 🔥 ロト1等当選 → FIRE を本気で目指す方へ
+""")
+
+# ★ここが赤字・太字の装飾部分
 st.markdown("""
 <div style='color:#e63946; font-weight:bold; font-size:20px;'>
 選択式宝くじは「99% 分析・統計、1% 運」
@@ -32,6 +38,7 @@ st.markdown("""
 <p>だと考えています。</p>
 """, unsafe_allow_html=True)
 
+st.markdown("""
 **A/B数字の傾向を軸に選ぶ**ことが多く、  
 「ただ買う」のではなく、「根拠を持って買う」ことが最短ルートです。
 
@@ -61,7 +68,6 @@ st.markdown("""
 - ABC分類
 - 基本予想
 - セレクト予想
-            
 """)
 
 # ✅ 会員専用ページへのリンク（マルチページ用）
@@ -89,7 +95,6 @@ st.image("https://raw.githubusercontent.com/Naobro/lototop-app/main/L_gainfriend
 st.markdown("""
 🔐 [➡ 限定予想ページはこちら（パスワード入力）](https://naoloto-win.streamlit.app/member)
 """)
-
 
 st.markdown("### 💡 今後　サブスク & 単発予想販売（予定）")
 st.markdown("""
