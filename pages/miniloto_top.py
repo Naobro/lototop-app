@@ -15,16 +15,32 @@ import random
 st.set_page_config(layout="wide")
 st.title("ミニロト AI予想サイト")
 
-# CSS適用
+## ✅ スマホで折り返さず横スクロール可能にするCSS（ミニロト・ロト6・ロト7共通）
 st.markdown("""
 <style>
-table { width: 100%; border-collapse: collapse; text-align: center; font-size: 16px; }
-th, td { border: 1px solid #ccc; padding: 8px; }
-thead { background-color: #f2f2f2; font-weight: bold; }
-.wide-table td { white-space: nowrap; }
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+    white-space: nowrap;         /* 折り返し防止 */
+    overflow-x: auto;            /* 横スクロール */
+    max-width: 100%;
+    text-align: center;
+    color: #000;
+    background-color: #fff;
+    table-layout: auto;
+}
+th, td {
+    border: 1px solid #ccc;
+    padding: 8px;
+    white-space: nowrap;         /* ← 各セルも明示的にnowrap */
+}
+thead {
+    background-color: #f2f2f2;
+    font-weight: bold;
+}
 </style>
 """, unsafe_allow_html=True)
-
 def style_table(df):
     return df.to_html(index=False, escape=False, classes="wide-table")
 
@@ -75,34 +91,6 @@ def format_yen(val):
     except:
         return "-"
 
-# ✅ CSS（背景白・左項目＝赤、値は中央/右揃え）
-st.markdown("""
-<style>
-.loto-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 16px;
-}
-.loto-table th {
-    background-color: #e0ebf7;
-    color: red;
-    font-weight: bold;
-    padding: 8px 10px;
-    text-align: center;
-    border: 1px solid #ccc;
-}
-.loto-table td {
-    padding: 8px 10px;
-    border: 1px solid #ccc;
-}
-.loto-table td.center {
-    text-align: center;
-}
-.loto-table td.right {
-    text-align: right;
-}
-</style>
-""", unsafe_allow_html=True)
 
 # ✅ 本数字・ボーナス数字（セル分割）
 main_number_cells = ''.join([f"<td class='center'>{int(df_latest[f'第{i}数字'])}</td>" for i in range(1, 6)])
