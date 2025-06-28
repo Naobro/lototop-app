@@ -170,8 +170,6 @@ summary_df = pd.DataFrame({
 
 st.markdown("#### 🔎 出現傾向（ABC割合・ひっぱり率・連続率）")
 
-st.markdown(center_table(summary_df), unsafe_allow_html=True)
-
 import pandas as pd
 from collections import Counter
 import streamlit as st
