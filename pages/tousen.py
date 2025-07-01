@@ -97,6 +97,28 @@ def save_record(file_path, record, columns):
         df = pd.concat([old, df], ignore_index=True)
     df.to_csv(file_path, index=False)
     return True
+def append_to_numbers_only_csv(full_file, numbers):
+    """n3.csv/n4.csv に当選数字だけ追記（抽せん日なし）"""
+    try:
+        full_path = os.path.join(DATA_DIR, full_file)  # DATA_DIR = ../data/
+        df_new = pd.DataFrame([numbers])
+        if os.path.exists(full_path):
+            df_full = pd.read_csv(full_path, header=None)
+            # すでに同じ行が存在するかチェック（数字完全一致）
+            if any((df_full == df_new.iloc[0]).all(axis=1)):
+                return  # 重複行があるのでスキップ
+            df_full = pd.concat([df_full, df_new], ignore_index=True)
+        else:
+            df_full = df_new
+        df_full.to_csv(full_path, index=False, header=False)
+    except Exception as e:
+        st.error(f"n3/n4.csvへの追記に失敗しました: {e}")
+# ナンバーズ3／4の場合、数字だけ n3.csv/n4.csv に追記
+if lottery_type == "ナンバーズ3":
+    append_to_numbers_only_csv("n3.csv", [record["第1数字"], record["第2数字"], record["第3数字"]])
+
+if lottery_type == "ナンバーズ4":
+    append_to_numbers_only_csv("n4.csv", [record["第1数字"], record["第2数字"], record["第3数字"], record["第4数字"]])
 
 def push_to_github():
     try:
