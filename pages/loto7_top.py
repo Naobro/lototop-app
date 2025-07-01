@@ -98,7 +98,7 @@ st.markdown(f"""
 </table>
 """, unsafe_allow_html=True)
 # ✅ ② 直近24回の当選番号（ABC構成・ひっぱり・連続分析付き）
-st.header("② 直近24回の当選番号（ABC構成・ひっぱり・連続分析付き）")
+st.header("直近24回の当選番号")
 
 # 最新データから直近24回を取得
 df_recent = df.tail(24).sort_values(by="抽せん日", ascending=False).copy()
@@ -176,11 +176,53 @@ summary_df = pd.DataFrame({
 
 st.markdown("#### 🔎 出現傾向（ABC割合・ひっぱり率・連続率）")
 
+# ✅ A/B数字の位別分類（ロト7用：最大37まで）
+
+st.header("⑥-A A数字・B数字の位別分類")
+
+def style_table(df):
+    return df.style.set_table_styles([
+        {'selector': 'th', 'props': [('text-align', 'center')]},
+        {'selector': 'td', 'props': [('text-align', 'center')]}
+    ]).to_html(escape=False, index=False)
+
+# 最新当選番号（ロト7は第1〜第7数字）
+latest_numbers = [int(df.iloc[0][f"第{i}数字"]) for i in range(1, 8)]
+
+def highlight_number(n):
+    return f"<span style='color:red; font-weight:bold'>{n}</span>" if n in latest_numbers else str(n)
+
+def classify_numbers_loto7(numbers):
+    bins = {
+        '1の位': [], '10の位': [], '20の位': [], '30の位': []
+    }
+    for n in numbers:
+        if 1 <= n <= 9:
+            bins['1の位'].append(n)
+        elif 10 <= n <= 19:
+            bins['10の位'].append(n)
+        elif 20 <= n <= 29:
+            bins['20の位'].append(n)
+        elif 30 <= n <= 37:  # ロト7は最大37まで
+            bins['30の位'].append(n)
+    return bins
+
+A_bins = classify_numbers_loto7(A_set)
+B_bins = classify_numbers_loto7(B_set)
+
+digit_table = pd.DataFrame({
+    "位": list(A_bins.keys()),
+    "A数字": [', '.join([highlight_number(n) for n in sorted(A_bins[k])]) for k in A_bins],
+    "B数字": [', '.join([highlight_number(n) for n in sorted(B_bins[k])]) for k in B_bins]
+})
+
+st.markdown(style_table(digit_table), unsafe_allow_html=True)
+
 import pandas as pd
 from collections import Counter
 import streamlit as st
 
-st.header("⑩ 連続数字ペア & ひっぱり傾向")
+st.header("連続数字ペア & ひっぱり傾向")
 
 # 直近24回のデータを取得（dfは直近全データ）
 latest_24 = df.tail(24)

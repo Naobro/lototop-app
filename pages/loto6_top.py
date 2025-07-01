@@ -107,6 +107,47 @@ for _, row in df_recent.iterrows():
     })
 abc_df = pd.DataFrame(abc_rows)
 render_scrollable_table(abc_df)
+# ✅ A/B数字の位別分類（ロト6用：40〜43も30の位に分類）
+
+st.header("⑥-A A数字・B数字の位別分類")
+
+def style_table(df):
+    return df.style.set_table_styles([
+        {'selector': 'th', 'props': [('text-align', 'center')]},
+        {'selector': 'td', 'props': [('text-align', 'center')]}
+    ]).to_html(escape=False, index=False)
+
+# 最新当選番号（ロト6は6個）
+latest_numbers = [int(df.iloc[0][f"第{i}数字"]) for i in range(1, 7)]
+
+def highlight_number(n):
+    return f"<span style='color:red; font-weight:bold'>{n}</span>" if n in latest_numbers else str(n)
+
+def classify_numbers_loto6(numbers):
+    bins = {
+        '1の位': [], '10の位': [], '20の位': [], '30の位': []
+    }
+    for n in numbers:
+        if 1 <= n <= 9:
+            bins['1の位'].append(n)
+        elif 10 <= n <= 19:
+            bins['10の位'].append(n)
+        elif 20 <= n <= 29:
+            bins['20の位'].append(n)
+        elif 30 <= n <= 43:  # ← 40〜43 も含める
+            bins['30の位'].append(n)
+    return bins
+
+A_bins = classify_numbers_loto6(A_set)
+B_bins = classify_numbers_loto6(B_set)
+
+digit_table = pd.DataFrame({
+    "位": list(A_bins.keys()),
+    "A数字": [', '.join([highlight_number(n) for n in sorted(A_bins[k])]) for k in A_bins],
+    "B数字": [', '.join([highlight_number(n) for n in sorted(B_bins[k])]) for k in B_bins]
+})
+
+st.markdown(style_table(digit_table), unsafe_allow_html=True)
 
 ## ✅ ③ パターン分析（40〜43 も 30 に統合）
 st.header("パターン分析")
@@ -182,30 +223,6 @@ abc_summary_df = pd.DataFrame({
     "C数字（その他）": C_numbers + [""] * (max_len - len(C_numbers))
 })
 render_scrollable_table(abc_summary_df)
-# ✅ A・B数字の位別分布（1〜9） ※ 40〜43も「30〜43」に統合
-st.header("A・B数字の位別分布（1〜9）")
-
-def digit_range(n):
-    if 1 <= n <= 9: return "1〜9"
-    elif 10 <= n <= 19: return "10〜19"
-    elif 20 <= n <= 29: return "20〜29"
-    elif 30 <= n <= 43: return "30〜43"
-    else: return "不明"
-
-def count_ranges(num_set):
-    ranges = pd.Series([digit_range(n) for n in num_set])
-    return ranges.value_counts().reindex(["1〜9", "10〜19", "20〜29", "30〜43"], fill_value=0)
-
-a_dist = count_ranges(A_set)
-b_dist = count_ranges(B_set)
-
-ab_digit_df = pd.DataFrame({
-    "位の範囲": a_dist.index,
-    "A数字の個数": a_dist.values,
-    "B数字の個数": b_dist.values
-})
-ab_digit_df.reset_index(drop=True, inplace=True)
-render_scrollable_table(ab_digit_df)
 
 # ✅ ⑧ 基本予想（2通り×5パターン）
 st.header("基本予想（パターン別 2通り×5種類）")
