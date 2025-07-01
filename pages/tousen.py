@@ -241,13 +241,13 @@ if st.button("CSV保存＋GitHub反映"):
                        "ストレート当選金額", "ボックス当選金額", "セット（ストレート）当選金額", "セット（ボックス）当選金額"]
 
         
-if file_path and save_record(file_path, record, columns):
-    st.success(f"✅ {lottery_type} 第{round_no}回 保存完了")
+if file_path and record and columns:
+    if save_record(file_path, record, columns):
+        st.success(f"✅ {lottery_type} 第{round_no}回 保存完了")
 
-    if lottery_type == "ナンバーズ3":
-        append_to_numbers_only_csv("n3.csv", [record["第1数字"], record["第2数字"], record["第3数字"]])
-    if lottery_type == "ナンバーズ4":
-        append_to_numbers_only_csv("n4.csv", [record["第1数字"], record["第2数字"], record["第3数字"], record["第4数字"]])
+        if lottery_type == "ナンバーズ3":
+            append_to_numbers_only_csv("n3.csv", [record["第1数字"], record["第2数字"], record["第3数字"]])
+        if lottery_type == "ナンバーズ4":
+            append_to_numbers_only_csv("n4.csv", [record["第1数字"], record["第2数字"], record["第3数字"], record["第4数字"]])
 
-    push_to_github()
-        
+        push_to_github()
