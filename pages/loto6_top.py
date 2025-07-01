@@ -87,7 +87,7 @@ st.markdown(f"""
 </table>
 """, unsafe_allow_html=True)
 # ✅ ② ABC分類
-st.header("② 直近24回の当選番号（ABC分類）")
+st.header("直近24回の当選番号")
 
 df_recent = df.sort_values("回号", ascending=False).head(24).copy()
 digits = df_recent[[f"第{i}数字" for i in range(1, 7)]].values.flatten()
@@ -108,19 +108,22 @@ for _, row in df_recent.iterrows():
 abc_df = pd.DataFrame(abc_rows)
 render_scrollable_table(abc_df)
 
-# ✅ ③ パターン分析
-st.header("③ パターン分析")
+## ✅ ③ パターン分析（40〜43 も 30 に統合）
+st.header("パターン分析")
 
 def get_distribution(row):
     pattern = []
     for val in row:
         try:
             num = int(val)
-            if 1 <= num <= 9: pattern.append("1")
-            elif 10 <= num <= 19: pattern.append("10")
-            elif 20 <= num <= 29: pattern.append("20")
-            elif 30 <= num <= 39: pattern.append("30")
-            elif 40 <= num <= 43: pattern.append("40")
+            if 1 <= num <= 9:
+                pattern.append("1")
+            elif 10 <= num <= 19:
+                pattern.append("10")
+            elif 20 <= num <= 29:
+                pattern.append("20")
+            elif 30 <= num <= 43:  # ← ここを修正
+                pattern.append("30")
         except:
             pattern.append("不明")
     return '-'.join(sorted(pattern))
@@ -130,8 +133,8 @@ pattern_counts = pattern_series.value_counts().reset_index()
 pattern_counts.columns = ['パターン', '出現回数']
 render_scrollable_table(pattern_counts)
 
-# ✅ ④ 各位の出現回数TOP5
-st.header("④ 各位の出現回数TOP5")
+# ✅ ④各位の出現回数TOP5
+st.header("各位の出現回数TOP5")
 number_groups = {'1': [], '10': [], '20': [], '30': []}
 for i in range(1, 7):
     col = f'第{i}数字'
@@ -150,7 +153,7 @@ top5_df = pd.DataFrame({
 render_scrollable_table(top5_df)
 
 # ✅ ⑤ 各数字の出現回数TOP5
-st.header("⑤ 各数字の出現回数TOP5")
+st.header("各数字の出現回数TOP5")
 results = {'順位': ['1位', '2位', '3位', '4位', '5位']}
 for i in range(1, 7):
     col = f'第{i}数字'
@@ -163,8 +166,8 @@ for i in range(1, 7):
 top5_df = pd.DataFrame(results)
 render_scrollable_table(top5_df)
 
-# ✅ ⑥ A・B・C数字分類
-st.header("⑥ A・B・C数字（出現頻度分類）")
+# ✅ A・B・C数字分類
+st.header("A・B・C数字（出現頻度分類）")
 count_series = pd.Series(
     df_recent[[f'第{i}数字' for i in range(1, 7)]].values.flatten()
 ).dropna().astype(int).value_counts()
@@ -179,9 +182,33 @@ abc_summary_df = pd.DataFrame({
     "C数字（その他）": C_numbers + [""] * (max_len - len(C_numbers))
 })
 render_scrollable_table(abc_summary_df)
+# ✅ A・B数字の位別分布（1〜9） ※ 40〜43も「30〜43」に統合
+st.header("A・B数字の位別分布（1〜9）")
+
+def digit_range(n):
+    if 1 <= n <= 9: return "1〜9"
+    elif 10 <= n <= 19: return "10〜19"
+    elif 20 <= n <= 29: return "20〜29"
+    elif 30 <= n <= 43: return "30〜43"
+    else: return "不明"
+
+def count_ranges(num_set):
+    ranges = pd.Series([digit_range(n) for n in num_set])
+    return ranges.value_counts().reindex(["1〜9", "10〜19", "20〜29", "30〜43"], fill_value=0)
+
+a_dist = count_ranges(A_set)
+b_dist = count_ranges(B_set)
+
+ab_digit_df = pd.DataFrame({
+    "位の範囲": a_dist.index,
+    "A数字の個数": a_dist.values,
+    "B数字の個数": b_dist.values
+})
+ab_digit_df.reset_index(drop=True, inplace=True)
+render_scrollable_table(ab_digit_df)
 
 # ✅ ⑧ 基本予想（2通り×5パターン）
-st.header("⑧ 基本予想（パターン別 2通り×5種類）")
+st.header("基本予想（パターン別 2通り×5種類）")
 group_dict = {
     "1": list(range(1, 10)),
     "10": list(range(10, 20)),
@@ -228,7 +255,7 @@ for label, pattern in pattern_list:
     pred_df = pd.DataFrame(predictions, columns=[f"第{i}数字" for i in range(1, 7)])
     render_scrollable_table(pred_df)
 # ✅ ⑨ セレクト予想ルーレット
-st.header("⑨ セレクト予想ルーレット")
+st.header("セレクト予想ルーレット")
 
 # --- 数字グループ定義 ---
 group_dict = {

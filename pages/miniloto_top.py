@@ -111,7 +111,7 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # ② 直近24回 当選番号 + ABC + 引っ張り + 連続分析
-st.header("② 直近24回の当選番号")
+st.header("直近24回の当選番号")
 all_numbers = df_recent[[f"第{i}数字" for i in range(1, 6)]].values.flatten()
 counts = pd.Series(all_numbers).value_counts()
 A_set = set(counts[(counts >= 3) & (counts <= 4)].index)
@@ -321,7 +321,7 @@ pattern_counts = pattern_series.value_counts().reset_index()
 pattern_counts.columns = ['パターン', '出現回数']
 st.markdown(style_table(pattern_counts), unsafe_allow_html=True)
 
-st.header("④ 各位の出現回数TOP5")
+st.header("各位の出現回数TOP5")
 
 # 20〜31をまとめて1つのグループに
 number_groups = {'1': [], '10': [], '20/30': []}
@@ -341,7 +341,7 @@ top5_df = pd.DataFrame({
 })
 st.markdown(style_table(top5_df), unsafe_allow_html=True)
 
-st.header("⑤ 各数字の出現回数TOP5（位置別）")
+st.header("各数字の出現回数TOP5（位置別）")
 
 # ラベルを5行に拡張
 position_result = {'順位': ['1位', '2位', '3位', '4位', '5位']}
@@ -398,11 +398,38 @@ abc_class_df = pd.DataFrame({
     "B（5回以上）": sorted(B),
     "C（その他）": sorted(C)
 })
+# ✅ ⑥ A・B・C数字（グループ別リスト形式）
+st.header("⑥ A・B・C数字（グループ別リスト表示）")
+
+# 出現頻度を数えてABC分類
+flat_numbers = df_recent[[f'第{i}数字' for i in range(1, 6)]].values.flatten()
+count_series = pd.Series(flat_numbers).dropna().astype(int).value_counts()
+A_numbers = count_series[(count_series >= 3) & (count_series <= 4)].index.tolist()
+B_numbers = count_series[count_series >= 5].index.tolist()
+C_numbers = sorted(list(set(range(1, 32)) - set(A_numbers) - set(B_numbers)))
+
+# グループ分け辞書
+group_ranges = {
+    "1の位（1〜9）": range(1, 10),
+    "10の位（10〜19）": range(10, 20),
+    "20の位（20〜31）": range(20, 32),
+}
+
+# 表示処理
+for label, r in group_ranges.items():
+    a_group = sorted([n for n in A_numbers if n in r])
+    b_group = sorted([n for n in B_numbers if n in r])
+    c_group = sorted([n for n in C_numbers if n in r])
+
+    st.markdown(f"### 🔹 {label}")
+    st.markdown(f"- A数字（3〜4回）: {', '.join(map(str, a_group)) if a_group else 'なし'}")
+    st.markdown(f"- B数字（5回以上）: {', '.join(map(str, b_group)) if b_group else 'なし'}")
+    st.markdown(f"- C数字（その他）: {', '.join(map(str, c_group)) if c_group else 'なし'}")
 
 # Streamlit用：テーブル表示（style_table関数が必要）
 # st.markdown(style_table(abc_class_df), unsafe_allow_html=True)
 # --- ⑦ 基本予想（構成・出現・ABC優先） ---
-st.header("⑦ 基本予想（構成・出現・ABC優先）")
+st.header("基本予想（構成・出現・ABC優先）")
 
 import random
 
@@ -465,7 +492,7 @@ predict_df = pd.DataFrame(predicts, columns=["第1", "第2", "第3", "第4", "�
 st.markdown(style_table(predict_df), unsafe_allow_html=True)
 
 # セレクト予想
-st.header("⑧ セレクト予想")
+st.header("セレクト予想")
 axis = st.multiselect("軸数字（最大3）", list(range(1,32)), max_selections=3)
 remove = st.multiselect("除外数字（最大20）", list(range(1,32)), max_selections=20)
 
@@ -504,7 +531,7 @@ import streamlit as st
 import pandas as pd
 import random
 
-st.header("⑨ セレクト予想ルーレット（ミニロト）")
+st.header("セレクト予想ルーレット（ミニロト）")
 
 # --- 数字グループ定義（ミニロトは1〜31） ---
 group_dict = {
