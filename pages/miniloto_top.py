@@ -73,7 +73,7 @@ abc_class_df = pd.DataFrame({
 # 最新データの取得
 df_latest = df.iloc[0]
 
-st.header("① 最新の当選番号")
+st.header("最新の当選番号")
 
 # ✅ 最新回のデータを取得
 df_latest = df.iloc[-1]
@@ -153,7 +153,7 @@ A_nums = [int(n) for n in abc_class_df['A（3〜4回）'] if n != '']
 B_nums = [int(n) for n in abc_class_df['B（5回以上）'] if n != '']
 
 # ⑥-A A数字・B数字の位別分類（最新当選番号に応じて赤文字強調）
-st.header("⑥-A A数字・B数字の位別分類")
+st.header("A A数字・B数字の位別分類")
 
 # 最新当選番号（df の先頭行を参照）
 latest_numbers = [df.iloc[0][f"第{i}数字"] for i in range(1, 6)]
@@ -398,33 +398,6 @@ abc_class_df = pd.DataFrame({
     "B（5回以上）": sorted(B),
     "C（その他）": sorted(C)
 })
-# ✅ ⑥ A・B・C数字（グループ別リスト形式）
-st.header("⑥ A・B・C数字（グループ別リスト表示）")
-
-# 出現頻度を数えてABC分類
-flat_numbers = df_recent[[f'第{i}数字' for i in range(1, 6)]].values.flatten()
-count_series = pd.Series(flat_numbers).dropna().astype(int).value_counts()
-A_numbers = count_series[(count_series >= 3) & (count_series <= 4)].index.tolist()
-B_numbers = count_series[count_series >= 5].index.tolist()
-C_numbers = sorted(list(set(range(1, 32)) - set(A_numbers) - set(B_numbers)))
-
-# グループ分け辞書
-group_ranges = {
-    "1の位（1〜9）": range(1, 10),
-    "10の位（10〜19）": range(10, 20),
-    "20の位（20〜31）": range(20, 32),
-}
-
-# 表示処理
-for label, r in group_ranges.items():
-    a_group = sorted([n for n in A_numbers if n in r])
-    b_group = sorted([n for n in B_numbers if n in r])
-    c_group = sorted([n for n in C_numbers if n in r])
-
-    st.markdown(f"### 🔹 {label}")
-    st.markdown(f"- A数字（3〜4回）: {', '.join(map(str, a_group)) if a_group else 'なし'}")
-    st.markdown(f"- B数字（5回以上）: {', '.join(map(str, b_group)) if b_group else 'なし'}")
-    st.markdown(f"- C数字（その他）: {', '.join(map(str, c_group)) if c_group else 'なし'}")
 
 # Streamlit用：テーブル表示（style_table関数が必要）
 # st.markdown(style_table(abc_class_df), unsafe_allow_html=True)
