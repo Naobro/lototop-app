@@ -28,6 +28,10 @@ st.title("抽選結果をコピペしてCSVに保存・GitHubへ反映")
 
 lottery_type = st.selectbox("宝くじの種類を選んでください", ["ロト6", "ロト7", "ミニロト", "ナンバーズ3", "ナンバーズ4"])
 text_input = st.text_area("みずほ銀行の抽選結果をコピペしてください", height=300)
+# 初期化（ボタン未選択時のNameError対策）
+file_path = ""
+record = {}
+columns = []
 
 def extract_round(text):
     match = re.search(r'第\s*(\d+)', text)
