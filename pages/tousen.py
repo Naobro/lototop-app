@@ -114,11 +114,6 @@ def append_to_numbers_only_csv(full_file, numbers):
     except Exception as e:
         st.error(f"n3/n4.csvへの追記に失敗しました: {e}")
 # ナンバーズ3／4の場合、数字だけ n3.csv/n4.csv に追記
-if lottery_type == "ナンバーズ3":
-    append_to_numbers_only_csv("n3.csv", [record["第1数字"], record["第2数字"], record["第3数字"]])
-
-if lottery_type == "ナンバーズ4":
-    append_to_numbers_only_csv("n4.csv", [record["第1数字"], record["第2数字"], record["第3数字"], record["第4数字"]])
 
 def push_to_github():
     try:
@@ -245,6 +240,14 @@ if st.button("CSV保存＋GitHub反映"):
                        "ストレート口数", "ボックス口数", "セット（ストレート）口数", "セット（ボックス）口数",
                        "ストレート当選金額", "ボックス当選金額", "セット（ストレート）当選金額", "セット（ボックス）当選金額"]
 
-        if file_path and save_record(file_path, record, columns):
-            st.success(f"✅ {lottery_type} 第{round_no}回 保存完了")
-            push_to_github()
+        
+if file_path and save_record(file_path, record, columns):
+    st.success(f"✅ {lottery_type} 第{round_no}回 保存完了")
+
+    if lottery_type == "ナンバーズ3":
+        append_to_numbers_only_csv("n3.csv", [record["第1数字"], record["第2数字"], record["第3数字"]])
+    if lottery_type == "ナンバーズ4":
+        append_to_numbers_only_csv("n4.csv", [record["第1数字"], record["第2数字"], record["第3数字"], record["第4数字"]])
+
+    push_to_github()
+        
