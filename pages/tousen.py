@@ -104,20 +104,23 @@ def save_record(file_path, record, columns):
 def append_to_numbers_only_csv(full_file, numbers):
     """n3.csv/n4.csv に当選数字だけ追記（抽せん日なし）"""
     try:
-        full_path = os.path.join(DATA_DIR, full_file)  # DATA_DIR = ../data/
+        full_path = os.path.join(DATA_DIR, full_file)
         df_new = pd.DataFrame([numbers])
         if os.path.exists(full_path):
             df_full = pd.read_csv(full_path, header=None)
-            # すでに同じ行が存在するかチェック（数字完全一致）
-            if any((df_full == df_new.iloc[0]).all(axis=1)):
+
+            # ✅ 列数が異なる行は無視、安全に比較
+            same_row_exists = any((df_full.iloc[i].tolist() == numbers for i in range(len(df_full))))
+            if same_row_exists:
                 return  # 重複行があるのでスキップ
+
             df_full = pd.concat([df_full, df_new], ignore_index=True)
         else:
             df_full = df_new
+
         df_full.to_csv(full_path, index=False, header=False)
     except Exception as e:
         st.error(f"n3/n4.csvへの追記に失敗しました: {e}")
-# ナンバーズ3／4の場合、数字だけ n3.csv/n4.csv に追記
 
 def push_to_github():
     try:
