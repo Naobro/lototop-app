@@ -50,7 +50,7 @@ df = pd.read_csv(csv_path)
 df = df.rename(columns={"抽せん日": "抽せん日"})
 df['抽せん日'] = pd.to_datetime(df['抽せん日'], errors='coerce')
 df = df.dropna(subset=['抽せん日'])
-df = df.sort_values(by="抽せん日", ascending=False)
+df = df.sort_values(by="回号", ascending=False).copy()
 df_recent = df.head(24)
 # --- abc_class_df の生成（先に定義しておく） ---
 latest24_numbers = df_recent[[f"第{i}数字" for i in range(1, 6)]].values.flatten()
@@ -71,12 +71,10 @@ abc_class_df = pd.DataFrame({
 })
 
 # 最新データの取得
-df_latest = df.iloc[0]  # 一番上（最新）を参照
+df_latest = df.sort_values(by="回号", ascending=False).iloc[0]
 
 st.header("最新の当選番号")
 
-# ✅ 最新回のデータを取得
-df_latest = df.iloc[-1]
 
 # ✅ フォーマット関数（口数＋金額）
 def format_count(val):
@@ -540,7 +538,7 @@ df = df[df["抽せん日"].notna()].copy()
 for i in range(1, 6):
     df[f"第{i}数字"] = pd.to_numeric(df[f"第{i}数字"], errors="coerce")
 df = df.dropna(subset=[f"第{i}数字" for i in range(1, 6)])
-df_recent = df.sort_values("回号", ascending=False).head(24).copy()
+df_recent = df.sort_values(by="回号", ascending=False).head(24)
 latest = df_recent.iloc[0]
 
 # --- 除外対象（前回数字） ---
