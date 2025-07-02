@@ -208,16 +208,12 @@ st.markdown(style_table(sum_df), unsafe_allow_html=True)
 import pandas as pd
 from collections import Counter
 
-# CSV読み込み
-csv_path = "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/miniloto_50.csv"
-df = pd.read_csv(csv_path)
 
 # 整形処理
 df.columns = df.columns.str.strip()
 df = df.rename(columns={"抽せん日": "抽せん日"})
 df["抽せん日"] = pd.to_datetime(df["抽せん日"], errors="coerce")
 df = df.dropna(subset=["抽せん日"])
-df = df.sort_values(by="抽せん日", ascending=False).head(24)
 
 # 本数字カラム抽出
 number_cols = [col for col in df.columns if "第" in col and "数字" in col]
