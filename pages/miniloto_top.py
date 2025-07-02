@@ -50,7 +50,7 @@ df = pd.read_csv(csv_path)
 df = df.rename(columns={"抽せん日": "抽せん日"})
 df['抽せん日'] = pd.to_datetime(df['抽せん日'], errors='coerce')
 df = df.dropna(subset=['抽せん日'])
-df = df.sort_values(by="回号", ascending=False).copy()
+df = df.sort_values(by="抽せん日", ascending=False)
 df_recent = df.head(24)
 # --- abc_class_df の生成（先に定義しておく） ---
 latest24_numbers = df_recent[[f"第{i}数字" for i in range(1, 6)]].values.flatten()
@@ -71,9 +71,10 @@ abc_class_df = pd.DataFrame({
 })
 
 # 最新データの取得
-df_latest = df.sort_values(by="回号", ascending=False).iloc[0]
+df_latest = df.iloc[0]
 
 st.header("最新の当選番号")
+
 
 
 # ✅ フォーマット関数（口数＋金額）
@@ -88,7 +89,6 @@ def format_yen(val):
         return f"{int(float(val)):,}円"
     except:
         return "-"
-
 
 # ✅ 本数字・ボーナス数字（セル分割）
 main_number_cells = ''.join([f"<td class='center'>{int(df_latest[f'第{i}数字'])}</td>" for i in range(1, 6)])
@@ -131,19 +131,18 @@ for _, row in df_recent.iterrows():
             abc.append('A'); abc_counts['A'] += 1
         else:
             abc.append('C'); abc_counts['C'] += 1
-    pull_count = len(set(nums) & prev_numbers)  # ← より明確に変数名を修正
-pull_total += int(pull_count > 0)           # ← 回数ではなく「有無」で集計
-prev_numbers = set(nums)
-cont = any(b - a == 1 for a, b in zip(sorted_nums, sorted_nums[1:]))
-cont_total += int(cont)  # ← 明示的に 0 or 1 加算
-
-abc_rows.append({
-    '抽選日': row['抽せん日'].strftime('%Y-%m-%d'),
-    **{f"第{i}数字": row[f"第{i}数字"] for i in range(1, 6)},
-    'ABC構成': ','.join(abc),
-    'ひっぱり': f"{pull_count}個" if pull_count > 0 else "なし",  # ← 明示的に個数表示
-    '連続': "あり" if cont else "なし"
-})
+    pulls = len(set(nums) & prev_numbers)
+    pull_total += bool(pulls)
+    prev_numbers = set(nums)
+    cont = any(b - a == 1 for a, b in zip(sorted_nums, sorted_nums[1:]))
+    cont_total += cont
+    abc_rows.append({
+        '抽選日': row['抽せん日'].strftime('%Y-%m-%d'),
+        **{f"第{i}数字": row[f"第{i}数字"] for i in range(1, 6)},
+        'ABC構成': ','.join(abc),
+        'ひっぱり': f"{pulls}個" if pulls else "なし",
+        '連続': "あり" if cont else "なし"
+    })
 abc_df = pd.DataFrame(abc_rows)
 st.markdown(style_table(abc_df), unsafe_allow_html=True)
 
@@ -208,12 +207,16 @@ st.markdown(style_table(sum_df), unsafe_allow_html=True)
 import pandas as pd
 from collections import Counter
 
+# CSV読み込み
+csv_path = "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/miniloto_50.csv"
+df = pd.read_csv(csv_path)
 
 # 整形処理
 df.columns = df.columns.str.strip()
 df = df.rename(columns={"抽せん日": "抽せん日"})
 df["抽せん日"] = pd.to_datetime(df["抽せん日"], errors="coerce")
 df = df.dropna(subset=["抽せん日"])
+df = df.sort_values(by="抽せん日", ascending=False).head(24)
 
 # 本数字カラム抽出
 number_cols = [col for col in df.columns if "第" in col and "数字" in col]
@@ -534,7 +537,7 @@ df = df[df["抽せん日"].notna()].copy()
 for i in range(1, 6):
     df[f"第{i}数字"] = pd.to_numeric(df[f"第{i}数字"], errors="coerce")
 df = df.dropna(subset=[f"第{i}数字" for i in range(1, 6)])
-df_recent = df.sort_values(by="回号", ascending=False).head(24)
+df_recent = df.sort_values("回号", ascending=False).head(24).copy()
 latest = df_recent.iloc[0]
 
 # --- 除外対象（前回数字） ---
