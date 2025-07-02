@@ -116,10 +116,11 @@ A_set = set(counts[(counts >= 3) & (counts <= 4)].index)
 B_set = set(counts[counts >= 5].index)
 
 abc_rows = []
-prev_numbers = set()
+prev_numbers = None  # 最初はNoneにしておく
 pull_total = 0
 cont_total = 0
 abc_counts = {'A': 0, 'B': 0, 'C': 0}
+
 for _, row in df_recent.iterrows():
     nums = [int(row[f"第{i}数字"]) for i in range(1, 6)]
     sorted_nums = sorted(nums)
@@ -131,11 +132,19 @@ for _, row in df_recent.iterrows():
             abc.append('A'); abc_counts['A'] += 1
         else:
             abc.append('C'); abc_counts['C'] += 1
-    pulls = len(set(nums) & prev_numbers)
+
+    # ✅ ひっぱり：前回の数字が今回にいくつ含まれてるか（引っぱった側＝今回で判定）
+    if prev_numbers is not None:
+        pulls = len(set(nums) & prev_numbers)
+    else:
+        pulls = 0
     pull_total += bool(pulls)
-    prev_numbers = set(nums)
+
+    # ✅ 連続数字チェック
     cont = any(b - a == 1 for a, b in zip(sorted_nums, sorted_nums[1:]))
     cont_total += cont
+
+    # ✅ 結果追加
     abc_rows.append({
         '抽選日': row['抽せん日'].strftime('%Y-%m-%d'),
         **{f"第{i}数字": row[f"第{i}数字"] for i in range(1, 6)},
@@ -143,9 +152,13 @@ for _, row in df_recent.iterrows():
         'ひっぱり': f"{pulls}個" if pulls else "なし",
         '連続': "あり" if cont else "なし"
     })
+
+    # ✅ 今回の数字を次回の比較対象に保存
+    prev_numbers = set(nums)
+
+# ✅ DataFrameに変換して表示
 abc_df = pd.DataFrame(abc_rows)
 st.markdown(style_table(abc_df), unsafe_allow_html=True)
-
 # A数字・B数字を取得（文字列→int変換）
 A_nums = [int(n) for n in abc_class_df['A（3〜4回）'] if n != '']
 B_nums = [int(n) for n in abc_class_df['B（5回以上）'] if n != '']
