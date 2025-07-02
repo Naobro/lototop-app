@@ -71,7 +71,7 @@ abc_class_df = pd.DataFrame({
 })
 
 # 最新データの取得
-df_latest = df.iloc[0]
+df_latest = df.iloc[0]  # 一番上（最新）を参照
 
 st.header("最新の当選番号")
 
@@ -133,18 +133,19 @@ for _, row in df_recent.iterrows():
             abc.append('A'); abc_counts['A'] += 1
         else:
             abc.append('C'); abc_counts['C'] += 1
-    pulls = len(set(nums) & prev_numbers)
-    pull_total += bool(pulls)
-    prev_numbers = set(nums)
-    cont = any(b - a == 1 for a, b in zip(sorted_nums, sorted_nums[1:]))
-    cont_total += cont
-    abc_rows.append({
-        '抽選日': row['抽せん日'].strftime('%Y-%m-%d'),
-        **{f"第{i}数字": row[f"第{i}数字"] for i in range(1, 6)},
-        'ABC構成': ','.join(abc),
-        'ひっぱり': f"{pulls}個" if pulls else "なし",
-        '連続': "あり" if cont else "なし"
-    })
+    pull_count = len(set(nums) & prev_numbers)  # ← より明確に変数名を修正
+pull_total += int(pull_count > 0)           # ← 回数ではなく「有無」で集計
+prev_numbers = set(nums)
+cont = any(b - a == 1 for a, b in zip(sorted_nums, sorted_nums[1:]))
+cont_total += int(cont)  # ← 明示的に 0 or 1 加算
+
+abc_rows.append({
+    '抽選日': row['抽せん日'].strftime('%Y-%m-%d'),
+    **{f"第{i}数字": row[f"第{i}数字"] for i in range(1, 6)},
+    'ABC構成': ','.join(abc),
+    'ひっぱり': f"{pull_count}個" if pull_count > 0 else "なし",  # ← 明示的に個数表示
+    '連続': "あり" if cont else "なし"
+})
 abc_df = pd.DataFrame(abc_rows)
 st.markdown(style_table(abc_df), unsafe_allow_html=True)
 
