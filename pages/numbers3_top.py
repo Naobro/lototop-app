@@ -153,7 +153,7 @@ def generate_recent_numbers3_table(csv_path):
 recent_csv_path = "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/numbers3_24.csv"
 generate_recent_numbers3_table(recent_csv_path)
 # **③ ランキングの作成**
-st.header("③ ランキング")
+st.header("ランキング")
 
 def generate_ranking(csv_path):
     try:
@@ -207,7 +207,7 @@ ranking_csv_path = "https://raw.githubusercontent.com/Naobro/lototop-app/main/da
 generate_ranking(ranking_csv_path)
 
 # **④分析セクション**
-st.header("④分析セクション")
+st.header("分析セクション")
 
 # **ナンバーズ3 直近24回のWとSの回数**
 st.subheader("直近24回のWとSの回数")
@@ -342,6 +342,87 @@ generate_range_distribution(csv_path)
 import pandas as pd
 import streamlit as st
 from collections import Counter
+
+# ✅ AI予測表示：ランダムフォレスト・ニューラルネット・マルコフ連鎖・共通数字
+def show_ai_predictions(csv_path):
+    st.header("② AIによる次回数字予測")
+
+    from sklearn.ensemble import RandomForestClassifier
+    from sklearn.neural_network import MLPClassifier
+    from collections import defaultdict, Counter
+
+    try:
+        df = pd.read_csv(csv_path)
+        df = df.dropna(subset=["第1数字", "第2数字", "第3数字"])
+        df[["第1数字", "第2数字", "第3数字"]] = df[["第1数字", "第2数字", "第3数字"]].astype(int)
+
+        # 学習用データ作成
+        X, y1, y2, y3 = [], [], [], []
+        for i in range(len(df)-1):
+            prev = df.iloc[i+1]
+            curr = df.iloc[i]
+            X.append([prev["第1数字"], prev["第2数字"], prev["第3数字"]])
+            y1.append(curr["第1数字"])
+            y2.append(curr["第2数字"])
+            y3.append(curr["第3数字"])
+        X = pd.DataFrame(X)
+        latest = df.iloc[0][["第1数字", "第2数字", "第3数字"]].tolist()
+
+        def get_top3(model, x):
+            probs = model.predict_proba([x])[0]
+            return [i for i, _ in sorted(enumerate(probs), key=lambda x: -x[1])[:3]]
+
+        # ランダムフォレスト予測
+        rf1 = RandomForestClassifier().fit(X, y1)
+        rf2 = RandomForestClassifier().fit(X, y2)
+        rf3 = RandomForestClassifier().fit(X, y3)
+        rf_pred = {
+            "第1数字": get_top3(rf1, latest),
+            "第2数字": get_top3(rf2, latest),
+            "第3数字": get_top3(rf3, latest)
+        }
+        st.subheader("🌲 ランダムフォレスト予測")
+        st.dataframe(pd.DataFrame(rf_pred))
+
+        # ニューラルネット予測
+        nn1 = MLPClassifier(hidden_layer_sizes=(50,), max_iter=1000).fit(X, y1)
+        nn2 = MLPClassifier(hidden_layer_sizes=(50,), max_iter=1000).fit(X, y2)
+        nn3 = MLPClassifier(hidden_layer_sizes=(50,), max_iter=1000).fit(X, y3)
+        nn_pred = {
+            "第1数字": get_top3(nn1, latest),
+            "第2数字": get_top3(nn2, latest),
+            "第3数字": get_top3(nn3, latest)
+        }
+        st.subheader("🧠 ニューラルネットワーク予測")
+        st.dataframe(pd.DataFrame(nn_pred))
+
+        # マルコフ連鎖予測
+        def markov_predict(col):
+            transition = defaultdict(list)
+            values = df[col].tolist()
+            for i in range(len(values)-1):
+                transition[values[i]].append(values[i+1])
+            last = df.iloc[0][col]
+            count = Counter(transition[last])
+            return [v for v, _ in count.most_common(3)]
+
+        markov_pred = {
+            "第1数字": markov_predict("第1数字"),
+            "第2数字": markov_predict("第2数字"),
+            "第3数字": markov_predict("第3数字")
+        }
+        st.subheader("🔗 マルコフ連鎖予測")
+        st.dataframe(pd.DataFrame(markov_pred))
+
+        # 共通数字
+        st.subheader("✅ 3手法で一致した数字")
+        for k in ["第1数字", "第2数字", "第3数字"]:
+            common = set(rf_pred[k]) & set(nn_pred[k]) & set(markov_pred[k])
+            st.markdown(f"**{k}**：{'、'.join(map(str, common)) if common else '（一致なし）'}")
+
+    except Exception as e:
+        st.error("AI予測の実行中にエラーが発生しました")
+        st.error(str(e))
 
 
 # **組み合わせパターン（ペア）のカウント**
