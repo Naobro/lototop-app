@@ -117,9 +117,9 @@ def style_table(df):
         {'selector': 'td', 'props': [('text-align', 'center')]}
     ]).to_html(escape=False, index=False)
 
-# 最新当選番号（df を回号降順にソートして取得）
-df_sorted = df.sort_values("回号", ascending=False).reset_index(drop=True)
-latest_numbers = [int(df_sorted.iloc[0][f"第{i}数字"]) for i in range(1, 7)]
+# ✅ CSVの最後の行（最新の当選データ）を正しく使う
+latest = df.iloc[-1]
+latest_numbers = [int(latest[f"第{i}数字"]) for i in range(1, 7)]
 
 def highlight_number(n):
     return f"<span style='color:red; font-weight:bold'>{n}</span>" if n in latest_numbers else str(n)
