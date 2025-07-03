@@ -178,7 +178,7 @@ st.markdown("#### 🔎 出現傾向（ABC割合・ひっぱり率・連続率）
 
 # ✅ A/B数字の位別分類（ロト7用：最大37まで）
 
-st.header("⑥-A A数字・B数字の位別分類")
+st.header("A数字・B数字の位別分類")
 
 def style_table(df):
     return df.style.set_table_styles([
@@ -186,8 +186,8 @@ def style_table(df):
         {'selector': 'td', 'props': [('text-align', 'center')]}
     ]).to_html(escape=False, index=False)
 
-# 最新当選番号（ロト7は第1〜第7数字）
-latest_numbers = [int(df.iloc[0][f"第{i}数字"]) for i in range(1, 8)]
+# 最新当選番号（ロト7は第1〜第7数字）※正しい行
+latest_numbers = [int(df.iloc[-1][f"第{i}数字"]) for i in range(1, 8)]
 
 def highlight_number(n):
     return f"<span style='color:red; font-weight:bold'>{n}</span>" if n in latest_numbers else str(n)
