@@ -109,7 +109,7 @@ abc_df = pd.DataFrame(abc_rows)
 render_scrollable_table(abc_df)
 # ✅ A/B数字の位別分類（ロト6用：40〜43も30の位に分類）
 
-st.header("⑥-A A数字・B数字の位別分類")
+st.header("A数字・B数字の位別分類")
 
 def style_table(df):
     return df.style.set_table_styles([
@@ -117,8 +117,9 @@ def style_table(df):
         {'selector': 'td', 'props': [('text-align', 'center')]}
     ]).to_html(escape=False, index=False)
 
-# 最新当選番号（ロト6は6個）
-latest_numbers = [int(df.iloc[0][f"第{i}数字"]) for i in range(1, 7)]
+# 最新当選番号（df を回号降順にソートして取得）
+df_sorted = df.sort_values("回号", ascending=False).reset_index(drop=True)
+latest_numbers = [int(df_sorted.iloc[0][f"第{i}数字"]) for i in range(1, 7)]
 
 def highlight_number(n):
     return f"<span style='color:red; font-weight:bold'>{n}</span>" if n in latest_numbers else str(n)
@@ -134,7 +135,7 @@ def classify_numbers_loto6(numbers):
             bins['10の位'].append(n)
         elif 20 <= n <= 29:
             bins['20の位'].append(n)
-        elif 30 <= n <= 43:  # ← 40〜43 も含める
+        elif 30 <= n <= 43:
             bins['30の位'].append(n)
     return bins
 
@@ -148,7 +149,6 @@ digit_table = pd.DataFrame({
 })
 
 st.markdown(style_table(digit_table), unsafe_allow_html=True)
-
 ## ✅ ③ パターン分析（40〜43 も 30 に統合）
 st.header("パターン分析")
 
