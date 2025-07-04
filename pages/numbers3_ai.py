@@ -7,20 +7,27 @@ import sys
 import warnings
 warnings.filterwarnings("ignore")
 
-# 機械学習用
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.neural_network import MLPClassifier
 
-# データの読み込み
+# --- データの読み込みと整形 ---
 CSV_PATH = "./data/n3.csv"
-df = pd.read_csv(CSV_PATH)
-df = df.dropna(subset=["第1数字", "第2数字", "第3数字"])
+
+# 明示的に必要な列のみ読み込む（空白列対策）
+df = pd.read_csv(CSV_PATH, usecols=[0, 1, 2, 3], names=["回号", "第1数字", "第2数字", "第3数字"], header=0)
+
+# 不完全な行を除外し、整数変換
+df = df.dropna()
 df[["第1数字", "第2数字", "第3数字"]] = df[["第1数字", "第2数字", "第3数字"]].astype(int)
 
-# 入力と出力を作成（1つ前のデータを特徴量、現在を正解とする）
+# 最新データ（回号が最大＝最新）
+df = df.sort_values("回号", ascending=False).reset_index(drop=True)
+latest = df.iloc[0][["第1数字", "第2数字", "第3数字"]].tolist()
+
+# 特徴量とターゲットの作成
 X, y1, y2, y3 = [], [], [], []
-for i in range(len(df)-1):
-    prev = df.iloc[i+1]
+for i in range(len(df) - 1):
+    prev = df.iloc[i + 1]
     curr = df.iloc[i]
     X.append([prev["第1数字"], prev["第2数字"], prev["第3数字"]])
     y1.append(curr["第1数字"])
@@ -28,10 +35,7 @@ for i in range(len(df)-1):
     y3.append(curr["第3数字"])
 X = np.array(X)
 
-# 最新の当選番号（1行目が最新）
-latest = df.iloc[0][["第1数字", "第2数字", "第3数字"]].tolist()
-
-# 共通予測関数
+# 予測補助関数
 def get_top3(model, x):
     probs = model.predict_proba([x])[0]
     return [i for i, _ in sorted(enumerate(probs), key=lambda x: -x[1])[:3]]
@@ -70,8 +74,8 @@ st.header("🔗 マルコフ連鎖予測")
 def markov_predict(column_name):
     transition = defaultdict(list)
     col = df[column_name].tolist()
-    for i in range(len(col)-1):
-        transition[col[i]].append(col[i+1])
+    for i in range(len(col) - 1):
+        transition[col[i]].append(col[i + 1])
     last = df.iloc[0][column_name]
     counter = Counter(transition[last])
     return [n for n, _ in counter.most_common(3)]
