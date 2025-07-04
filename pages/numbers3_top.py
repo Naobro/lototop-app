@@ -577,9 +577,6 @@ generate_sum_analysis(csv_path)
 st.header("AIによる次回数字予測")
 show_ai_predictions("https://raw.githubusercontent.com/Naobro/lototop-app/main/data/n3.csv")
 
-import streamlit as st
-import random
-import pandas as pd
 
 # **予測セクション**
 st.header("ナンバーズ3 予測")
