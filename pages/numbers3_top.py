@@ -350,6 +350,7 @@ def show_ai_predictions(csv_path):
     from sklearn.ensemble import RandomForestClassifier
     from sklearn.neural_network import MLPClassifier
     from collections import defaultdict, Counter
+    from sklearn.exceptions import NotFittedError
 
     try:
         df = pd.read_csv(csv_path)
@@ -366,16 +367,20 @@ def show_ai_predictions(csv_path):
             y2.append(curr["第2数字"])
             y3.append(curr["第3数字"])
         X = pd.DataFrame(X)
-        latest = df.iloc[0][["第1数字", "第2数字", "第3数字"]].tolist()
+        latest = [int(df.iloc[0][f"第{i}数字"]) for i in range(1, 4)]
 
         def get_top3(model, x):
-            probs = model.predict_proba([x])[0]
-            return [i for i, _ in sorted(enumerate(probs), key=lambda x: -x[1])[:3]]
+            try:
+                probs = model.predict_proba([x])[0]
+                return [i for i, _ in sorted(enumerate(probs), key=lambda x: -x[1])[:3]]
+            except (AttributeError, NotFittedError):
+                pred = model.predict([x])[0]
+                return [pred]
 
         # ランダムフォレスト予測
-        rf1 = RandomForestClassifier().fit(X, y1)
-        rf2 = RandomForestClassifier().fit(X, y2)
-        rf3 = RandomForestClassifier().fit(X, y3)
+        rf1 = RandomForestClassifier(n_estimators=100).fit(X, y1)
+        rf2 = RandomForestClassifier(n_estimators=100).fit(X, y2)
+        rf3 = RandomForestClassifier(n_estimators=100).fit(X, y3)
         rf_pred = {
             "第1数字": get_top3(rf1, latest),
             "第2数字": get_top3(rf2, latest),
@@ -418,13 +423,14 @@ def show_ai_predictions(csv_path):
         st.subheader("✅ 3手法で一致した数字")
         for k in ["第1数字", "第2数字", "第3数字"]:
             common = set(rf_pred[k]) & set(nn_pred[k]) & set(markov_pred[k])
-            st.markdown(f"**{k}**：{'、'.join(map(str, common)) if common else '（一致なし）'}")
+            if common:
+                st.markdown(f"**{k}**：{'、'.join(map(str, sorted(common)))}")
+            else:
+                st.markdown(f"**{k}**：一致なし")
 
     except Exception as e:
         st.error("AI予測の実行中にエラーが発生しました")
-        st.error(str(e))
-
-
+        st.exception(e)
 # **組み合わせパターン（ペア）のカウント**
 st.subheader("直近24回の組み合わせパターン（ペア）のカウント")
 
