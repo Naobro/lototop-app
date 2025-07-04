@@ -13,6 +13,10 @@ import pandas as pd
 import random
 from collections import Counter
 import html  # ← これを最上部の import 群に追加
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from numbers3_ai import show_ai_predictions
 
 # GitHub上のCSVパス
 CSV_PATH = "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/numbers3_24.csv"
@@ -508,10 +512,9 @@ def generate_sum_analysis(csv_path):
 # CSVのパス
 csv_path = "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/numbers3_24.csv"
 generate_sum_analysis(csv_path)
-
-# 末尾など適切な場所に以下を追記（AI予測セクションの表示）
-from numbers3_ai import show_ai_predictions  # ← ファイル名に合わせて修正
-show_ai_predictions("data/n3.csv")
+# ✅ AI予測セクションの追加（ここに追記）
+st.header("AIによる次回数字予測")
+show_ai_predictions("https://raw.githubusercontent.com/Naobro/lototop-app/main/data/n3.csv")
 
 import streamlit as st
 import random
