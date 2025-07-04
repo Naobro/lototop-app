@@ -27,6 +27,16 @@ def show_ai_predictions(csv_path):
     from sklearn.neural_network import MLPClassifier
     from collections import Counter, defaultdict
 
+ def show_ai_predictions(csv_path):
+    import pandas as pd
+    import streamlit as st
+    from sklearn.ensemble import RandomForestClassifier
+    from sklearn.neural_network import MLPClassifier
+    from collections import Counter, defaultdict
+
+    df = pd.read_csv(csv_path, header=None, names=["第1数字", "第2数字", "第3数字"])
+    df = df.dropna().astype(int)
+
     st.header("🔢 ナンバーズ3 - AI予測（3手法）")
 
     latest = df.iloc[0]
@@ -40,10 +50,13 @@ def show_ai_predictions(csv_path):
 
         for col in ["第1数字", "第2数字", "第3数字"]:
             model_rf = RandomForestClassifier().fit(X, y[col])
-            rf_pred[col] = model_rf.predict(X[:1].repeat(10)).tolist()
-
             model_nn = MLPClassifier(max_iter=1000).fit(X, y[col])
-            nn_pred[col] = model_nn.predict(X[:1].repeat(10)).tolist()
+
+            # 前回の数字1行分を10回繰り返して予測させる
+            X_repeat = pd.concat([X[:1]] * 10, ignore_index=True)
+
+            rf_pred[col] = model_rf.predict(X_repeat).tolist()
+            nn_pred[col] = model_nn.predict(X_repeat).tolist()
 
         st.subheader("🌲 ランダムフォレスト予測")
         st.dataframe(pd.DataFrame(rf_pred))
@@ -75,12 +88,6 @@ def show_ai_predictions(csv_path):
     except Exception as e:
         st.error("AI予測の実行中にエラーが発生しました")
         st.exception(e)
-
-# ✅ GitHub上のCSVパス（24回分）※これは別機能の分析用
-CSV_PATH = "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/numbers3_24.csv"
-
-# ✅ AI予測表示（ローカルの全データ用）
-show_ai_predictions("data/n3.csv")
 
 # 最新の当選結果表示関数
 def show_latest_results(csv_path):
@@ -575,7 +582,6 @@ csv_path = "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/numbe
 generate_sum_analysis(csv_path)
 # ✅ AI予測セクションの追加（ここに追記）
 st.header("AIによる次回数字予測")
-show_ai_predictions("https://raw.githubusercontent.com/Naobro/lototop-app/main/data/n3.csv")
 
 
 # **予測セクション**
@@ -597,9 +603,12 @@ def generate_random_predictions(n, axis_number):
 axis_number = st.selectbox("軸数字を選択 (0〜9)", list(range(10)), key="axis_number")
 num_predictions = 20  # 予測数を20に固定
 
+# ランダム予測ボタン
 if st.button("20パターン予測", key="random_predict_button"):
     random_predictions = generate_random_predictions(num_predictions, axis_number)
     st.write(f"ランダム予測 (20パターン)：")
     df_random_predictions = pd.DataFrame(random_predictions, columns=[f'予測番号{i+1}' for i in range(3)])
     st.dataframe(df_random_predictions)
-    show_ai_predictions("https://raw.githubusercontent.com/Naobro/lototop-app/main/data/n3.csv")
+
+# ✅ AI予測は1回だけ呼び出す
+show_ai_predictions("data/n3.csv")
