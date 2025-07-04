@@ -27,7 +27,7 @@ def show_ai_predictions(csv_path):
     from sklearn.neural_network import MLPClassifier
     from collections import Counter, defaultdict
 
- def show_ai_predictions(csv_path):
+def show_ai_predictions(csv_path):
     import pandas as pd
     import streamlit as st
     from sklearn.ensemble import RandomForestClassifier
@@ -88,7 +88,6 @@ def show_ai_predictions(csv_path):
     except Exception as e:
         st.error("AI予測の実行中にエラーが発生しました")
         st.exception(e)
-
 # 最新の当選結果表示関数
 def show_latest_results(csv_path):
     try:
