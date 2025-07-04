@@ -9,13 +9,18 @@ import warnings
 warnings.filterwarnings("ignore")
 
 # --- データの読み込みと整形 ---
-CSV_PATH = "./data/n3.csv"
+CSV_PATH = "data/n3.csv"  # 安定した相対パス
 
-# CSVファイルを安全に読み込む（BOM対応＋空白列削除）
-df = pd.read_csv(CSV_PATH, encoding="utf-8-sig")
-df = df.loc[:, ~df.columns.str.contains('^Unnamed')]  # 不要な列を除去
-df = df.dropna()  # 欠損除外
-df[["第1数字", "第2数字", "第3数字"]] = df[["第1数字", "第2数字", "第3数字"]].astype(int)
+# CSVファイルを安全に読み込む（BOMなしUTF-8前提）
+try:
+    df = pd.read_csv(CSV_PATH, encoding="utf-8")
+    df = df.loc[:, ~df.columns.str.contains('^Unnamed')]  # 不要列除去
+    df = df.dropna()
+    df[["第1数字", "第2数字", "第3数字"]] = df[["第1数字", "第2数字", "第3数字"]].astype(int)
+except Exception as e:
+    st.error("CSV読み込み中にエラーが発生しました")
+    st.exception(e)
+    st.stop()
 
 # 最新データ（回号が最大）
 df = df.sort_values("回号", ascending=False).reset_index(drop=True)
