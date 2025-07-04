@@ -17,11 +17,15 @@ from collections import defaultdict
 # import sys
 # from numbers3_ai import show_ai_predictions
 
-# ✅ AI予測関数の追加（n3.csv専用、ヘッダーなし対応）
 def show_ai_predictions(csv_path):
     df = pd.read_csv(csv_path, header=None, names=["第1数字", "第2数字", "第3数字"])
-df = df.apply(pd.to_numeric, errors="coerce")  # ← 数値以外をNaNに変換
-df = df.dropna().astype(int)  # ← NaN行を削除してから整数に変換
+    df = df.apply(pd.to_numeric, errors="coerce")
+    df = df.dropna().astype(int)
+
+    import streamlit as st
+    from sklearn.ensemble import RandomForestClassifier
+    from sklearn.neural_network import MLPClassifier
+    from collections import Counter, defaultdict
 
     st.header("🔢 ナンバーズ3 - AI予測（3手法）")
 
