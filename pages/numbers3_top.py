@@ -149,6 +149,7 @@ def show_latest_results(csv_path):
     except Exception as e:
         st.error(f"エラーが発生しました: {e}")
         st.error(f"エラー詳細: {type(e)}")
+CSV_PATH = "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/numbers3_24.csv"
 
 # Streamlit表示
 def show_page():
