@@ -605,3 +605,4 @@ if st.button("20パターン予測", key="random_predict_button"):
     st.write(f"ランダム予測 (20パターン)：")
     df_random_predictions = pd.DataFrame(random_predictions, columns=[f'予測番号{i+1}' for i in range(3)])
     st.dataframe(df_random_predictions)
+    show_ai_predictions("https://raw.githubusercontent.com/Naobro/lototop-app/main/data/n3.csv")
