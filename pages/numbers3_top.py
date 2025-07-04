@@ -1,9 +1,10 @@
 import sys
 import os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 import streamlit as st
-from auth import check_password
+from auth import check_password # type: ignore
+from numbers3_ai import show_ai_predictions # type: ignore
 
 check_password()
 st.set_page_config(layout="centered")
@@ -12,11 +13,7 @@ import ssl
 import pandas as pd
 import random
 from collections import Counter
-import html  # ← これを最上部の import 群に追加
-import sys
-import os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from numbers3_ai import show_ai_predictions
+import html
 
 # GitHub上のCSVパス
 CSV_PATH = "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/numbers3_24.csv"
