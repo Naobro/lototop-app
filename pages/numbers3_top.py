@@ -345,7 +345,7 @@ from collections import Counter
 
 # ✅ AI予測表示：ランダムフォレスト・ニューラルネット・マルコフ連鎖・共通数字
 def show_ai_predictions(csv_path):
-    st.header("② AIによる次回数字予測")
+    st.header("AIによる次回数字予測")
 
     from sklearn.ensemble import RandomForestClassifier
     from sklearn.neural_network import MLPClassifier
@@ -508,6 +508,10 @@ def generate_sum_analysis(csv_path):
 # CSVのパス
 csv_path = "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/numbers3_24.csv"
 generate_sum_analysis(csv_path)
+
+# 末尾など適切な場所に以下を追記（AI予測セクションの表示）
+from numbers3_ai import show_ai_predictions  # ← ファイル名に合わせて修正
+show_ai_predictions("data/n3.csv")
 
 import streamlit as st
 import random
