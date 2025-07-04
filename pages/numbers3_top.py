@@ -359,8 +359,8 @@ def show_ai_predictions(csv_path):
 
         # 学習用データ作成
         X, y1, y2, y3 = [], [], [], []
-        for i in range(len(df)-1):
-            prev = df.iloc[i+1]
+        for i in range(len(df) - 1):
+            prev = df.iloc[i + 1]
             curr = df.iloc[i]
             X.append([prev["第1数字"], prev["第2数字"], prev["第3数字"]])
             y1.append(curr["第1数字"])
@@ -405,8 +405,8 @@ def show_ai_predictions(csv_path):
         def markov_predict(col):
             transition = defaultdict(list)
             values = df[col].tolist()
-            for i in range(len(values)-1):
-                transition[values[i]].append(values[i+1])
+            for i in range(len(values) - 1):
+                transition[values[i]].append(values[i + 1])
             last = df.iloc[0][col]
             count = Counter(transition[last])
             return [v for v, _ in count.most_common(3)]
