@@ -480,34 +480,27 @@ def show_ai_predictions(csv_path):
             markov_predict("第3数字")
         ]
 
-        # 結果を横並びテーブルにまとめる
-        result_df = pd.DataFrame([
-            ["🌲 ランダムフォレスト"] + rf_pred[0] + rf_pred[1] + rf_pred[2],
-            ["🧠 ニューラルネット"] + nn_pred[0] + nn_pred[1] + nn_pred[2],
-            ["🔁 マルコフ連鎖"] + mc_pred[0] + mc_pred[1] + mc_pred[2],
-        ], columns=[
-            "モデル名",
-            "第1数字候補1", "第1数字候補2", "第1数字候補3",
-            "第2数字候補1", "第2数字候補2", "第2数字候補3",
-            "第3数字候補1", "第3数字候補2", "第3数字候補3"
-        ])
+        # 結果を横並びテーブルにまとめる（1セルに3候補を表示）
+result_df = pd.DataFrame([
+    ["🌲 ランダムフォレスト"] + [", ".join(rf_pred[i]) for i in range(3)],
+    ["🧠 ニューラルネット"] + [", ".join(nn_pred[i]) for i in range(3)],
+    ["🔁 マルコフ連鎖"] + [", ".join(mc_pred[i]) for i in range(3)],
+], columns=[
+    "モデル名", "第1数字候補", "第2数字候補", "第3数字候補"
+])
 
-        # 表示
-        st.subheader("🔍 AIモデル予測（次に来る数字の上位3候補）")
-        st.dataframe(result_df, use_container_width=True)
+# 表示
+st.subheader("🔍 AIモデル予測（次に来る数字の上位3候補）")
+st.dataframe(result_df, use_container_width=True)
 
-        # 共通数字
-        st.subheader("✅ 3手法で一致した数字")
-        for i, k in enumerate(["第1数字", "第2数字", "第3数字"]):
-            common = set(rf_pred[i]) & set(nn_pred[i]) & set(mc_pred[i])
-            if common:
-                st.markdown(f"**{k}**：{'、'.join(sorted(common))}")
-            else:
-                st.markdown(f"**{k}**：一致なし")
-
-    except Exception as e:
-        st.error("AI予測の実行中にエラーが発生しました")
-        st.exception(e)
+ # 共通数字
+st.subheader("✅ 3手法で一致した数字")
+for i, k in enumerate(["第1数字", "第2数字", "第3数字"]):
+    common = set(rf_pred[i]) & set(nn_pred[i]) & set(mc_pred[i])
+    if common:
+        st.markdown(f"**{k}**：{'、'.join(sorted(common))}")
+    else:
+        st.markdown(f"**{k}**：一致なし")
 # **組み合わせパターン（ペア）のカウント**
 st.subheader("直近24回の組み合わせパターン（ペア）のカウント")
 
