@@ -101,26 +101,22 @@ def save_record(file_path, record, columns):
         df = pd.concat([old, df], ignore_index=True)
     df.to_csv(file_path, index=False)
     return True
-def append_to_numbers_only_csv(full_file, numbers):
-    """n3.csv/n4.csv に当選数字だけ追記（抽せん日なし）"""
+def append_to_numbers_only_csv(full_file, round_no, numbers):
+    """n3.csv / n4.csv に回号＋当選数字を追記（重複チェックあり）"""
     try:
         full_path = os.path.join(DATA_DIR, full_file)
-        df_new = pd.DataFrame([numbers])
+        new_row = [round_no] + numbers
+        df_new = pd.DataFrame([new_row])
         if os.path.exists(full_path):
             df_full = pd.read_csv(full_path, header=None)
-
-            # ✅ 列数が異なる行は無視、安全に比較
-            same_row_exists = any((df_full.iloc[i].tolist() == numbers for i in range(len(df_full))))
-            if same_row_exists:
-                return  # 重複行があるのでスキップ
-
+            if str(round_no) in df_full.iloc[:, 0].astype(str).values:
+                return  # 同じ回号はスキップ
             df_full = pd.concat([df_full, df_new], ignore_index=True)
         else:
             df_full = df_new
-
         df_full.to_csv(full_path, index=False, header=False)
     except Exception as e:
-        st.error(f"n3/n4.csvへの追記に失敗しました: {e}")
+        st.error(f"{full_file}への追記に失敗しました: {e}")
 
 def push_to_github():
     try:
@@ -247,14 +243,13 @@ if st.button("CSV保存＋GitHub反映"):
                        "ストレート口数", "ボックス口数", "セット（ストレート）口数", "セット（ボックス）口数",
                        "ストレート当選金額", "ボックス当選金額", "セット（ストレート）当選金額", "セット（ボックス）当選金額"]
 
-        
 if file_path and record and columns:
     if save_record(file_path, record, columns):
         st.success(f"✅ {lottery_type} 第{round_no}回 保存完了")
 
         if lottery_type == "ナンバーズ3":
-            append_to_numbers_only_csv("n3.csv", [record["第1数字"], record["第2数字"], record["第3数字"]])
+            append_to_numbers_only_csv("n3.csv", record["回号"], [record["第1数字"], record["第2数字"], record["第3数字"]])
         if lottery_type == "ナンバーズ4":
-            append_to_numbers_only_csv("n4.csv", [record["第1数字"], record["第2数字"], record["第3数字"], record["第4数字"]])
+            append_to_numbers_only_csv("n4.csv", record["回号"], [record["第1数字"], record["第2数字"], record["第3数字"], record["第4数字"]])
 
-        push_to_github()
+        push_to_github()       
