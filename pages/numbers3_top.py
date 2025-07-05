@@ -415,7 +415,6 @@ import pandas as pd
 import streamlit as st
 from collections import Counter
 
-# ✅ AI予測表示：ランダムフォレスト・ニューラルネット・マルコフ連鎖・共通数字
 def show_ai_predictions(csv_path):
     st.header("AIによる次回数字予測")
 
@@ -423,6 +422,7 @@ def show_ai_predictions(csv_path):
     from sklearn.neural_network import MLPClassifier
     from collections import defaultdict, Counter
     from sklearn.exceptions import NotFittedError
+    import pandas as pd
 
     try:
         df = pd.read_csv(csv_path)
@@ -441,62 +441,67 @@ def show_ai_predictions(csv_path):
         X = pd.DataFrame(X)
         latest = [int(df.iloc[0][f"第{i}数字"]) for i in range(1, 4)]
 
+        # Top3取得関数
         def get_top3(model, x):
             try:
                 probs = model.predict_proba([x])[0]
-                return [i for i, _ in sorted(enumerate(probs), key=lambda x: -x[1])[:3]]
+                return [str(i) for i, _ in sorted(enumerate(probs), key=lambda x: -x[1])[:3]]
             except (AttributeError, NotFittedError):
                 pred = model.predict([x])[0]
-                return [pred]
+                return [str(pred)]
 
-        # ランダムフォレスト予測
-        rf1 = RandomForestClassifier(n_estimators=100).fit(X, y1)
-        rf2 = RandomForestClassifier(n_estimators=100).fit(X, y2)
-        rf3 = RandomForestClassifier(n_estimators=100).fit(X, y3)
-        rf_pred = {
-            "第1数字": get_top3(rf1, latest),
-            "第2数字": get_top3(rf2, latest),
-            "第3数字": get_top3(rf3, latest)
-        }
-        st.subheader("🌲 ランダムフォレスト予測")
-        st.dataframe(pd.DataFrame(rf_pred))
+        # ランダムフォレスト
+        rf_pred = [
+            get_top3(RandomForestClassifier(n_estimators=100).fit(X, y1), latest),
+            get_top3(RandomForestClassifier(n_estimators=100).fit(X, y2), latest),
+            get_top3(RandomForestClassifier(n_estimators=100).fit(X, y3), latest)
+        ]
 
-        # ニューラルネット予測
-        nn1 = MLPClassifier(hidden_layer_sizes=(50,), max_iter=1000).fit(X, y1)
-        nn2 = MLPClassifier(hidden_layer_sizes=(50,), max_iter=1000).fit(X, y2)
-        nn3 = MLPClassifier(hidden_layer_sizes=(50,), max_iter=1000).fit(X, y3)
-        nn_pred = {
-            "第1数字": get_top3(nn1, latest),
-            "第2数字": get_top3(nn2, latest),
-            "第3数字": get_top3(nn3, latest)
-        }
-        st.subheader("🧠 ニューラルネットワーク予測")
-        st.dataframe(pd.DataFrame(nn_pred))
+        # ニューラルネット
+        nn_pred = [
+            get_top3(MLPClassifier(hidden_layer_sizes=(50,), max_iter=1000).fit(X, y1), latest),
+            get_top3(MLPClassifier(hidden_layer_sizes=(50,), max_iter=1000).fit(X, y2), latest),
+            get_top3(MLPClassifier(hidden_layer_sizes=(50,), max_iter=1000).fit(X, y3), latest)
+        ]
 
-        # マルコフ連鎖予測
+        # マルコフ連鎖
         def markov_predict(col):
             transition = defaultdict(list)
-            values = df[col].tolist()
+            values = df[col].astype(str).tolist()
             for i in range(len(values) - 1):
                 transition[values[i]].append(values[i + 1])
-            last = df.iloc[0][col]
+            last = values[0]
             count = Counter(transition[last])
             return [v for v, _ in count.most_common(3)]
 
-        markov_pred = {
-            "第1数字": markov_predict("第1数字"),
-            "第2数字": markov_predict("第2数字"),
-            "第3数字": markov_predict("第3数字")
-        }
-        st.subheader("🔗 マルコフ連鎖予測")
-        st.dataframe(pd.DataFrame(markov_pred))
+        mc_pred = [
+            markov_predict("第1数字"),
+            markov_predict("第2数字"),
+            markov_predict("第3数字")
+        ]
+
+        # 結果を横並びテーブルにまとめる
+        result_df = pd.DataFrame([
+            ["🌲 ランダムフォレスト"] + rf_pred[0] + rf_pred[1] + rf_pred[2],
+            ["🧠 ニューラルネット"] + nn_pred[0] + nn_pred[1] + nn_pred[2],
+            ["🔁 マルコフ連鎖"] + mc_pred[0] + mc_pred[1] + mc_pred[2],
+        ], columns=[
+            "モデル名",
+            "第1数字候補1", "第1数字候補2", "第1数字候補3",
+            "第2数字候補1", "第2数字候補2", "第2数字候補3",
+            "第3数字候補1", "第3数字候補2", "第3数字候補3"
+        ])
+
+        # 表示
+        st.subheader("🔍 AIモデル予測（次に来る数字の上位3候補）")
+        st.dataframe(result_df, use_container_width=True)
 
         # 共通数字
         st.subheader("✅ 3手法で一致した数字")
-        for k in ["第1数字", "第2数字", "第3数字"]:
-            common = set(rf_pred[k]) & set(nn_pred[k]) & set(markov_pred[k])
+        for i, k in enumerate(["第1数字", "第2数字", "第3数字"]):
+            common = set(rf_pred[i]) & set(nn_pred[i]) & set(mc_pred[i])
             if common:
-                st.markdown(f"**{k}**：{'、'.join(map(str, sorted(common)))}")
+                st.markdown(f"**{k}**：{'、'.join(sorted(common))}")
             else:
                 st.markdown(f"**{k}**：一致なし")
 
