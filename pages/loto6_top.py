@@ -276,6 +276,7 @@ all_candidates = rf_top + mlp_top + markov_top
 counter = Counter(all_candidates)
 top20 = [num for num, _ in counter.most_common(20)]
 top20 = sorted(set(top20))[:20]
+top20 = list(map(int, top20))  # ← ★ここ追加で整数に！
 
 # --- 表示 ---
 st.success(f"🧠 次回出現候補（AI予測・20個）: {sorted(top20)}")
