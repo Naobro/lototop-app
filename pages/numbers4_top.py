@@ -170,74 +170,78 @@ st.header("AIによる次回数字予測（ナンバーズ4）")
 
 def show_ai_predictions_n4(csv_path):
     try:
+        # CSV読み込みと整形
         df = pd.read_csv(csv_path)
+        df = df.loc[
+            df["第1数字"].notnull() &
+            df["第2数字"].notnull() &
+            df["第3数字"].notnull() &
+            df["第4数字"].notnull()
+        ]
         df = df.dropna(subset=["第1数字", "第2数字", "第3数字", "第4数字"])
         df[["第1数字", "第2数字", "第3数字", "第4数字"]] = df[["第1数字", "第2数字", "第3数字", "第4数字"]].astype(int)
+        df["抽せん日"] = pd.to_datetime(df["抽せん日"], errors="coerce").dt.strftime("%Y-%m-%d")
 
-        # 学習データ作成
-        X, y = [], {f"第{i}数字": [] for i in range(1, 5)}
-        for i in range(len(df) - 1):
-            prev = df.iloc[i + 1]
-            curr = df.iloc[i]
-            X.append([prev[f"第{i}数字"] for i in range(1, 5)])
-            for j in range(1, 5):
-                y[f"第{j}数字"].append(curr[f"第{j}数字"])
-        X_df = pd.DataFrame(X)
+        # 最新データの直後を予測対象とする
         latest = [int(df.iloc[0][f"第{i}数字"]) for i in range(1, 5)]
 
-        def get_top3(model, x):
-            try:
-                probs = model.predict_proba([x])[0]
-                return [i for i, _ in sorted(enumerate(probs), key=lambda x: -x[1])[:3]]
-            except (AttributeError, NotFittedError):
-                return [model.predict([x])[0]]
+        # 学習データと正解ラベルを作成
+        X = []
+        y = {i: [] for i in range(1, 5)}
+        for i in range(len(df) - 1):
+            row = [int(df.iloc[i][f"第{j}数字"]) for j in range(1, 5)]
+            next_row = [int(df.iloc[i + 1][f"第{j}数字"]) for j in range(1, 5)]
+            X.append(row)
+            for j in range(1, 5):
+                y[j].append(next_row[j - 1])
 
-        # ランダムフォレスト予測
-        rf_pred = {}
+        # モデル定義
+        rf_models = {i: RandomForestClassifier() for i in range(1, 5)}
+        nn_models = {i: MLPClassifier(max_iter=1000, random_state=42) for i in range(1, 5)}
+
+        # 学習
         for i in range(1, 5):
-            model = RandomForestClassifier(n_estimators=100).fit(X_df, y[f"第{i}数字"])
-            rf_pred[f"第{i}数字"] = get_top3(model, latest)
-        st.subheader("🌲 ランダムフォレスト予測")
-        st.dataframe(pd.DataFrame(rf_pred))
+            rf_models[i].fit(X, y[i])
+            nn_models[i].fit(X, y[i])
 
-        # ニューラルネットワーク予測
-        nn_pred = {}
+        # 予測
+        rf_pred = [rf_models[i].predict([latest])[0] for i in range(1, 5)]
+        nn_pred = [nn_models[i].predict([latest])[0] for i in range(1, 5)]
+
+        # マルコフ連鎖的予測（最頻値）
+        next_numbers = list(zip(*X))[0]
+        mc_pred = []
         for i in range(1, 5):
-            model = MLPClassifier(hidden_layer_sizes=(50,), max_iter=1000).fit(X_df, y[f"第{i}数字"])
-            nn_pred[f"第{i}数字"] = get_top3(model, latest)
-        st.subheader("🧠 ニューラルネットワーク予測")
-        st.dataframe(pd.DataFrame(nn_pred))
-
-        # マルコフ連鎖予測
-        def markov_predict(col):
-            trans = defaultdict(list)
-            vals = df[col].tolist()
-            for i in range(len(vals) - 1):
-                trans[vals[i]].append(vals[i + 1])
-            last_val = df.iloc[0][col]
-            count = Counter(trans[last_val])
-            return [v for v, _ in count.most_common(3)]
-
-        markov_pred = {f"第{i}数字": markov_predict(f"第{i}数字") for i in range(1, 5)}
-        st.subheader("🔗 マルコフ連鎖予測")
-        st.dataframe(pd.DataFrame(markov_pred))
-
-        # 共通数字
-        st.subheader("✅ 3手法で一致した数字")
-        for i in range(1, 5):
-            col = f"第{i}数字"
-            common = set(rf_pred[col]) & set(nn_pred[col]) & set(markov_pred[col])
-            if common:
-                st.markdown(f"**{col}**：{'、'.join(map(str, sorted(common)))}")
+            nexts = []
+            for j in range(len(X)):
+                if X[j] == latest:
+                    nexts.append(y[i][j])
+            if nexts:
+                mc_pred.append(Counter(nexts).most_common(1)[0][0])
             else:
-                st.markdown(f"**{col}**：一致なし")
+                mc_pred.append(random.choice(range(10)))  # fallback
+
+        # 表示
+        st.subheader("🔍 AIモデル予測（次に来る数字の予測）")
+
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.markdown("#### 🌲 ランダムフォレスト")
+            st.write(rf_pred)
+        with col2:
+            st.markdown("#### 🧠 ニューラルネット")
+            st.write(nn_pred)
+        with col3:
+            st.markdown("#### 🔁 マルコフ連鎖")
+            st.write(mc_pred)
 
     except Exception as e:
-        st.error("AI予測の実行中にエラーが発生しました")
-        st.exception(e)
+        st.error("AI予測中にエラーが発生しました")
+        st.error(str(e))
 
-# 🔹 呼び出し
+st.header("AIによる次回数字予測（ナンバーズ4）")
 show_ai_predictions_n4("https://raw.githubusercontent.com/Naobro/lototop-app/main/data/n4.csv")
+
 # ④ W/S/T カウント
 st.subheader("シングル・ダブル・トリプル分析")
 s = d = t = 0
