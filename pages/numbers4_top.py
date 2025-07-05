@@ -166,8 +166,6 @@ except Exception as e:
     st.error(f"ランキングの表示に失敗しました: {e}")
 
 
-st.header("AIによる次回数字予測（ナンバーズ4）")
-
 def show_ai_predictions_n4(csv_path):
     try:
         # CSV読み込みと整形
