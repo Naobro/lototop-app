@@ -180,8 +180,7 @@ def show_ai_predictions_n4(csv_path):
         ]
         df = df.dropna(subset=["第1数字", "第2数字", "第3数字", "第4数字"])
         df[["第1数字", "第2数字", "第3数字", "第4数字"]] = df[["第1数字", "第2数字", "第3数字", "第4数字"]].astype(int)
-        df["抽せん日"] = pd.to_datetime(df["抽せん日"], errors="coerce").dt.strftime("%Y-%m-%d")
-
+        
         # 最新データの直後を予測対象とする
         latest = [int(df.iloc[0][f"第{i}数字"]) for i in range(1, 5)]
 
