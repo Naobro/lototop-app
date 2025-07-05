@@ -211,6 +211,7 @@ generate_ranking(ranking_csv_path)
 # **④分析セクション**
 st.header("分析セクション")
 
+
 # **ナンバーズ3 直近24回のWとSの回数**
 st.subheader("直近24回のWとSの回数")
 
@@ -434,6 +435,9 @@ def show_ai_predictions(csv_path):
     except Exception as e:
         st.error("AI予測の実行中にエラーが発生しました")
         st.exception(e)
+# ✅ AI予測は1回だけ呼び出す
+show_ai_predictions("data/n3.csv")
+
 # **組み合わせパターン（ペア）のカウント**
 st.subheader("直近24回の組み合わせパターン（ペア）のカウント")
 
@@ -511,9 +515,6 @@ def generate_sum_analysis(csv_path):
 # CSVのパス
 csv_path = "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/numbers3_24.csv"
 generate_sum_analysis(csv_path)
-# ✅ AI予測セクションの追加（ここに追記）
-st.header("AIによる次回数字予測")
-
 
 # **予測セクション**
 st.header("ナンバーズ3 予測")
@@ -541,5 +542,3 @@ if st.button("20パターン予測", key="random_predict_button"):
     df_random_predictions = pd.DataFrame(random_predictions, columns=[f'予測番号{i+1}' for i in range(3)])
     st.dataframe(df_random_predictions)
 
-# ✅ AI予測は1回だけ呼び出す
-show_ai_predictions("data/n3.csv")
