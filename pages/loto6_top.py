@@ -228,61 +228,62 @@ st.header("🎯 AIによる次回出現数字候補（20個に絞り込み）")
 
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.neural_network import MLPClassifier
-from collections import defaultdict
+from collections import defaultdict, Counter
+import numpy as np
 
+# --- 直近30回で学習用データ構築 ---
 df_ai = df.copy().dropna(subset=[f"第{i}数字" for i in range(1, 7)])
 df_ai = df_ai.tail(30).reset_index(drop=True)
 
 X, y = [], []
 for i in range(len(df_ai) - 1):
-    features = [df_ai.loc[i + 1, f"第{j}数字"] for j in range(1, 7)]
-    targets = [df_ai.loc[i, f"第{j}数字"] for j in range(1, 7)]
-    X.append(features)
-    y.extend(targets)
+    prev_nums = [df_ai.loc[i + 1, f"第{j}数字"] for j in range(1, 7)]
+    next_nums = [df_ai.loc[i, f"第{j}数字"] for j in range(1, 7)]
+    for target in next_nums:
+        X.append(prev_nums)
+        y.append(target)
 
-# 学習・予測
+# --- RandomForest ---
 rf = RandomForestClassifier(n_estimators=100, random_state=42)
 rf.fit(X, y)
 rf_probs = rf.predict_proba([X[-1]])[0]
 rf_top = list(np.argsort(rf_probs)[::-1][:15] + 1)
 
+# --- Neural Network ---
 mlp = MLPClassifier(hidden_layer_sizes=(100,), max_iter=500, random_state=42)
 mlp.fit(X, y)
 mlp_probs = mlp.predict_proba([X[-1]])[0]
 mlp_top = list(np.argsort(mlp_probs)[::-1][:15] + 1)
 
-# マルコフ連鎖（単純加算）
-transition_counts = defaultdict(lambda: defaultdict(int))
+# --- マルコフ連鎖スコア ---
+transition = defaultdict(lambda: defaultdict(int))
 for i in range(len(df_ai) - 1):
-    now = [df_ai.loc[i, f"第{j}数字"] for j in range(1, 7)]
-    next_ = [df_ai.loc[i + 1, f"第{j}数字"] for j in range(1, 7)]
-    for n in now:
-        for n2 in next_:
-            transition_counts[n][n2] += 1
+    curr = [df_ai.loc[i + 1, f"第{j}数字"] for j in range(1, 6+1)]
+    next_ = [df_ai.loc[i, f"第{j}数字"] for j in range(1, 6+1)]
+    for c in curr:
+        for n in next_:
+            transition[c][n] += 1
 
-last = [df_ai.loc[len(df_ai)-1, f"第{j}数字"] for j in range(1, 7)]
+last_draw = [df_ai.loc[len(df_ai)-1, f"第{j}数字"] for j in range(1, 7)]
 markov_scores = defaultdict(int)
-for n in last:
-    for n2, count in transition_counts[n].items():
-        markov_scores[n2] += count
+for c in last_draw:
+    for n, cnt in transition[c].items():
+        markov_scores[n] += cnt
 markov_top = sorted(markov_scores, key=markov_scores.get, reverse=True)[:15]
 
-# 全モデルから20個に絞り込み（重複優先）
-from collections import Counter
+# --- 集計：重複を優先して20個に絞り込み ---
 all_candidates = rf_top + mlp_top + markov_top
 counter = Counter(all_candidates)
 top20 = [num for num, _ in counter.most_common(20)]
 top20 = sorted(set(top20))[:20]
 
-# 表示
-st.success(f"次回出現候補（20個）：{sorted(top20)}")
+# --- 表示 ---
+st.success(f"🧠 次回出現候補（AI予測・20個）: {sorted(top20)}")
 
-# モデル別候補も表示
-with st.expander("モデル別の候補を確認"):
-    st.write("🔹 ランダムフォレスト上位:", sorted(rf_top))
-    st.write("🔹 ニューラルネット上位:", sorted(mlp_top))
-    st.write("🔹 マルコフ連鎖上位:", sorted(markov_top))
-
+with st.expander("📊 モデル別候補を表示"):
+    st.write("🔹 ランダムフォレスト:", sorted(rf_top))
+    st.write("🔹 ニューラルネット:", sorted(mlp_top))
+    st.write("🔹 マルコフ連鎖:", sorted(markov_top))
 # ✅ ⑧ 基本予想（2通り×5パターン）
 st.header("基本予想（パターン別 2通り×5種類）")
 group_dict = {
