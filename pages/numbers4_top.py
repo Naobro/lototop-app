@@ -203,9 +203,9 @@ def show_ai_predictions_n4(csv_path):
             rf_models[i].fit(X, y[i])
             nn_models[i].fit(X, y[i])
 
-        # 予測
-        rf_pred = [rf_models[i].predict([latest])[0] for i in range(1, 5)]
-        nn_pred = [nn_models[i].predict([latest])[0] for i in range(1, 5)]
+        # 予測（出力をintで整形）
+        rf_pred = [int(rf_models[i].predict([latest])[0]) for i in range(1, 5)]
+        nn_pred = [int(nn_models[i].predict([latest])[0]) for i in range(1, 5)]
 
         # マルコフ連鎖的予測（最頻値）
         next_numbers = list(zip(*X))[0]
