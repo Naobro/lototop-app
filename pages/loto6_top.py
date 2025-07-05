@@ -282,9 +282,9 @@ top20 = list(map(int, top20))  # ← ★ここ追加で整数に！
 st.success(f"🧠 次回出現候補（AI予測・20個）: {sorted(top20)}")
 
 with st.expander("📊 モデル別候補を表示"):
-    st.write("🔹 ランダムフォレスト:", sorted(rf_top))
-    st.write("🔹 ニューラルネット:", sorted(mlp_top))
-    st.write("🔹 マルコフ連鎖:", sorted(markov_top))
+    st.write("🔹 ランダムフォレスト:", sorted(map(int, rf_top)))
+    st.write("🔹 ニューラルネット:", sorted(map(int, mlp_top)))
+    st.write("🔹 マルコフ連鎖:", sorted(map(int, markov_top)))
 # ✅ ⑧ 基本予想（2通り×5パターン）
 st.header("基本予想（パターン別 2通り×5種類）")
 group_dict = {
