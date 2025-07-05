@@ -220,20 +220,40 @@ def show_ai_predictions_n4(csv_path):
             else:
                 mc_pred.append(random.choice(range(10)))  # fallback
 
-        # 表示
-        st.subheader("🔍 AIモデル予測（次に来る数字の予測）")
+                # 表示：各モデルでの上位3候補を取得
+        def get_top3(model_dict, X, y):
+            top3 = []
+            for i in range(1, 5):
+                probas = model_dict[i].predict_proba([latest])[0]
+                top_indices = probas.argsort()[-3:][::-1]
+                top3.append(", ".join(str(idx) for idx in top_indices))
+            return top3
 
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.markdown("#### 🌲 ランダムフォレスト")
-            st.write(rf_pred)
-        with col2:
-            st.markdown("#### 🧠 ニューラルネット")
-            st.write(nn_pred)
-        with col3:
-            st.markdown("#### 🔁 マルコフ連鎖")
-            st.write(mc_pred)
+        rf_top3 = get_top3(rf_models, X, y)
+        nn_top3 = get_top3(nn_models, X, y)
 
+        # マルコフ連鎖の上位3候補（出現頻度ベース）
+        mc_top3 = []
+        for i in range(1, 5):
+            nexts = []
+            for j in range(len(X)):
+                if X[j] == latest:
+                    nexts.append(y[i][j])
+            if nexts:
+                freq = Counter(nexts).most_common(3)
+                mc_top3.append(", ".join(str(x[0]) for x in freq))
+            else:
+                mc_top3.append(", ".join(str(random.randint(0, 9)) for _ in range(3)))
+
+        # テーブル表示
+        result_df = pd.DataFrame([
+            ["🌲 ランダムフォレスト"] + rf_top3,
+            ["🧠 ニューラルネット"] + nn_top3,
+            ["🔁 マルコフ連鎖"] + mc_top3
+        ], columns=["モデル名", "第1数字候補", "第2数字候補", "第3数字候補", "第4数字候補"])
+
+        st.subheader("🔍 AIモデル予測（次に来る数字の上位3候補）")
+        st.dataframe(result_df, use_container_width=True)
     except Exception as e:
         st.error("AI予測中にエラーが発生しました")
         st.error(str(e))
