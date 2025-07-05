@@ -17,77 +17,7 @@ from collections import defaultdict
 # import sys
 # from numbers3_ai import show_ai_predictions
 
-def show_ai_predictions(csv_path):
-    df = pd.read_csv(csv_path, header=None, names=["第1数字", "第2数字", "第3数字"])
-    df = df.apply(pd.to_numeric, errors="coerce")
-    df = df.dropna().astype(int)
 
-    import streamlit as st
-    from sklearn.ensemble import RandomForestClassifier
-    from sklearn.neural_network import MLPClassifier
-    from collections import Counter, defaultdict
-
-def show_ai_predictions(csv_path):
-    import pandas as pd
-    import streamlit as st
-    from sklearn.ensemble import RandomForestClassifier
-    from sklearn.neural_network import MLPClassifier
-    from collections import Counter, defaultdict
-
-    df = pd.read_csv(csv_path, header=None, names=["第1数字", "第2数字", "第3数字"])
-    df = df.dropna().astype(int)
-
-    st.header("🔢 ナンバーズ3 - AI予測（3手法）")
-
-    latest = df.iloc[0]
-    st.markdown(f"前回当選番号：**{latest['第1数字']}-{latest['第2数字']}-{latest['第3数字']}**")
-
-    try:
-        X = df.iloc[1:].copy()
-        y = df.shift(1).iloc[1:]
-
-        rf_pred, nn_pred = {}, {}
-
-        for col in ["第1数字", "第2数字", "第3数字"]:
-            model_rf = RandomForestClassifier().fit(X, y[col])
-            model_nn = MLPClassifier(max_iter=1000).fit(X, y[col])
-
-            # 前回の数字1行分を10回繰り返して予測させる
-            X_repeat = pd.concat([X[:1]] * 10, ignore_index=True)
-
-            rf_pred[col] = model_rf.predict(X_repeat).tolist()
-            nn_pred[col] = model_nn.predict(X_repeat).tolist()
-
-        st.subheader("🌲 ランダムフォレスト予測")
-        st.dataframe(pd.DataFrame(rf_pred))
-
-        st.subheader("🧠 ニューラルネットワーク予測")
-        st.dataframe(pd.DataFrame(nn_pred))
-
-        def markov_predict(col):
-            transition = defaultdict(list)
-            values = df[col].tolist()
-            for i in range(len(values) - 1):
-                transition[values[i]].append(values[i + 1])
-            last = df.iloc[0][col]
-            count = Counter(transition[last])
-            return [v for v, _ in count.most_common(3)]
-
-        markov_pred = {col: markov_predict(col) for col in ["第1数字", "第2数字", "第3数字"]}
-        st.subheader("🔗 マルコフ連鎖予測")
-        st.dataframe(pd.DataFrame(markov_pred))
-
-        st.subheader("✅ 3手法で一致した数字（高確率）")
-        for col in ["第1数字", "第2数字", "第3数字"]:
-            common = set(rf_pred[col]) & set(nn_pred[col]) & set(markov_pred[col])
-            if common:
-                st.markdown(f"**{col}**：{'、'.join(map(str, sorted(common)))}")
-            else:
-                st.markdown(f"**{col}**：（一致なし）")
-
-    except Exception as e:
-        st.error("AI予測の実行中にエラーが発生しました")
-        st.exception(e)
 # 最新の当選結果表示関数
 def show_latest_results(csv_path):
     try:
@@ -416,13 +346,14 @@ import streamlit as st
 from collections import Counter
 
 def show_ai_predictions(csv_path):
-    st.header("AIによる次回数字予測")
-
+    import pandas as pd
+    import streamlit as st
     from sklearn.ensemble import RandomForestClassifier
     from sklearn.neural_network import MLPClassifier
-    from collections import defaultdict, Counter
     from sklearn.exceptions import NotFittedError
-    import pandas as pd
+    from collections import defaultdict, Counter
+
+    st.header("AIによる次回数字予測")
 
     try:
         df = pd.read_csv(csv_path)
@@ -480,14 +411,12 @@ def show_ai_predictions(csv_path):
             markov_predict("第3数字")
         ]
 
-         # 結果を横並びテーブルにまとめる（1セルに3候補を表示）
+        # 結果を横並びテーブルにまとめる（1セルに3候補を表示）
         result_df = pd.DataFrame([
             ["🌲 ランダムフォレスト"] + [", ".join(rf_pred[i]) for i in range(3)],
             ["🧠 ニューラルネット"] + [", ".join(nn_pred[i]) for i in range(3)],
             ["🔁 マルコフ連鎖"] + [", ".join(mc_pred[i]) for i in range(3)],
-        ], columns=[
-            "モデル名", "第1数字候補", "第2数字候補", "第3数字候補"
-        ])
+        ], columns=["モデル名", "第1数字候補", "第2数字候補", "第3数字候補"])
 
         # 表示
         st.subheader("🔍 AIモデル予測（次に来る数字の上位3候補）")
@@ -501,6 +430,10 @@ def show_ai_predictions(csv_path):
                 st.markdown(f"**{k}**：{'、'.join(sorted(common))}")
             else:
                 st.markdown(f"**{k}**：一致なし")
+
+    except Exception as e:
+        st.error("AI予測の実行中にエラーが発生しました")
+        st.exception(e)
 # **組み合わせパターン（ペア）のカウント**
 st.subheader("直近24回の組み合わせパターン（ペア）のカウント")
 
