@@ -297,11 +297,10 @@ for n in top22:
         grouped["20の位"].append(n)
     elif 30 <= n <= 37:
         grouped["30の位"].append(n)
-
-# --- 表形式に整形 ---
+# --- 表形式に整形（Noneで埋めることでテーブル表示安定） ---
 max_len = max(len(v) for v in grouped.values())
 group_df = pd.DataFrame({
-    k: grouped[k] + [""] * (max_len - len(grouped[k]))
+    k: grouped[k] + [None] * (max_len - len(grouped[k]))
     for k in grouped
 })
 
