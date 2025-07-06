@@ -114,7 +114,7 @@ B_set = set(counts[counts >= 5].index)
 
 # 各行のABC構成・ひっぱり・連続を分析
 abc_rows = []
-prev_numbers = set()
+prev_numbers = None  # ← 初回は None にしてスキップ
 pull_total = 0
 cont_total = 0
 abc_counts = {'A': 0, 'B': 0, 'C': 0}
@@ -123,6 +123,7 @@ for _, row in df_recent.iterrows():
     nums = [int(row[f"第{i}数字"]) for i in range(1, 8)]
     sorted_nums = sorted(nums)
 
+    # ABC構成
     abc = []
     for n in sorted_nums:
         if n in B_set:
@@ -136,12 +137,19 @@ for _, row in df_recent.iterrows():
             abc_counts['C'] += 1
     abc_str = ','.join(abc)
 
-    pulls = len(set(nums) & prev_numbers)
-    if pulls > 0:
-        pull_total += 1
-    prev_numbers = set(nums)
+    # ひっぱり判定（前回との共通数カウント）
+    if prev_numbers is not None:
+        pulls = len(set(nums) & prev_numbers)
+        pull_str = f"{pulls}個" if pulls else "なし"
+        if pulls > 0:
+            pull_total += 1
+    else:
+        pull_str = "-"  # 初回は比較できない
+    prev_numbers = set(nums)  # ← 判定後に更新！
 
+    # 連続ペア（1差のペアがあるか）
     cont = any(b - a == 1 for a, b in zip(sorted_nums, sorted_nums[1:]))
+    cont_str = "あり" if cont else "なし"
     if cont:
         cont_total += 1
 
@@ -150,8 +158,8 @@ for _, row in df_recent.iterrows():
         '第1数字': row['第1数字'], '第2数字': row['第2数字'], '第3数字': row['第3数字'],
         '第4数字': row['第4数字'], '第5数字': row['第5数字'], '第6数字': row['第6数字'],
         '第7数字': row['第7数字'], 'ABC構成': abc_str,
-        'ひっぱり': f"{pulls}個" if pulls else "なし",
-        '連続': "あり" if cont else "なし"
+        'ひっぱり': pull_str,
+        '連続': cont_str
     })
 
 abc_df = pd.DataFrame(abc_rows)
@@ -164,8 +172,8 @@ total_abc = sum(abc_counts.values())
 a_perc = round(abc_counts['A'] / total_abc * 100, 1)
 b_perc = round(abc_counts['B'] / total_abc * 100, 1)
 c_perc = round(abc_counts['C'] / total_abc * 100, 1)
-pull_rate = round(pull_total / 24 * 100, 1)
-cont_rate = round(cont_total / 24 * 100, 1)
+pull_rate = round(pull_total / (len(df_recent) - 1) * 100, 1)  # 初回は除外
+cont_rate = round(cont_total / len(df_recent) * 100, 1)
 
 summary_df = pd.DataFrame({
     "分析項目": ["A数字割合", "B数字割合", "C数字割合", "ひっぱり率", "連続数字率"],
