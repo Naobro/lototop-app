@@ -224,6 +224,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.neural_network import MLPClassifier
 from collections import defaultdict, Counter
 import numpy as np
+import pandas as pd
 
 # --- 直近30回のデータで学習用データ構築（ロト7は第1〜第7数字） ---
 df_ai = df.copy().dropna(subset=[f"第{i}数字" for i in range(1, 8)])
@@ -270,12 +271,12 @@ all_candidates = rf_top + mlp_top + markov_top
 counter = Counter(all_candidates)
 top22 = [num for num, _ in counter.most_common(22)]
 top22 = sorted(set(top22))[:22]
-top22 = list(map(int, top22))  # ← np.int64 を int に変換
+top22 = list(map(int, top22))  # np.int64 → int
 
 # --- 表示 ---
 st.success(f"🧠 次回出現候補（AI予測・22個）: {sorted(top22)}")
 
-# モデル別候補を整形して出力（文字列に変換して表形式を防止）
+# --- モデル別候補（テーブル崩れ防止のため文字列で出力） ---
 with st.expander("📊 モデル別候補を表示"):
     st.write("🔹 ランダムフォレスト:", ", ".join(map(str, sorted(map(int, rf_top)))))
     st.write("🔹 ニューラルネット:", ", ".join(map(str, sorted(map(int, mlp_top)))))
@@ -288,7 +289,6 @@ grouped = {
     "20の位": [],
     "30の位": [],
 }
-
 for n in top22:
     if 1 <= n <= 9:
         grouped["1の位"].append(n)
@@ -298,15 +298,20 @@ for n in top22:
         grouped["20の位"].append(n)
     elif 30 <= n <= 37:
         grouped["30の位"].append(n)
-# --- 表形式に整形（Noneで埋めることでテーブル表示安定） ---
+
+# --- 表形式に整形してHTMLで表示（列ずれ防止） ---
 max_len = max(len(v) for v in grouped.values())
 group_df = pd.DataFrame({
     k: grouped[k] + [None] * (max_len - len(grouped[k]))
     for k in grouped
 })
 
-st.markdown("### 🗂 候補数字の位別分類（1の位・10の位・20の位・30の位）")
-st.dataframe(group_df)
+st.markdown("### 🧮 候補数字の位別分類（1の位・10の位・20の位・30の位）")
+st.markdown(f"""
+<div style='overflow-x: auto;'>
+{group_df.to_html(index=False, na_rep="", escape=False)}
+</div>
+""", unsafe_allow_html=True)
 
 import pandas as pd
 from collections import Counter
