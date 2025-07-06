@@ -174,56 +174,6 @@ pattern_counts = pattern_series.value_counts().reset_index()
 pattern_counts.columns = ['パターン', '出現回数']
 render_scrollable_table(pattern_counts)
 
-# ✅ ④各位の出現回数TOP5
-st.header("各位の出現回数TOP5")
-number_groups = {'1': [], '10': [], '20': [], '30': []}
-for i in range(1, 7):
-    col = f'第{i}数字'
-    col_values = pd.to_numeric(df_recent[col], errors="coerce")
-    number_groups['1'].extend(col_values[col_values.between(1, 9)].dropna().astype(int).tolist())
-    number_groups['10'].extend(col_values[col_values.between(10, 19)].dropna().astype(int).tolist())
-    number_groups['20'].extend(col_values[col_values.between(20, 29)].dropna().astype(int).tolist())
-    number_groups['30'].extend(col_values[col_values.between(30, 43)].dropna().astype(int).tolist())
-
-top5_df = pd.DataFrame({
-    '1の位': pd.Series(number_groups['1']).value_counts().head(5).index.tolist(),
-    '10の位': pd.Series(number_groups['10']).value_counts().head(5).index.tolist(),
-    '20の位': pd.Series(number_groups['20']).value_counts().head(5).index.tolist(),
-    '30の位': pd.Series(number_groups['30']).value_counts().head(5).index.tolist()
-})
-render_scrollable_table(top5_df)
-
-# ✅ ⑤ 各数字の出現回数TOP5
-st.header("各数字の出現回数TOP5")
-results = {'順位': ['1位', '2位', '3位', '4位', '5位']}
-for i in range(1, 7):
-    col = f'第{i}数字'
-    col_values = pd.to_numeric(df_recent[col], errors="coerce").dropna().astype(int)
-    counts = col_values.value_counts().sort_values(ascending=False)
-    top5 = counts.head(5)
-    results[col] = [f"{n}（{c}回）" for n, c in zip(top5.index, top5.values)]
-    while len(results[col]) < 5:
-        results[col].append("")
-top5_df = pd.DataFrame(results)
-render_scrollable_table(top5_df)
-
-# ✅ A・B・C数字分類
-st.header("A・B・C数字（出現頻度分類）")
-count_series = pd.Series(
-    df_recent[[f'第{i}数字' for i in range(1, 7)]].values.flatten()
-).dropna().astype(int).value_counts()
-A_numbers = count_series[(count_series >= 3) & (count_series <= 4)].index.tolist()
-B_numbers = count_series[count_series >= 5].index.tolist()
-C_numbers = sorted(list(set(range(1, 44)) - set(A_numbers) - set(B_numbers)))
-
-max_len = max(len(A_numbers), len(B_numbers), len(C_numbers))
-abc_summary_df = pd.DataFrame({
-    "A数字（3〜4回）": A_numbers + [""] * (max_len - len(A_numbers)),
-    "B数字（5回以上）": B_numbers + [""] * (max_len - len(B_numbers)),
-    "C数字（その他）": C_numbers + [""] * (max_len - len(C_numbers))
-})
-render_scrollable_table(abc_summary_df)
-
 st.header("🎯 AIによる次回出現数字候補（20個に絞り込み）")
 
 from sklearn.ensemble import RandomForestClassifier
@@ -321,6 +271,121 @@ st.markdown(f"""
 {group_df6.to_html(index=False, escape=False)}
 </div>
 """, unsafe_allow_html=True)
+
+# ✅ A・B・C数字分類
+st.header("A・B・C数字（出現頻度分類）")
+count_series = pd.Series(
+    df_recent[[f'第{i}数字' for i in range(1, 7)]].values.flatten()
+).dropna().astype(int).value_counts()
+A_numbers = count_series[(count_series >= 3) & (count_series <= 4)].index.tolist()
+B_numbers = count_series[count_series >= 5].index.tolist()
+C_numbers = sorted(list(set(range(1, 44)) - set(A_numbers) - set(B_numbers)))
+
+max_len = max(len(A_numbers), len(B_numbers), len(C_numbers))
+abc_summary_df = pd.DataFrame({
+    "A数字（3〜4回）": A_numbers + [""] * (max_len - len(A_numbers)),
+    "B数字（5回以上）": B_numbers + [""] * (max_len - len(B_numbers)),
+    "C数字（その他）": C_numbers + [""] * (max_len - len(C_numbers))
+})
+render_scrollable_table(abc_summary_df)
+
+
+
+
+
+# ✅ ④各位の出現回数TOP5
+st.header("各位の出現回数TOP5")
+number_groups = {'1': [], '10': [], '20': [], '30': []}
+for i in range(1, 7):
+    col = f'第{i}数字'
+    col_values = pd.to_numeric(df_recent[col], errors="coerce")
+    number_groups['1'].extend(col_values[col_values.between(1, 9)].dropna().astype(int).tolist())
+    number_groups['10'].extend(col_values[col_values.between(10, 19)].dropna().astype(int).tolist())
+    number_groups['20'].extend(col_values[col_values.between(20, 29)].dropna().astype(int).tolist())
+    number_groups['30'].extend(col_values[col_values.between(30, 43)].dropna().astype(int).tolist())
+
+top5_df = pd.DataFrame({
+    '1の位': pd.Series(number_groups['1']).value_counts().head(5).index.tolist(),
+    '10の位': pd.Series(number_groups['10']).value_counts().head(5).index.tolist(),
+    '20の位': pd.Series(number_groups['20']).value_counts().head(5).index.tolist(),
+    '30の位': pd.Series(number_groups['30']).value_counts().head(5).index.tolist()
+})
+render_scrollable_table(top5_df)
+
+# ✅ ⑤ 各数字の出現回数TOP5
+st.header("各数字の出現回数TOP5")
+results = {'順位': ['1位', '2位', '3位', '4位', '5位']}
+for i in range(1, 7):
+    col = f'第{i}数字'
+    col_values = pd.to_numeric(df_recent[col], errors="coerce").dropna().astype(int)
+    counts = col_values.value_counts().sort_values(ascending=False)
+    top5 = counts.head(5)
+    results[col] = [f"{n}（{c}回）" for n, c in zip(top5.index, top5.values)]
+    while len(results[col]) < 5:
+        results[col].append("")
+top5_df = pd.DataFrame(results)
+render_scrollable_table(top5_df)
+
+
+
+import pandas as pd
+from collections import Counter
+
+# --- ロト6の設定 ---
+n_numbers = 6  # ロト6は6個
+max_ball = 43  # 数字は1〜43
+df_recent = df.tail(24).copy()
+df_recent["抽せん日"] = pd.to_datetime(df_recent["抽せん日"], errors="coerce")
+df_recent = df_recent.dropna(subset=["抽せん日"])
+
+# --- 出現回数カウント ---
+numbers = df_recent[[f"第{i}数字" for i in range(1, n_numbers + 1)]].values.flatten()
+number_counts = pd.Series(numbers).value_counts().sort_values(ascending=False)
+
+# --- ランキングDataFrame作成（数字の横に出現回数を括弧付きで表示）---
+ranking_df = pd.DataFrame({
+    "順位": range(1, len(number_counts) + 1),
+    "数字": [f"{int(num)}（{count}）" for num, count in zip(number_counts.index, number_counts.values)]
+})
+
+# --- 左右分割：左22件・右21件 ---
+left_df = ranking_df.head(22).reset_index(drop=True)
+right_df = ranking_df.iloc[22:].reset_index(drop=True)
+
+# --- 表示用テーブル関数 ---
+def format_html_table(df):
+    return df.to_html(index=False, classes="loto-table", escape=False)
+
+# --- 出現回数ランキング表示 ---
+st.header("直近24回 出現回数ランキング（ロト6）")
+left_col, right_col = st.columns(2)
+with left_col:
+    st.markdown("#### 🔵 ランキング（1位〜22位）")
+    st.markdown(format_html_table(left_df), unsafe_allow_html=True)
+with right_col:
+    st.markdown("#### 🟢 ランキング（23位〜43位）")
+    st.markdown(format_html_table(right_df), unsafe_allow_html=True)
+
+# --- 🔁 連続数字ペア 出現ランキング ---
+st.header("🔁 連続数字ペア 出現ランキング（ロト6）")
+
+numbers_list = df_recent[[f"第{i}数字" for i in range(1, n_numbers + 1)]].values.tolist()
+consecutive_pairs = []
+for row in numbers_list:
+    sorted_row = sorted(row)
+    for a, b in zip(sorted_row, sorted_row[1:]):
+        if b - a == 1:
+            consecutive_pairs.append(f"{a}-{b}")
+
+# 集計＆整形
+consec_counter = Counter(consecutive_pairs)
+consec_df = pd.DataFrame(consec_counter.items(), columns=["連続ペア", "出現回数"])
+consec_df = consec_df.sort_values(by="出現回数", ascending=False).reset_index(drop=True)
+
+# 表示（style_table は既存の関数でOK）
+st.markdown(style_table(consec_df), unsafe_allow_html=True)
+
+
 # ✅ ⑧ 基本予想（2通り×5パターン）
 st.header("基本予想（パターン別 2通り×5種類）")
 group_dict = {
@@ -368,8 +433,9 @@ for label, pattern in pattern_list:
         predictions.append(unique)
     pred_df = pd.DataFrame(predictions, columns=[f"第{i}数字" for i in range(1, 7)])
     render_scrollable_table(pred_df)
-# ✅ ⑨ セレクト予想ルーレット
-st.header("セレクト予想ルーレット")
+
+
+st.header("セレクト予想")
 
 # --- 数字グループ定義 ---
 group_dict = {

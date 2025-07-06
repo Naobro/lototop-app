@@ -191,67 +191,6 @@ pattern_counts = patterns.value_counts().reset_index()
 pattern_counts.columns = ['パターン', '出現回数']
 st.markdown(style_table(pattern_counts), unsafe_allow_html=True)
 
-# ⑤ 各位の出現回数TOP5
-st.header(" 各位の出現回数TOP5")
-number_groups = {'1': [], '10': [], '20': [], '30': []}
-for i in range(1, 8):
-    number_groups['1'].extend(df_recent[f'第{i}数字'][df_recent[f'第{i}数字'].between(1, 9)].values)
-    number_groups['10'].extend(df_recent[f'第{i}数字'][df_recent[f'第{i}数字'].between(10, 19)].values)
-    number_groups['20'].extend(df_recent[f'第{i}数字'][df_recent[f'第{i}数字'].between(20, 29)].values)
-    number_groups['30'].extend(df_recent[f'第{i}数字'][df_recent[f'第{i}数字'].between(30, 37)].values)
-
-top5_df = pd.DataFrame({
-    '1の位': pd.Series(number_groups['1']).value_counts().head(5).index.tolist(),
-    '10の位': pd.Series(number_groups['10']).value_counts().head(5).index.tolist(),
-    '20の位': pd.Series(number_groups['20']).value_counts().head(5).index.tolist(),
-    '30の位': pd.Series(number_groups['30']).value_counts().head(5).index.tolist()
-})
-st.markdown(style_table(top5_df), unsafe_allow_html=True)
-
-
-
-# ✅ A/B数字の位別分類（ロト7用：最大37まで）
-
-st.header("A数字・B数字の位別分類")
-
-def style_table(df):
-    return df.style.set_table_styles([
-        {'selector': 'th', 'props': [('text-align', 'center')]},
-        {'selector': 'td', 'props': [('text-align', 'center')]}
-    ]).to_html(escape=False, index=False)
-
-# 最新当選番号（ロト7は第1〜第7数字）※正しい行
-latest_numbers = [int(df.iloc[-1][f"第{i}数字"]) for i in range(1, 8)]
-
-def highlight_number(n):
-    return f"<span style='color:red; font-weight:bold'>{n}</span>" if n in latest_numbers else str(n)
-
-def classify_numbers_loto7(numbers):
-    bins = {
-        '1の位': [], '10の位': [], '20の位': [], '30の位': []
-    }
-    for n in numbers:
-        if 1 <= n <= 9:
-            bins['1の位'].append(n)
-        elif 10 <= n <= 19:
-            bins['10の位'].append(n)
-        elif 20 <= n <= 29:
-            bins['20の位'].append(n)
-        elif 30 <= n <= 37:  # ロト7は最大37まで
-            bins['30の位'].append(n)
-    return bins
-
-A_bins = classify_numbers_loto7(A_set)
-B_bins = classify_numbers_loto7(B_set)
-
-digit_table = pd.DataFrame({
-    "位": list(A_bins.keys()),
-    "A数字": [', '.join([highlight_number(n) for n in sorted(A_bins[k])]) for k in A_bins],
-    "B数字": [', '.join([highlight_number(n) for n in sorted(B_bins[k])]) for k in B_bins]
-})
-
-st.markdown(style_table(digit_table), unsafe_allow_html=True)
-
 st.header("🎯 AIによる次回出現数字候補（22個に絞り込み）")
 
 from sklearn.ensemble import RandomForestClassifier
@@ -350,6 +289,88 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
+
+
+
+
+
+# ✅ A/B数字の位別分類（ロト7用：最大37まで）
+
+st.header("A数字・B数字の位別分類")
+
+def style_table(df):
+    return df.style.set_table_styles([
+        {'selector': 'th', 'props': [('text-align', 'center')]},
+        {'selector': 'td', 'props': [('text-align', 'center')]}
+    ]).to_html(escape=False, index=False)
+
+# 最新当選番号（ロト7は第1〜第7数字）※正しい行
+latest_numbers = [int(df.iloc[-1][f"第{i}数字"]) for i in range(1, 8)]
+
+def highlight_number(n):
+    return f"<span style='color:red; font-weight:bold'>{n}</span>" if n in latest_numbers else str(n)
+
+def classify_numbers_loto7(numbers):
+    bins = {
+        '1の位': [], '10の位': [], '20の位': [], '30の位': []
+    }
+    for n in numbers:
+        if 1 <= n <= 9:
+            bins['1の位'].append(n)
+        elif 10 <= n <= 19:
+            bins['10の位'].append(n)
+        elif 20 <= n <= 29:
+            bins['20の位'].append(n)
+        elif 30 <= n <= 37:  # ロト7は最大37まで
+            bins['30の位'].append(n)
+    return bins
+
+A_bins = classify_numbers_loto7(A_set)
+B_bins = classify_numbers_loto7(B_set)
+
+digit_table = pd.DataFrame({
+    "位": list(A_bins.keys()),
+    "A数字": [', '.join([highlight_number(n) for n in sorted(A_bins[k])]) for k in A_bins],
+    "B数字": [', '.join([highlight_number(n) for n in sorted(B_bins[k])]) for k in B_bins]
+})
+
+st.markdown(style_table(digit_table), unsafe_allow_html=True)
+
+# ⑤ 各位の出現回数TOP5
+st.header(" 各位の出現回数TOP5")
+number_groups = {'1': [], '10': [], '20': [], '30': []}
+for i in range(1, 8):
+    number_groups['1'].extend(df_recent[f'第{i}数字'][df_recent[f'第{i}数字'].between(1, 9)].values)
+    number_groups['10'].extend(df_recent[f'第{i}数字'][df_recent[f'第{i}数字'].between(10, 19)].values)
+    number_groups['20'].extend(df_recent[f'第{i}数字'][df_recent[f'第{i}数字'].between(20, 29)].values)
+    number_groups['30'].extend(df_recent[f'第{i}数字'][df_recent[f'第{i}数字'].between(30, 37)].values)
+
+top5_df = pd.DataFrame({
+    '1の位': pd.Series(number_groups['1']).value_counts().head(5).index.tolist(),
+    '10の位': pd.Series(number_groups['10']).value_counts().head(5).index.tolist(),
+    '20の位': pd.Series(number_groups['20']).value_counts().head(5).index.tolist(),
+    '30の位': pd.Series(number_groups['30']).value_counts().head(5).index.tolist()
+})
+st.markdown(style_table(top5_df), unsafe_allow_html=True)
+
+# ⑥ 各数字の出現回数TOP5
+st.header(" 各数字の出現回数TOP5")
+
+results = {'順位': ['1位', '2位', '3位', '4位', '5位']}
+for i in range(1, 8):
+    col = f'第{i}数字'
+    counts = pd.Series(df_recent[col]).value_counts()
+    counts = counts.sort_values(ascending=False).head(5)
+    results[col] = [f"{num} ({cnt}回)" for num, cnt in counts.items()]
+    
+    # 5未満の場合の空埋め
+    while len(results[col]) < 5:
+        results[col].append("")
+
+top5_df = pd.DataFrame(results)
+st.markdown(style_table(top5_df), unsafe_allow_html=True)
+
+
 import pandas as pd
 from collections import Counter
 import streamlit as st
@@ -435,22 +456,7 @@ def analyze_loto(df: pd.DataFrame, n_numbers: int):
 
 
 
-# ⑥ 各数字の出現回数TOP5
-st.header(" 各数字の出現回数TOP5")
 
-results = {'順位': ['1位', '2位', '3位', '4位', '5位']}
-for i in range(1, 8):
-    col = f'第{i}数字'
-    counts = pd.Series(df_recent[col]).value_counts()
-    counts = counts.sort_values(ascending=False).head(5)
-    results[col] = [f"{num} ({cnt}回)" for num, cnt in counts.items()]
-    
-    # 5未満の場合の空埋め
-    while len(results[col]) < 5:
-        results[col].append("")
-
-top5_df = pd.DataFrame(results)
-st.markdown(style_table(top5_df), unsafe_allow_html=True)
 
 
 
