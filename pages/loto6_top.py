@@ -135,48 +135,7 @@ render_scrollable_table(pattern_counts)
 
 
 
-# ✅ A/B数字の位別分類（ロト6用：40〜43も30の位に分類）
 
-st.header("A数字・B数字の位別分類")
-
-def style_table(df):
-    return df.style.set_table_styles([
-        {'selector': 'th', 'props': [('text-align', 'center')]},
-        {'selector': 'td', 'props': [('text-align', 'center')]}
-    ]).to_html(escape=False, index=False)
-
-# ✅ CSVの最後の行（最新の当選データ）を正しく使う
-latest = df.iloc[-1]
-latest_numbers = [int(latest[f"第{i}数字"]) for i in range(1, 7)]
-
-def highlight_number(n):
-    return f"<span style='color:red; font-weight:bold'>{n}</span>" if n in latest_numbers else str(n)
-
-def classify_numbers_loto6(numbers):
-    bins = {
-        '1の位': [], '10の位': [], '20の位': [], '30の位': []
-    }
-    for n in numbers:
-        if 1 <= n <= 9:
-            bins['1の位'].append(n)
-        elif 10 <= n <= 19:
-            bins['10の位'].append(n)
-        elif 20 <= n <= 29:
-            bins['20の位'].append(n)
-        elif 30 <= n <= 43:
-            bins['30の位'].append(n)
-    return bins
-
-A_bins = classify_numbers_loto6(A_set)
-B_bins = classify_numbers_loto6(B_set)
-
-digit_table = pd.DataFrame({
-    "位": list(A_bins.keys()),
-    "A数字": [', '.join([highlight_number(n) for n in sorted(A_bins[k])]) for k in A_bins],
-    "B数字": [', '.join([highlight_number(n) for n in sorted(B_bins[k])]) for k in B_bins]
-})
-
-st.markdown(style_table(digit_table), unsafe_allow_html=True)
 
 
 st.header("🎯 AIによる次回出現数字候補（20個に絞り込み）")
@@ -276,6 +235,50 @@ st.markdown(f"""
 {group_df6.to_html(index=False, escape=False)}
 </div>
 """, unsafe_allow_html=True)
+
+
+# ✅ A/B数字の位別分類（ロト6用：40〜43も30の位に分類）
+
+st.header("A数字・B数字の位別分類")
+
+def style_table(df):
+    return df.style.set_table_styles([
+        {'selector': 'th', 'props': [('text-align', 'center')]},
+        {'selector': 'td', 'props': [('text-align', 'center')]}
+    ]).to_html(escape=False, index=False)
+
+# ✅ CSVの最後の行（最新の当選データ）を正しく使う
+latest = df.iloc[-1]
+latest_numbers = [int(latest[f"第{i}数字"]) for i in range(1, 7)]
+
+def highlight_number(n):
+    return f"<span style='color:red; font-weight:bold'>{n}</span>" if n in latest_numbers else str(n)
+
+def classify_numbers_loto6(numbers):
+    bins = {
+        '1の位': [], '10の位': [], '20の位': [], '30の位': []
+    }
+    for n in numbers:
+        if 1 <= n <= 9:
+            bins['1の位'].append(n)
+        elif 10 <= n <= 19:
+            bins['10の位'].append(n)
+        elif 20 <= n <= 29:
+            bins['20の位'].append(n)
+        elif 30 <= n <= 43:
+            bins['30の位'].append(n)
+    return bins
+
+A_bins = classify_numbers_loto6(A_set)
+B_bins = classify_numbers_loto6(B_set)
+
+digit_table = pd.DataFrame({
+    "位": list(A_bins.keys()),
+    "A数字": [', '.join([highlight_number(n) for n in sorted(A_bins[k])]) for k in A_bins],
+    "B数字": [', '.join([highlight_number(n) for n in sorted(B_bins[k])]) for k in B_bins]
+})
+
+st.markdown(style_table(digit_table), unsafe_allow_html=True)
 
 
 
