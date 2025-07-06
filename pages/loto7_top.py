@@ -181,6 +181,8 @@ summary_df = pd.DataFrame({
     "分析項目": ["A数字割合", "B数字割合", "C数字割合", "ひっぱり率", "連続数字率"],
     "値": [f"{a_perc}%", f"{b_perc}%", f"{c_perc}%", f"{pull_rate}%", f"{cont_rate}%"]
 })
+st.subheader("出現傾向サマリー")
+st.table(summary_df)
 
 # ④ パターン分析
 st.header(" パターン分析")
