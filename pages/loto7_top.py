@@ -275,10 +275,11 @@ top22 = list(map(int, top22))  # ← np.int64 を int に変換
 # --- 表示 ---
 st.success(f"🧠 次回出現候補（AI予測・22個）: {sorted(top22)}")
 
+# モデル別候補を整形して出力（文字列に変換して表形式を防止）
 with st.expander("📊 モデル別候補を表示"):
-    st.write("🔹 ランダムフォレスト:", sorted(map(int, rf_top)))
-    st.write("🔹 ニューラルネット:", sorted(map(int, mlp_top)))
-    st.write("🔹 マルコフ連鎖:", sorted(map(int, markov_top)))
+    st.write("🔹 ランダムフォレスト:", ", ".join(map(str, sorted(map(int, rf_top)))))
+    st.write("🔹 ニューラルネット:", ", ".join(map(str, sorted(map(int, mlp_top)))))
+    st.write("🔹 マルコフ連鎖:", ", ".join(map(str, sorted(map(int, markov_top)))))
 
 # --- 候補数字を位ごとに分類 ---
 grouped = {
