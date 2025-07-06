@@ -107,6 +107,34 @@ for _, row in df_recent.iterrows():
     })
 abc_df = pd.DataFrame(abc_rows)
 render_scrollable_table(abc_df)
+
+## ✅ ③ パターン分析（40〜43 も 30 に統合）
+st.header("パターン分析")
+
+def get_distribution(row):
+    pattern = []
+    for val in row:
+        try:
+            num = int(val)
+            if 1 <= num <= 9:
+                pattern.append("1")
+            elif 10 <= num <= 19:
+                pattern.append("10")
+            elif 20 <= num <= 29:
+                pattern.append("20")
+            elif 30 <= num <= 43:  # ← ここを修正
+                pattern.append("30")
+        except:
+            pattern.append("不明")
+    return '-'.join(sorted(pattern))
+
+pattern_series = df_recent[[f"第{i}数字" for i in range(1, 7)]].apply(get_distribution, axis=1)
+pattern_counts = pattern_series.value_counts().reset_index()
+pattern_counts.columns = ['パターン', '出現回数']
+render_scrollable_table(pattern_counts)
+
+
+
 # ✅ A/B数字の位別分類（ロト6用：40〜43も30の位に分類）
 
 st.header("A数字・B数字の位別分類")
@@ -149,30 +177,7 @@ digit_table = pd.DataFrame({
 })
 
 st.markdown(style_table(digit_table), unsafe_allow_html=True)
-## ✅ ③ パターン分析（40〜43 も 30 に統合）
-st.header("パターン分析")
 
-def get_distribution(row):
-    pattern = []
-    for val in row:
-        try:
-            num = int(val)
-            if 1 <= num <= 9:
-                pattern.append("1")
-            elif 10 <= num <= 19:
-                pattern.append("10")
-            elif 20 <= num <= 29:
-                pattern.append("20")
-            elif 30 <= num <= 43:  # ← ここを修正
-                pattern.append("30")
-        except:
-            pattern.append("不明")
-    return '-'.join(sorted(pattern))
-
-pattern_series = df_recent[[f"第{i}数字" for i in range(1, 7)]].apply(get_distribution, axis=1)
-pattern_counts = pattern_series.value_counts().reset_index()
-pattern_counts.columns = ['パターン', '出現回数']
-render_scrollable_table(pattern_counts)
 
 st.header("🎯 AIによる次回出現数字候補（20個に絞り込み）")
 
@@ -271,25 +276,6 @@ st.markdown(f"""
 {group_df6.to_html(index=False, escape=False)}
 </div>
 """, unsafe_allow_html=True)
-
-# ✅ A・B・C数字分類
-st.header("A・B・C数字（出現頻度分類）")
-count_series = pd.Series(
-    df_recent[[f'第{i}数字' for i in range(1, 7)]].values.flatten()
-).dropna().astype(int).value_counts()
-A_numbers = count_series[(count_series >= 3) & (count_series <= 4)].index.tolist()
-B_numbers = count_series[count_series >= 5].index.tolist()
-C_numbers = sorted(list(set(range(1, 44)) - set(A_numbers) - set(B_numbers)))
-
-max_len = max(len(A_numbers), len(B_numbers), len(C_numbers))
-abc_summary_df = pd.DataFrame({
-    "A数字（3〜4回）": A_numbers + [""] * (max_len - len(A_numbers)),
-    "B数字（5回以上）": B_numbers + [""] * (max_len - len(B_numbers)),
-    "C数字（その他）": C_numbers + [""] * (max_len - len(C_numbers))
-})
-render_scrollable_table(abc_summary_df)
-
-
 
 
 
