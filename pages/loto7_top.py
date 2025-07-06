@@ -355,18 +355,17 @@ from collections import Counter
 import streamlit as st
 
 
-# ③ 出現回数ランキング（2列表示：左19件＋右18件）
+# ③ 出現回数ランキング（2列表示：左19件＋右残り）
 st.header("直近24回 出現回数ランキング")
 
 # 出現回数カウント
 numbers = df_recent[[f"第{i}数字" for i in range(1, 8)]].values.flatten()
 number_counts = pd.Series(numbers).value_counts().sort_values(ascending=False)
 
-# ランキングDataFrame作成
+# ランキングDataFrame作成（数字の横に出現回数を括弧付きで表示）
 ranking_df = pd.DataFrame({
     "順位": range(1, len(number_counts) + 1),
-    "出現回数": number_counts.values,
-    "数字": number_counts.index
+    "数字": [f"{int(num)}（{count}）" for num, count in zip(number_counts.index, number_counts.values)]
 })
 
 # 左右分割（左19行・右残り）
@@ -385,7 +384,6 @@ with left_col:
 with right_col:
     st.markdown("#### 🟢 ランキング（20位〜）")
     st.markdown(format_html_table(right_df), unsafe_allow_html=True)
-
 import pandas as pd
 from collections import Counter
 
