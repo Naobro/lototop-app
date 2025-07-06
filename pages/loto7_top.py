@@ -218,6 +218,96 @@ digit_table = pd.DataFrame({
 
 st.markdown(style_table(digit_table), unsafe_allow_html=True)
 
+st.header("🎯 AIによる次回出現数字候補（22個に絞り込み）")
+
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.neural_network import MLPClassifier
+from collections import defaultdict, Counter
+import numpy as np
+
+# --- 直近30回のデータで学習用データ構築（ロト7は第1〜第7数字） ---
+df_ai = df.copy().dropna(subset=[f"第{i}数字" for i in range(1, 8)])
+df_ai = df_ai.tail(30).reset_index(drop=True)
+
+X, y = [], []
+for i in range(len(df_ai) - 1):
+    prev_nums = [df_ai.loc[i + 1, f"第{j}数字"] for j in range(1, 8)]
+    next_nums = [df_ai.loc[i, f"第{j}数字"] for j in range(1, 8)]
+    for target in next_nums:
+        X.append(prev_nums)
+        y.append(target)
+
+# --- ランダムフォレスト ---
+rf = RandomForestClassifier(n_estimators=100, random_state=42)
+rf.fit(X, y)
+rf_probs = rf.predict_proba([X[-1]])[0]
+rf_top = list(np.argsort(rf_probs)[::-1][:15] + 1)
+
+# --- ニューラルネットワーク ---
+mlp = MLPClassifier(hidden_layer_sizes=(100,), max_iter=500, random_state=42)
+mlp.fit(X, y)
+mlp_probs = mlp.predict_proba([X[-1]])[0]
+mlp_top = list(np.argsort(mlp_probs)[::-1][:15] + 1)
+
+# --- マルコフ連鎖（簡易実装） ---
+transition = defaultdict(lambda: defaultdict(int))
+for i in range(len(df_ai) - 1):
+    curr = [df_ai.loc[i + 1, f"第{j}数字"] for j in range(1, 8)]
+    next_ = [df_ai.loc[i, f"第{j}数字"] for j in range(1, 8)]
+    for c in curr:
+        for n in next_:
+            transition[c][n] += 1
+
+last_draw = [df_ai.loc[len(df_ai)-1, f"第{j}数字"] for j in range(1, 8)]
+markov_scores = defaultdict(int)
+for c in last_draw:
+    for n, cnt in transition[c].items():
+        markov_scores[n] += cnt
+markov_top = sorted(markov_scores, key=markov_scores.get, reverse=True)[:15]
+
+# --- 候補を重複頻度で集計し、上位22個を抽出 ---
+all_candidates = rf_top + mlp_top + markov_top
+counter = Counter(all_candidates)
+top22 = [num for num, _ in counter.most_common(22)]
+top22 = sorted(set(top22))[:22]
+top22 = list(map(int, top22))  # ← np.int64 を int に変換
+
+# --- 表示 ---
+st.success(f"🧠 次回出現候補（AI予測・22個）: {sorted(top22)}")
+
+with st.expander("📊 モデル別候補を表示"):
+    st.write("🔹 ランダムフォレスト:", sorted(map(int, rf_top)))
+    st.write("🔹 ニューラルネット:", sorted(map(int, mlp_top)))
+    st.write("🔹 マルコフ連鎖:", sorted(map(int, markov_top)))
+
+# --- 候補数字を位ごとに分類 ---
+grouped = {
+    "1の位": [],
+    "10の位": [],
+    "20の位": [],
+    "30の位": [],
+}
+
+for n in top22:
+    if 1 <= n <= 9:
+        grouped["1の位"].append(n)
+    elif 10 <= n <= 19:
+        grouped["10の位"].append(n)
+    elif 20 <= n <= 29:
+        grouped["20の位"].append(n)
+    elif 30 <= n <= 37:
+        grouped["30の位"].append(n)
+
+# --- 表形式に整形 ---
+max_len = max(len(v) for v in grouped.values())
+group_df = pd.DataFrame({
+    k: grouped[k] + [""] * (max_len - len(grouped[k]))
+    for k in grouped
+})
+
+st.markdown("### 🗂 候補数字の位別分類（1の位・10の位・20の位・30の位）")
+st.dataframe(group_df)
+
 import pandas as pd
 from collections import Counter
 import streamlit as st
@@ -271,7 +361,7 @@ st.subheader("🔄 ひっぱり回数とひっぱり率")
 st.markdown(style_table(pull_df), unsafe_allow_html=True)
 
 # ③ 出現回数ランキング（2列表示：左19件＋右18件）
-st.header("③ 直近24回 出現回数ランキング")
+st.header("直近24回 出現回数ランキング")
 
 # 出現回数カウント
 numbers = df_recent[[f"第{i}数字" for i in range(1, 8)]].values.flatten()
