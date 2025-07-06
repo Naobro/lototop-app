@@ -100,9 +100,10 @@ st.markdown(f"""
 # ✅ ② 直近24回の当選番号（ABC構成・ひっぱり・連続分析付き）
 st.header("直近24回の当選番号")
 
-# 最新データから直近24回を取得
-df_recent = df.tail(24).sort_values(by="抽せん日", ascending=False).copy()
+# 日付昇順にしてから処理し、あとで降順に並べ直す
+df_recent = df.tail(24).copy()
 df_recent["抽せん日"] = pd.to_datetime(df_recent["抽せん日"], errors="coerce")
+df_recent = df_recent.sort_values(by="抽せん日", ascending=True).reset_index(drop=True)
 
 # 出現回数でABC分類セット作成（7数字分に対応）
 all_numbers = df_recent[[f"第{i}数字" for i in range(1, 8)]].values.flatten()
@@ -112,59 +113,60 @@ counts = pd.Series(all_numbers).value_counts()
 A_set = set(counts[(counts >= 3) & (counts <= 4)].index)
 B_set = set(counts[counts >= 5].index)
 
-# 各行のABC構成・ひっぱり・連続を分析
+# 分析処理
 abc_rows = []
-prev_numbers = None  # ← 初回は None にしてスキップ
-pull_total = 0
-cont_total = 0
 abc_counts = {'A': 0, 'B': 0, 'C': 0}
+cont_total = 0
+pull_total = 0
 
+nums_list = []
 for _, row in df_recent.iterrows():
     nums = [int(row[f"第{i}数字"]) for i in range(1, 8)]
+    nums_list.append(nums)
+
+for i in range(len(df_recent)):
+    nums = nums_list[i]
     sorted_nums = sorted(nums)
 
     # ABC構成
     abc = []
     for n in sorted_nums:
         if n in B_set:
-            abc.append('B')
-            abc_counts['B'] += 1
+            abc.append('B'); abc_counts['B'] += 1
         elif n in A_set:
-            abc.append('A')
-            abc_counts['A'] += 1
+            abc.append('A'); abc_counts['A'] += 1
         else:
-            abc.append('C')
-            abc_counts['C'] += 1
+            abc.append('C'); abc_counts['C'] += 1
     abc_str = ','.join(abc)
 
-    # ひっぱり判定（前回との共通数カウント）
-    if prev_numbers is not None:
-        pulls = len(set(nums) & prev_numbers)
-        pull_str = f"{pulls}個" if pulls else "なし"
-        if pulls > 0:
-            pull_total += 1
-    else:
-        pull_str = "-"  # 初回は比較できない
-    prev_numbers = set(nums)  # ← 判定後に更新！
-
-    # 連続ペア（1差のペアがあるか）
+    # 連続
     cont = any(b - a == 1 for a, b in zip(sorted_nums, sorted_nums[1:]))
     cont_str = "あり" if cont else "なし"
     if cont:
         cont_total += 1
 
+    # ひっぱり（1回目は比較対象がない）
+    if i == 0:
+        pulls_str = "-"
+    else:
+        pulls = len(set(nums) & set(nums_list[i - 1]))
+        pulls_str = f"{pulls}個" if pulls > 0 else "なし"
+        if pulls > 0:
+            pull_total += 1
+
     abc_rows.append({
-        '抽せん日': row['抽せん日'].strftime('%Y-%m-%d'),
-        '第1数字': row['第1数字'], '第2数字': row['第2数字'], '第3数字': row['第3数字'],
-        '第4数字': row['第4数字'], '第5数字': row['第5数字'], '第6数字': row['第6数字'],
-        '第7数字': row['第7数字'], 'ABC構成': abc_str,
-        'ひっぱり': pull_str,
+        '抽せん日': df_recent.loc[i, "抽せん日"].strftime('%Y-%m-%d'),
+        '第1数字': nums[0], '第2数字': nums[1], '第3数字': nums[2],
+        '第4数字': nums[3], '第5数字': nums[4], '第6数字': nums[5],
+        '第7数字': nums[6], 'ABC構成': abc_str,
+        'ひっぱり': pulls_str,
         '連続': cont_str
     })
 
-abc_df = pd.DataFrame(abc_rows)
+# 表を最新が上になるように並べ替え
+abc_df = pd.DataFrame(abc_rows).sort_values(by="抽せん日", ascending=False)
 
-# ✅ スクロール可能なテーブル表示（共通スタイルで）
+# 表示
 st.markdown(abc_df.to_html(index=False), unsafe_allow_html=True)
 
 # --- 出現傾向（ABC割合・ひっぱり率・連続率）テーブル ---
@@ -172,12 +174,12 @@ total_abc = sum(abc_counts.values())
 a_perc = round(abc_counts['A'] / total_abc * 100, 1)
 b_perc = round(abc_counts['B'] / total_abc * 100, 1)
 c_perc = round(abc_counts['C'] / total_abc * 100, 1)
-pull_rate = round(pull_total / (len(df_recent) - 1) * 100, 1)  # 初回は除外
+pull_rate = round(pull_total / (len(df_recent) - 1) * 100, 1)
 cont_rate = round(cont_total / len(df_recent) * 100, 1)
 
 summary_df = pd.DataFrame({
     "分析項目": ["A数字割合", "B数字割合", "C数字割合", "ひっぱり率", "連続数字率"],
-    "値": [f"{a_perc}%", f"{b_perc}%", f"{c_perc}%", f"{pull_rate}%", f"{cont_rate}%" ]
+    "値": [f"{a_perc}%", f"{b_perc}%", f"{c_perc}%", f"{pull_rate}%", f"{cont_rate}%"]
 })
 
 # ④ パターン分析
