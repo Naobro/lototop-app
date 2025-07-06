@@ -86,27 +86,92 @@ st.markdown(f"""
 <tr><th>キャリーオーバー</th><td colspan='6' class='right'>{format_yen(latest['キャリーオーバー'])}</td></tr>
 </table>
 """, unsafe_allow_html=True)
-# ✅ ② ABC分類
+# ✅ ② 直近24回の当選番号（ABC構成・ひっぱり・連続分析付き）
 st.header("直近24回の当選番号")
 
+# 回号順にソートして上位24件（最新）を抽出
 df_recent = df.sort_values("回号", ascending=False).head(24).copy()
-digits = df_recent[[f"第{i}数字" for i in range(1, 7)]].values.flatten()
-digits = pd.to_numeric(digits, errors="coerce")
-counts = pd.Series(digits).value_counts()
+df_recent["抽せん日"] = pd.to_datetime(df_recent["抽せん日"], errors="coerce")
+df_recent = df_recent.sort_values(by="抽せん日", ascending=True).reset_index(drop=True)
+
+# 出現回数からABC分類セット作成（ロト6は6数字）
+all_numbers = df_recent[[f"第{i}数字" for i in range(1, 7)]].values.flatten()
+all_numbers = pd.to_numeric(all_numbers, errors="coerce")
+counts = pd.Series(all_numbers).value_counts()
+
 A_set = set(counts[(counts >= 3) & (counts <= 4)].index)
 B_set = set(counts[counts >= 5].index)
 
+# 分析用初期化
 abc_rows = []
+abc_counts = {'A': 0, 'B': 0, 'C': 0}
+cont_total = 0
+pull_total = 0
+nums_list = []
+
+# 数字だけのリスト作成（比較用）
 for _, row in df_recent.iterrows():
-    nums = [row[f"第{i}数字"] for i in range(1, 7)]
-    abc = [ "B" if n in B_set else "A" if n in A_set else "C" for n in nums ]
+    nums = [int(row[f"第{i}数字"]) for i in range(1, 7)]
+    nums_list.append(nums)
+
+# 各回の分析
+for i in range(len(df_recent)):
+    nums = nums_list[i]
+    sorted_nums = sorted(nums)
+
+    # ABC構成
+    abc = []
+    for n in sorted_nums:
+        if n in B_set:
+            abc.append("B"); abc_counts["B"] += 1
+        elif n in A_set:
+            abc.append("A"); abc_counts["A"] += 1
+        else:
+            abc.append("C"); abc_counts["C"] += 1
+    abc_str = ",".join(abc)
+
+    # 連続数字分析
+    cont = any(b - a == 1 for a, b in zip(sorted_nums, sorted_nums[1:]))
+    cont_str = "あり" if cont else "なし"
+    if cont:
+        cont_total += 1
+
+    # ひっぱり分析（前回と共通する数字数）
+    if i == 0:
+        pulls_str = "-"
+    else:
+        pulls = len(set(nums) & set(nums_list[i - 1]))
+        pulls_str = f"{pulls}個" if pulls > 0 else "なし"
+        if pulls > 0:
+            pull_total += 1
+
     abc_rows.append({
-        "回号": row["回号"],
-        **{f"第{i}数字": int(row[f"第{i}数字"]) for i in range(1, 7)},
-        "ABC構成": ",".join(abc)
+        "抽せん日": df_recent.loc[i, "抽せん日"].strftime('%Y-%m-%d'),
+        "回号": df_recent.loc[i, "回号"],
+        **{f"第{i+1}数字": nums[i] for i in range(6)},
+        "ABC構成": abc_str,
+        "ひっぱり": pulls_str,
+        "連続": cont_str,
     })
-abc_df = pd.DataFrame(abc_rows)
+
+# 表を新しい順に並べる
+abc_df = pd.DataFrame(abc_rows).sort_values(by="抽せん日", ascending=False).reset_index(drop=True)
 render_scrollable_table(abc_df)
+
+# --- 出現傾向（ABC割合・ひっぱり率・連続率）テーブル ---
+total_abc = sum(abc_counts.values())
+a_perc = round(abc_counts["A"] / total_abc * 100, 1)
+b_perc = round(abc_counts["B"] / total_abc * 100, 1)
+c_perc = round(abc_counts["C"] / total_abc * 100, 1)
+pull_rate = round(pull_total / (len(df_recent) - 1) * 100, 1)
+cont_rate = round(cont_total / len(df_recent) * 100, 1)
+
+summary_df = pd.DataFrame({
+    "分析項目": ["A数字割合", "B数字割合", "C数字割合", "ひっぱり率", "連続数字率"],
+    "値": [f"{a_perc}%", f"{b_perc}%", f"{c_perc}%", f"{pull_rate}%", f"{cont_rate}%"]
+})
+st.subheader("出現傾向サマリー")
+st.table(summary_df)
 
 ## ✅ ③ パターン分析（40〜43 も 30 に統合）
 st.header("パターン分析")
