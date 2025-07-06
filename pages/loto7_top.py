@@ -172,9 +172,33 @@ summary_df = pd.DataFrame({
     "値": [f"{a_perc}%", f"{b_perc}%", f"{c_perc}%", f"{pull_rate}%", f"{cont_rate}%" ]
 })
 
+# ④ パターン分析
+st.header(" パターン分析")
+patterns = df_recent[[f"第{i}数字" for i in range(1, 8)]].apply(
+    lambda x: '-'.join([str((int(n)-1)//10*10+1) if 1<=int(n)<=9 else str((int(n)//10)*10) for n in sorted(x)]), axis=1
+)
+pattern_counts = patterns.value_counts().reset_index()
+pattern_counts.columns = ['パターン', '出現回数']
+st.markdown(style_table(pattern_counts), unsafe_allow_html=True)
+
+# ⑤ 各位の出現回数TOP5
+st.header(" 各位の出現回数TOP5")
+number_groups = {'1': [], '10': [], '20': [], '30': []}
+for i in range(1, 8):
+    number_groups['1'].extend(df_recent[f'第{i}数字'][df_recent[f'第{i}数字'].between(1, 9)].values)
+    number_groups['10'].extend(df_recent[f'第{i}数字'][df_recent[f'第{i}数字'].between(10, 19)].values)
+    number_groups['20'].extend(df_recent[f'第{i}数字'][df_recent[f'第{i}数字'].between(20, 29)].values)
+    number_groups['30'].extend(df_recent[f'第{i}数字'][df_recent[f'第{i}数字'].between(30, 37)].values)
+
+top5_df = pd.DataFrame({
+    '1の位': pd.Series(number_groups['1']).value_counts().head(5).index.tolist(),
+    '10の位': pd.Series(number_groups['10']).value_counts().head(5).index.tolist(),
+    '20の位': pd.Series(number_groups['20']).value_counts().head(5).index.tolist(),
+    '30の位': pd.Series(number_groups['30']).value_counts().head(5).index.tolist()
+})
+st.markdown(style_table(top5_df), unsafe_allow_html=True)
 
 
-st.markdown("#### 🔎 出現傾向（ABC割合・ひっぱり率・連続率）")
 
 # ✅ A/B数字の位別分類（ロト7用：最大37まで）
 
@@ -315,57 +339,11 @@ st.markdown(f"""
 {group_df.to_html(index=False, escape=False)}
 </div>
 """, unsafe_allow_html=True)
+
 import pandas as pd
 from collections import Counter
 import streamlit as st
 
-st.header("連続数字ペア & ひっぱり傾向")
-
-# 直近24回のデータを取得（dfは直近全データ）
-latest_24 = df.tail(24)
-
-# ロト7は本数字が7個
-numbers_list = latest_24[[f"第{i}数字" for i in range(1, 8)]].values.tolist()
-
-# 🔁 連続ペア（例: 25-26）
-consecutive_pairs = []
-for row in numbers_list:
-    sorted_row = sorted(row)
-    for a, b in zip(sorted_row, sorted_row[1:]):
-        if b - a == 1:
-            consecutive_pairs.append(f"{a}-{b}")
-consec_counter = Counter(consecutive_pairs)
-consec_df = pd.DataFrame(consec_counter.items(), columns=["連続ペア", "出現回数"])
-consec_df = consec_df.sort_values(by="出現回数", ascending=False).reset_index(drop=True)
-
-# 🔄 ひっぱり分析（前回からのひっぱり）
-all_numbers = [set(row) for row in numbers_list]
-pull_counter = Counter()
-total_counter = Counter()
-for i in range(1, len(all_numbers)):
-    current = all_numbers[i]
-    prev = all_numbers[i - 1]
-    for num in current:
-        total_counter[num] += 1
-        if num in prev:
-            pull_counter[num] += 1
-
-# 出現回数とひっぱり率計算
-pull_data = []
-for num in sorted(total_counter.keys()):
-    total = total_counter[num]
-    pulls = pull_counter.get(num, 0)
-    rate = f"{round(pulls / total * 100, 1)}%" if total > 0 else "-"
-    pull_data.append([num, total, pulls, rate])
-pull_df = pd.DataFrame(pull_data, columns=["数字", "出現回数", "ひっぱり回数", "ひっぱり率"])
-pull_df = pull_df.sort_values(by="ひっぱり率", ascending=False).reset_index(drop=True)
-
-# 表示
-st.subheader("🔁 連続ペア 出現ランキング")
-st.markdown(style_table(consec_df), unsafe_allow_html=True)
-
-st.subheader("🔄 ひっぱり回数とひっぱり率")
-st.markdown(style_table(pull_df), unsafe_allow_html=True)
 
 # ③ 出現回数ランキング（2列表示：左19件＋右18件）
 st.header("直近24回 出現回数ランキング")
@@ -447,31 +425,7 @@ def analyze_loto(df: pd.DataFrame, n_numbers: int):
 
     return consec_df, pull_df
 
-# ④ パターン分析
-st.header(" パターン分析")
-patterns = df_recent[[f"第{i}数字" for i in range(1, 8)]].apply(
-    lambda x: '-'.join([str((int(n)-1)//10*10+1) if 1<=int(n)<=9 else str((int(n)//10)*10) for n in sorted(x)]), axis=1
-)
-pattern_counts = patterns.value_counts().reset_index()
-pattern_counts.columns = ['パターン', '出現回数']
-st.markdown(style_table(pattern_counts), unsafe_allow_html=True)
 
-# ⑤ 各位の出現回数TOP5
-st.header(" 各位の出現回数TOP5")
-number_groups = {'1': [], '10': [], '20': [], '30': []}
-for i in range(1, 8):
-    number_groups['1'].extend(df_recent[f'第{i}数字'][df_recent[f'第{i}数字'].between(1, 9)].values)
-    number_groups['10'].extend(df_recent[f'第{i}数字'][df_recent[f'第{i}数字'].between(10, 19)].values)
-    number_groups['20'].extend(df_recent[f'第{i}数字'][df_recent[f'第{i}数字'].between(20, 29)].values)
-    number_groups['30'].extend(df_recent[f'第{i}数字'][df_recent[f'第{i}数字'].between(30, 37)].values)
-
-top5_df = pd.DataFrame({
-    '1の位': pd.Series(number_groups['1']).value_counts().head(5).index.tolist(),
-    '10の位': pd.Series(number_groups['10']).value_counts().head(5).index.tolist(),
-    '20の位': pd.Series(number_groups['20']).value_counts().head(5).index.tolist(),
-    '30の位': pd.Series(number_groups['30']).value_counts().head(5).index.tolist()
-})
-st.markdown(style_table(top5_df), unsafe_allow_html=True)
 
 # ⑥ 各数字の出現回数TOP5
 st.header(" 各数字の出現回数TOP5")
@@ -489,30 +443,32 @@ for i in range(1, 8):
 
 top5_df = pd.DataFrame(results)
 st.markdown(style_table(top5_df), unsafe_allow_html=True)
-# ⑦ A・B・C数字（出現頻度分類）
-st.header(" A・B・C数字（出現頻度分類）")
 
-# all_numbers を定義（直近24回の本数字をフラットに結合）
-all_numbers = df_recent[[f"第{i}数字" for i in range(1, 8)]].values.flatten()
 
-# 出現回数から分類
-counts = pd.Series(all_numbers).value_counts()
-A = counts[(counts >= 3) & (counts <= 4)].index.tolist()
-B = counts[counts >= 5].index.tolist()
-C = list(set(range(1, 38)) - set(A) - set(B))
 
-# 表の整形
-max_len = max(len(A), len(B), len(C))
-A += [""] * (max_len - len(A))
-B += [""] * (max_len - len(B))
-C += [""] * (max_len - len(C))
-abc_df = pd.DataFrame({
-    "A数字（3〜4回）": A,
-    "B数字（5回以上）": B,
-    "C数字（その他）": C
-})
-st.markdown(style_table(abc_df), unsafe_allow_html=True)
+st.header("🔁 連続数字ペア 出現ランキング")
 
+# 直近24回のデータを取得（dfは直近全データ）
+latest_24 = df.tail(24)
+
+# ロト7は本数字が7個
+numbers_list = latest_24[[f"第{i}数字" for i in range(1, 8)]].values.tolist()
+
+# 🔁 連続ペア（例: 25-26）
+consecutive_pairs = []
+for row in numbers_list:
+    sorted_row = sorted(row)
+    for a, b in zip(sorted_row, sorted_row[1:]):
+        if b - a == 1:
+            consecutive_pairs.append(f"{a}-{b}")
+
+# 集計＆整形
+consec_counter = Counter(consecutive_pairs)
+consec_df = pd.DataFrame(consec_counter.items(), columns=["連続ペア", "出現回数"])
+consec_df = consec_df.sort_values(by="出現回数", ascending=False).reset_index(drop=True)
+
+# 表示
+st.markdown(style_table(consec_df), unsafe_allow_html=True)
 import os
 import pandas as pd
 import random
