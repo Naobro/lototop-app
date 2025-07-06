@@ -210,9 +210,9 @@ from sklearn.neural_network import MLPClassifier
 from collections import defaultdict, Counter
 import numpy as np
 
-# --- 直近30回で学習用データ構築 ---
+# --- 直近100回で学習用データ構築 ---
 df_ai = df.copy().dropna(subset=[f"第{i}数字" for i in range(1, 7)])
-df_ai = df_ai.tail(30).reset_index(drop=True)
+df_ai = df_ai.tail(min(len(df_ai), 100)).reset_index(drop=True)
 
 X, y = [], []
 for i in range(len(df_ai) - 1):

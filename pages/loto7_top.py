@@ -201,10 +201,9 @@ from collections import defaultdict, Counter
 import numpy as np
 import pandas as pd
 
-# --- 直近30回のデータで学習用データ構築（ロト7は第1〜第7数字） ---
+# --- 直近100回のデータで学習用データ構築（ロト7は第1〜第7数字） ---
 df_ai = df.copy().dropna(subset=[f"第{i}数字" for i in range(1, 8)])
-df_ai = df_ai.tail(30).reset_index(drop=True)
-
+df_ai = df_ai.tail(min(len(df_ai), 100)).reset_index(drop=True)
 X, y = [], []
 for i in range(len(df_ai) - 1):
     prev_nums = [df_ai.loc[i + 1, f"第{j}数字"] for j in range(1, 8)]
