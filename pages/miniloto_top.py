@@ -173,20 +173,7 @@ for i in range(len(df_recent)):
 abc_df = pd.DataFrame(abc_rows).sort_values(by='抽せん日', ascending=False).reset_index(drop=True)
 st.markdown(style_table(abc_df), unsafe_allow_html=True)
 
-# --- 出現傾向（ABC割合・ひっぱり率・連続率）テーブル ---
-total_abc = sum(abc_counts.values())
-a_perc = round(abc_counts['A'] / total_abc * 100, 1) if total_abc else 0
-b_perc = round(abc_counts['B'] / total_abc * 100, 1) if total_abc else 0
-c_perc = round(abc_counts['C'] / total_abc * 100, 1) if total_abc else 0
-pull_rate = round(pull_total / (len(df_recent) - 1) * 100, 1) if len(df_recent) > 1 else 0
-cont_rate = round(cont_total / len(df_recent) * 100, 1) if len(df_recent) else 0
 
-summary_df = pd.DataFrame({
-    "分析項目": ["A数字割合", "B数字割合", "C数字割合", "ひっぱり率", "連続数字率"],
-    "値": [f"{a_perc}%", f"{b_perc}%", f"{c_perc}%", f"{pull_rate}%", f"{cont_rate}%"]
-})
-st.subheader("出現傾向サマリー")
-st.table(summary_df)
 
 
 # 出現傾向分析
@@ -202,8 +189,121 @@ sum_df = pd.DataFrame({"分析項目": ["A割合", "B割合", "C割合", "ひっ
 st.markdown(style_table(sum_df), unsafe_allow_html=True)
 # 【2/3】全コード：中盤（統計・ABC分類・基本予想）
 
+st.header("分布パターン")
+
+def get_distribution(row):
+    pattern = []
+    for n in sorted(row):
+        if 1 <= n <= 9:
+            pattern.append("1")
+        elif 10 <= n <= 19:
+            pattern.append("10")
+        else:  # ✅ 20〜31 をすべて 20 に分類
+            pattern.append("20")
+    return '-'.join(pattern)
+
+pattern_series = df_recent[[f"第{i}数字" for i in range(1, 6)]].apply(get_distribution, axis=1)
+pattern_counts = pattern_series.value_counts().reset_index()
+pattern_counts.columns = ['パターン', '出現回数']
+st.markdown(style_table(pattern_counts), unsafe_allow_html=True)
+
+st.header("🎯 AIによる次回出現数字候補（18個に絞り込み）")
+
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.neural_network import MLPClassifier
+from collections import defaultdict, Counter
+import numpy as np
+import pandas as pd
+
+# --- 最大100回まで使用（少なければ全部使う） ---
+df_ai = df.copy().dropna(subset=[f"第{i}数字" for i in range(1, 6)])
+df_ai = df_ai.tail(min(len(df_ai), 100)).reset_index(drop=True)
+
+# --- 学習データ作成（前回 → 今回の出目） ---
+X, y = [], []
+for i in range(len(df_ai) - 1):
+    prev_nums = [df_ai.loc[i + 1, f"第{j}数字"] for j in range(1, 6)]
+    next_nums = [df_ai.loc[i, f"第{j}数字"] for j in range(1, 6)]
+    for target in next_nums:
+        X.append(prev_nums)
+        y.append(target)
+
+# --- ランダムフォレスト予測 ---
+rf = RandomForestClassifier(n_estimators=100, random_state=42)
+rf.fit(X, y)
+rf_probs = rf.predict_proba([X[-1]])[0]
+rf_top = list(np.argsort(rf_probs)[::-1][:15] + 1)
+
+# --- ニューラルネット予測 ---
+mlp = MLPClassifier(hidden_layer_sizes=(100,), max_iter=500, random_state=42)
+mlp.fit(X, y)
+mlp_probs = mlp.predict_proba([X[-1]])[0]
+mlp_top = list(np.argsort(mlp_probs)[::-1][:15] + 1)
+
+# --- マルコフ連鎖予測 ---
+transition = defaultdict(lambda: defaultdict(int))
+for i in range(len(df_ai) - 1):
+    curr = [df_ai.loc[i + 1, f"第{j}数字"] for j in range(1, 6)]
+    next_ = [df_ai.loc[i, f"第{j}数字"] for j in range(1, 6)]
+    for c in curr:
+        for n in next_:
+            transition[c][n] += 1
+
+last_draw = [df_ai.loc[len(df_ai)-1, f"第{j}数字"] for j in range(1, 6)]
+markov_scores = defaultdict(int)
+for c in last_draw:
+    for n, cnt in transition[c].items():
+        markov_scores[n] += cnt
+markov_top = sorted(markov_scores, key=markov_scores.get, reverse=True)[:15]
+
+# --- 候補を重複頻度で集計し、上位18個を抽出 ---
+all_candidates = rf_top + mlp_top + markov_top
+counter = Counter(all_candidates)
+top18 = [num for num, _ in counter.most_common(18)]
+top18 = sorted(set(top18))[:18]
+top18 = list(map(int, top18))
+
+# --- 表示 ---
+st.success(f"🧠 次回出現候補（AI予測・18個）: {sorted(top18)}")
+
+# --- モデル別候補表示（展開式） ---
+with st.expander("📊 モデル別候補を表示"):
+    st.write("🔹 ランダムフォレスト:", ", ".join(map(str, sorted(rf_top))))
+    st.write("🔹 ニューラルネット:", ", ".join(map(str, sorted(mlp_top))))
+    st.write("🔹 マルコフ連鎖:", ", ".join(map(str, sorted(markov_top))))
+
+# --- 位別分類（30・31は20の位に入れる） ---
+grouped = {
+    "1の位": [],
+    "10の位": [],
+    "20の位": [],
+}
+for n in top18:
+    if 1 <= n <= 9:
+        grouped["1の位"].append(n)
+    elif 10 <= n <= 19:
+        grouped["10の位"].append(n)
+    elif 20 <= n <= 31:  # ← 30・31もここに入れる
+        grouped["20の位"].append(n)
+
+# --- 表形式に整形・表示 ---
+max_len = max(len(v) for v in grouped.values())
+group_df = pd.DataFrame({
+    k: grouped[k] + [""] * (max_len - len(grouped[k]))
+    for k in grouped
+})
+group_df = group_df.applymap(lambda x: str(int(x)) if str(x).isdigit() else "")
+
+st.markdown("### 🧮 候補数字の位別分類（1の位・10の位・20の位）")
+st.markdown(f"""
+<div style='overflow-x: auto;'>
+{group_df.to_html(index=False, escape=False)}
+</div>
+""", unsafe_allow_html=True)
+
+
 # ⑥-A A数字・B数字の位別分類（最新当選番号に応じて赤文字強調）
-st.header("A A数字・B数字の位別分類")
+st.header("A数字・B数字の位別分類")
 
 # 最新当選番号（df の先頭行を参照）
 latest_numbers = [df.iloc[0][f"第{i}数字"] for i in range(1, 6)]
@@ -243,7 +343,40 @@ digit_table = pd.DataFrame({
 # 表示（HTMLスタイルで）
 st.markdown(style_table(digit_table), unsafe_allow_html=True)
 
+st.header("各位の出現回数TOP5")
 
+# 20〜31をまとめて1つのグループに
+number_groups = {'1': [], '10': [], '20/30': []}
+for i in range(1, 6):
+    number_groups['1'] += df_recent[f'第{i}数字'][df_recent[f'第{i}数字'].between(1, 9)].tolist()
+    number_groups['10'] += df_recent[f'第{i}数字'][df_recent[f'第{i}数字'].between(10, 19)].tolist()
+    number_groups['20/30'] += df_recent[f'第{i}数字'][df_recent[f'第{i}数字'].between(20, 31)].tolist()
+
+def pad_top_values(series, length=5):
+    values = series.value_counts().head(length).index.tolist()
+    return values + [""] * (length - len(values))
+
+top5_df = pd.DataFrame({
+    '1の位': pad_top_values(pd.Series(number_groups['1'])),
+    '10の位': pad_top_values(pd.Series(number_groups['10'])),
+    '20/30の位': pad_top_values(pd.Series(number_groups['20/30']))
+})
+st.markdown(style_table(top5_df), unsafe_allow_html=True)
+
+st.header("各数字の出現回数TOP5（位置別）")
+
+# ラベルを5行に拡張
+position_result = {'順位': ['1位', '2位', '3位', '4位', '5位']}
+
+for i in range(1, 6):
+    col = f'第{i}数字'
+    counts = df_recent[col].value_counts().sort_values(ascending=False).head(5)
+    # 欠損時に空文字で補完
+    top5 = [f"{n}（{c}回）" for n, c in zip(counts.index, counts.values)] + [""] * (5 - len(counts))
+    position_result[col] = top5
+
+# 表示
+st.markdown(style_table(pd.DataFrame(position_result)), unsafe_allow_html=True)
 import pandas as pd
 from collections import Counter
 
@@ -341,58 +474,9 @@ pull_df = pull_df.sort_values(by="ひっぱり率", ascending=False)
 st.subheader("🔁 連続ペア 出現ランキング")
 st.markdown(style_table(consec_df), unsafe_allow_html=True)
 
-st.header("分布パターン")
 
-def get_distribution(row):
-    pattern = []
-    for n in sorted(row):
-        if 1 <= n <= 9:
-            pattern.append("1")
-        elif 10 <= n <= 19:
-            pattern.append("10")
-        else:  # ✅ 20〜31 をすべて 20 に分類
-            pattern.append("20")
-    return '-'.join(pattern)
 
-pattern_series = df_recent[[f"第{i}数字" for i in range(1, 6)]].apply(get_distribution, axis=1)
-pattern_counts = pattern_series.value_counts().reset_index()
-pattern_counts.columns = ['パターン', '出現回数']
-st.markdown(style_table(pattern_counts), unsafe_allow_html=True)
 
-st.header("各位の出現回数TOP5")
-
-# 20〜31をまとめて1つのグループに
-number_groups = {'1': [], '10': [], '20/30': []}
-for i in range(1, 6):
-    number_groups['1'] += df_recent[f'第{i}数字'][df_recent[f'第{i}数字'].between(1, 9)].tolist()
-    number_groups['10'] += df_recent[f'第{i}数字'][df_recent[f'第{i}数字'].between(10, 19)].tolist()
-    number_groups['20/30'] += df_recent[f'第{i}数字'][df_recent[f'第{i}数字'].between(20, 31)].tolist()
-
-def pad_top_values(series, length=5):
-    values = series.value_counts().head(length).index.tolist()
-    return values + [""] * (length - len(values))
-
-top5_df = pd.DataFrame({
-    '1の位': pad_top_values(pd.Series(number_groups['1'])),
-    '10の位': pad_top_values(pd.Series(number_groups['10'])),
-    '20/30の位': pad_top_values(pd.Series(number_groups['20/30']))
-})
-st.markdown(style_table(top5_df), unsafe_allow_html=True)
-
-st.header("各数字の出現回数TOP5（位置別）")
-
-# ラベルを5行に拡張
-position_result = {'順位': ['1位', '2位', '3位', '4位', '5位']}
-
-for i in range(1, 6):
-    col = f'第{i}数字'
-    counts = df_recent[col].value_counts().sort_values(ascending=False).head(5)
-    # 欠損時に空文字で補完
-    top5 = [f"{n}（{c}回）" for n, c in zip(counts.index, counts.values)] + [""] * (5 - len(counts))
-    position_result[col] = top5
-
-# 表示
-st.markdown(style_table(pd.DataFrame(position_result)), unsafe_allow_html=True)
 # ABC分析用コード（完全動作版）
 import pandas as pd
 from collections import Counter
