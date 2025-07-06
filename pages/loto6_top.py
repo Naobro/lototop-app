@@ -285,6 +285,42 @@ with st.expander("📊 モデル別候補を表示"):
     st.write("🔹 ランダムフォレスト:", sorted(map(int, rf_top)))
     st.write("🔹 ニューラルネット:", sorted(map(int, mlp_top)))
     st.write("🔹 マルコフ連鎖:", sorted(map(int, markov_top)))
+
+# --- ロト6用：候補数字を位ごとに分類 ---
+grouped6 = {
+    "1の位": [],
+    "10の位": [],
+    "20の位": [],
+    "30の位": [],
+    "40の位": [],
+}
+for n in top20:
+    if 1 <= n <= 9:
+        grouped6["1の位"].append(n)
+    elif 10 <= n <= 19:
+        grouped6["10の位"].append(n)
+    elif 20 <= n <= 29:
+        grouped6["20の位"].append(n)
+    elif 30 <= n <= 39:
+        grouped6["30の位"].append(n)
+    elif 40 <= n <= 43:
+        grouped6["40の位"].append(n)
+
+# --- 表形式に整形（整数表示＋Noneは空文字） ---
+max_len6 = max(len(v) for v in grouped6.values())
+group_df6 = pd.DataFrame({
+    k: grouped6[k] + [None] * (max_len6 - len(grouped6[k]))
+    for k in grouped6
+})
+group_df6 = group_df6.applymap(lambda x: str(int(x)) if pd.notnull(x) else "")
+
+# --- 表示 ---
+st.markdown("### 🧮 候補数字の位別分類（1の位・10の位・20の位・30の位・40の位）")
+st.markdown(f"""
+<div style='overflow-x: auto;'>
+{group_df6.to_html(index=False, escape=False)}
+</div>
+""", unsafe_allow_html=True)
 # ✅ ⑧ 基本予想（2通り×5パターン）
 st.header("基本予想（パターン別 2通り×5種類）")
 group_dict = {
