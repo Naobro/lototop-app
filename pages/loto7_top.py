@@ -299,20 +299,22 @@ for n in top22:
     elif 30 <= n <= 37:
         grouped["30の位"].append(n)
 
-# --- 表形式に整形してHTMLで表示（列ずれ防止） ---
+# --- 表形式に整形（整数で表示するため文字列に変換） ---
 max_len = max(len(v) for v in grouped.values())
 group_df = pd.DataFrame({
     k: grouped[k] + [None] * (max_len - len(grouped[k]))
     for k in grouped
 })
 
+# 数値を整数の文字列に変換し、小数点を消す（Noneは空文字に）
+group_df = group_df.applymap(lambda x: str(int(x)) if pd.notnull(x) else "")
+
 st.markdown("### 🧮 候補数字の位別分類（1の位・10の位・20の位・30の位）")
 st.markdown(f"""
 <div style='overflow-x: auto;'>
-{group_df.to_html(index=False, na_rep="", escape=False)}
+{group_df.to_html(index=False, escape=False)}
 </div>
 """, unsafe_allow_html=True)
-
 import pandas as pd
 from collections import Counter
 import streamlit as st
