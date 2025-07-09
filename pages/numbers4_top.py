@@ -190,9 +190,9 @@ def show_ai_predictions(csv_path):
         df[required_cols] = df[required_cols].astype(int)
 
         dfs = {
-            "全データ": df,
-            "直近100回": df.tail(100),
-            "直近24回": df.tail(24)
+            "全データ": (df, 0.1),
+            "直近100回": (df.tail(100), 0.3),
+            "直近24回": (df.tail(24), 0.6)
         }
 
         wheels = [
@@ -245,7 +245,7 @@ def show_ai_predictions(csv_path):
 
             return {"RF": rf_top3, "NN": nn_top3, "MC": mc_top3, "WH": wheel_top3}
 
-        results = {name: run_models(sub) for name, sub in dfs.items()}
+        results = {label: run_models(data) for label, (data, _) in dfs.items()}
 
         def show_models(title, model_dict):
             df_show = pd.DataFrame({
@@ -277,14 +277,15 @@ def show_ai_predictions(csv_path):
         for label in dfs:
             show_models(label, results[label])
 
-        # スコア合算（RF/NN/MC/WH 合計）
+        # ✅ スコア合算：重み付き
         final_scores = [Counter() for _ in range(4)]
-        for model_set in results.values():
+        for label, (data, weight) in dfs.items():
+            model_set = results[label]
             for i in range(4):
-                for rank, n in enumerate(model_set["RF"][i]): final_scores[i][n] += 3 - rank
-                for rank, n in enumerate(model_set["NN"][i]): final_scores[i][n] += 3 - rank
-                for rank, n in enumerate(model_set["MC"][i]): final_scores[i][n] += 3 - rank
-                for rank, n in enumerate(model_set["WH"][i]): final_scores[i][n] += 3 - rank
+                for rank, n in enumerate(model_set["RF"][i]): final_scores[i][n] += (3 - rank) * weight
+                for rank, n in enumerate(model_set["NN"][i]): final_scores[i][n] += (3 - rank) * weight
+                for rank, n in enumerate(model_set["MC"][i]): final_scores[i][n] += (3 - rank) * weight
+                for rank, n in enumerate(model_set["WH"][i]): final_scores[i][n] += (3 - rank) * weight
 
         top5_combined = [
             [n for n, _ in final_scores[i].most_common(5)] for i in range(4)
@@ -313,6 +314,7 @@ def show_page():
     show_ai_predictions("data/n4.csv")
 
 show_page()
+
 
 
 
