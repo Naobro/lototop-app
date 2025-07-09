@@ -203,7 +203,6 @@ def show_ai_predictions(csv_path):
             y3.append(curr["第3数字"])
             y4.append(curr["第4数字"])
 
-        # モデル学習（4桁分）
         rf_models = [RandomForestClassifier() for _ in range(4)]
         nn_models = [MLPClassifier(max_iter=500) for _ in range(4)]
         targets = [y1, y2, y3, y4]
@@ -214,16 +213,13 @@ def show_ai_predictions(csv_path):
 
         latest_input = [[df.iloc[0][col] for col in ["第1数字", "第2数字", "第3数字", "第4数字"]]]
 
-        # TOP3抽出関数
         def get_top3(model):
             probs = model.predict_proba(latest_input)[0]
             return sorted(range(len(probs)), key=lambda i: probs[i], reverse=True)[:3]
 
-        # 各モデルTOP3（4桁分）
         rf_top3 = [get_top3(model) for model in rf_models]
         nn_top3 = [get_top3(model) for model in nn_models]
 
-        # マルコフ連鎖 TOP3
         def markov_top3(series):
             transitions = defaultdict(Counter)
             for i in range(len(series) - 1):
@@ -233,7 +229,6 @@ def show_ai_predictions(csv_path):
 
         mc_top3 = [markov_top3(df[f"第{i+1}数字"].tolist()) for i in range(4)]
 
-        # 表表示関数（4桁用）
         def show_table(title, data, rows=3):
             st.subheader(title)
             df_show = pd.DataFrame({
@@ -245,20 +240,24 @@ def show_ai_predictions(csv_path):
             df_show.index = [f"{i+1}番目" for i in range(rows)]
             st.dataframe(df_show.style.set_properties(**{'text-align': 'center'}), use_container_width=True)
 
-        # モデル別表示
+        # ✅ 各モデル表示
         show_table("🌲 ランダムフォレスト TOP3", rf_top3)
         show_table("🧠 ニューラルネット TOP3", nn_top3)
         show_table("🔁 マルコフ連鎖 TOP3", mc_top3)
 
-        # 統合 → TOP5
+        # ✅ スコア合算による統合TOP5
         final_top5 = []
         for i in range(4):
-            combined = rf_top3[i] + nn_top3[i] + mc_top3[i]
-            freq = Counter(combined)
-            top5 = [num for num, _ in freq.most_common()]
-            final_top5.append(sorted(set(top5))[:5])
+            score = Counter()
+            for rank, num in enumerate(rf_top3[i]):
+                score[num] += 3 - rank  # 1位:3点, 2位:2点, 3位:1点
+            for rank, num in enumerate(nn_top3[i]):
+                score[num] += 3 - rank
+            for rank, num in enumerate(mc_top3[i]):
+                score[num] += 3 - rank
+            top5 = [num for num, _ in score.most_common(5)]
+            final_top5.append(top5)
 
-        # 統合TOP5表示
         show_table("✅ 3モデル統合 TOP5", final_top5, rows=5)
 
     except Exception as e:
@@ -270,105 +269,6 @@ def show_page():
     show_ai_predictions("data/n4.csv")
 
 show_page()
-
-
-
-
-
-
-
-def show_ai_predictions_n4(csv_path):
-    try:
-        # CSV読み込みと整形
-        df = pd.read_csv(csv_path)
-        df = df.loc[
-            df["第1数字"].notnull() &
-            df["第2数字"].notnull() &
-            df["第3数字"].notnull() &
-            df["第4数字"].notnull()
-        ]
-        df = df.dropna(subset=["第1数字", "第2数字", "第3数字", "第4数字"])
-        df[["第1数字", "第2数字", "第3数字", "第4数字"]] = df[["第1数字", "第2数字", "第3数字", "第4数字"]].astype(int)
-        
-        # 最新データの直後を予測対象とする
-        latest = [int(df.iloc[0][f"第{i}数字"]) for i in range(1, 5)]
-
-        # 学習データと正解ラベルを作成
-        X = []
-        y = {i: [] for i in range(1, 5)}
-        for i in range(len(df) - 1):
-            row = [int(df.iloc[i][f"第{j}数字"]) for j in range(1, 5)]
-            next_row = [int(df.iloc[i + 1][f"第{j}数字"]) for j in range(1, 5)]
-            X.append(row)
-            for j in range(1, 5):
-                y[j].append(next_row[j - 1])
-
-        # モデル定義
-        rf_models = {i: RandomForestClassifier() for i in range(1, 5)}
-        nn_models = {i: MLPClassifier(max_iter=1000, random_state=42) for i in range(1, 5)}
-
-        # 学習
-        for i in range(1, 5):
-            rf_models[i].fit(X, y[i])
-            nn_models[i].fit(X, y[i])
-
-        # 予測（出力をintで整形）
-        rf_pred = [int(rf_models[i].predict([latest])[0]) for i in range(1, 5)]
-        nn_pred = [int(nn_models[i].predict([latest])[0]) for i in range(1, 5)]
-
-        # マルコフ連鎖的予測（最頻値）
-        next_numbers = list(zip(*X))[0]
-        mc_pred = []
-        for i in range(1, 5):
-            nexts = []
-            for j in range(len(X)):
-                if X[j] == latest:
-                    nexts.append(y[i][j])
-            if nexts:
-                mc_pred.append(Counter(nexts).most_common(1)[0][0])
-            else:
-                mc_pred.append(random.choice(range(10)))  # fallback
-
-                # 表示：各モデルでの上位3候補を取得
-        def get_top3(model_dict, X, y):
-            top3 = []
-            for i in range(1, 5):
-                probas = model_dict[i].predict_proba([latest])[0]
-                top_indices = probas.argsort()[-3:][::-1]
-                top3.append(", ".join(str(idx) for idx in top_indices))
-            return top3
-
-        rf_top3 = get_top3(rf_models, X, y)
-        nn_top3 = get_top3(nn_models, X, y)
-
-        # マルコフ連鎖の上位3候補（出現頻度ベース）
-        mc_top3 = []
-        for i in range(1, 5):
-            nexts = []
-            for j in range(len(X)):
-                if X[j] == latest:
-                    nexts.append(y[i][j])
-            if nexts:
-                freq = Counter(nexts).most_common(3)
-                mc_top3.append(", ".join(str(x[0]) for x in freq))
-            else:
-                mc_top3.append(", ".join(str(random.randint(0, 9)) for _ in range(3)))
-
-        # テーブル表示
-        result_df = pd.DataFrame([
-            ["🌲 ランダムフォレスト"] + rf_top3,
-            ["🧠 ニューラルネット"] + nn_top3,
-            ["🔁 マルコフ連鎖"] + mc_top3
-        ], columns=["モデル名", "第1数字候補", "第2数字候補", "第3数字候補", "第4数字候補"])
-
-        st.subheader("🔍 AIモデル予測（次に来る数字の上位3候補）")
-        st.dataframe(result_df, use_container_width=True)
-    except Exception as e:
-        st.error("AI予測中にエラーが発生しました")
-        st.error(str(e))
-
-st.header("AIによる次回数字予測（ナンバーズ4）")
-show_ai_predictions_n4("https://raw.githubusercontent.com/Naobro/lototop-app/main/data/n4.csv")
 
 # ④ W/S/T カウント
 st.subheader("シングル・ダブル・トリプル分析")
