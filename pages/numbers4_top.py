@@ -166,6 +166,117 @@ except Exception as e:
     st.error(f"ランキングの表示に失敗しました: {e}")
 
 
+import pandas as pd
+import streamlit as st
+from collections import Counter, defaultdict
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.neural_network import MLPClassifier
+
+# ====================== AI予測関数 ======================
+def show_ai_predictions(csv_path):
+    st.header("🎯 ナンバーズ4 AIによる次回数字予測")
+
+    try:
+        df = pd.read_csv(csv_path)
+        st.write("✅ CSV読み込み成功")
+
+        # カラム正規化
+        df.columns = [col.replace('（', '(').replace('）', ')') for col in df.columns]
+        required_cols = ["第1数字", "第2数字", "第3数字", "第4数字"]
+        if not all(col in df.columns for col in required_cols):
+            st.error("必要なカラム（第1数字〜第4数字）が見つかりません")
+            st.write("現在のカラム:", df.columns.tolist())
+            return
+
+        df = df.dropna(subset=required_cols)
+        df[required_cols] = df[required_cols].astype(int)
+        df = df.tail(min(len(df), 100)).reset_index(drop=True)
+
+        # 学習データ作成
+        X, y1, y2, y3, y4 = [], [], [], [], []
+        for i in range(len(df) - 1):
+            prev = df.iloc[i + 1]
+            curr = df.iloc[i]
+            X.append([prev["第1数字"], prev["第2数字"], prev["第3数字"], prev["第4数字"]])
+            y1.append(curr["第1数字"])
+            y2.append(curr["第2数字"])
+            y3.append(curr["第3数字"])
+            y4.append(curr["第4数字"])
+
+        # モデル学習（4桁分）
+        rf_models = [RandomForestClassifier() for _ in range(4)]
+        nn_models = [MLPClassifier(max_iter=500) for _ in range(4)]
+        targets = [y1, y2, y3, y4]
+
+        for i in range(4):
+            rf_models[i].fit(X, targets[i])
+            nn_models[i].fit(X, targets[i])
+
+        latest_input = [[df.iloc[0][col] for col in ["第1数字", "第2数字", "第3数字", "第4数字"]]]
+
+        # TOP3抽出関数
+        def get_top3(model):
+            probs = model.predict_proba(latest_input)[0]
+            return sorted(range(len(probs)), key=lambda i: probs[i], reverse=True)[:3]
+
+        # 各モデルTOP3（4桁分）
+        rf_top3 = [get_top3(model) for model in rf_models]
+        nn_top3 = [get_top3(model) for model in nn_models]
+
+        # マルコフ連鎖 TOP3
+        def markov_top3(series):
+            transitions = defaultdict(Counter)
+            for i in range(len(series) - 1):
+                transitions[series[i]][series[i+1]] += 1
+            last = series[0]
+            return [num for num, _ in transitions[last].most_common(3)]
+
+        mc_top3 = [markov_top3(df[f"第{i+1}数字"].tolist()) for i in range(4)]
+
+        # 表表示関数（4桁用）
+        def show_table(title, data, rows=3):
+            st.subheader(title)
+            df_show = pd.DataFrame({
+                "第1数字": data[0][:rows],
+                "第2数字": data[1][:rows],
+                "第3数字": data[2][:rows],
+                "第4数字": data[3][:rows]
+            })
+            df_show.index = [f"{i+1}番目" for i in range(rows)]
+            st.dataframe(df_show.style.set_properties(**{'text-align': 'center'}), use_container_width=True)
+
+        # モデル別表示
+        show_table("🌲 ランダムフォレスト TOP3", rf_top3)
+        show_table("🧠 ニューラルネット TOP3", nn_top3)
+        show_table("🔁 マルコフ連鎖 TOP3", mc_top3)
+
+        # 統合 → TOP5
+        final_top5 = []
+        for i in range(4):
+            combined = rf_top3[i] + nn_top3[i] + mc_top3[i]
+            freq = Counter(combined)
+            top5 = [num for num, _ in freq.most_common()]
+            final_top5.append(sorted(set(top5))[:5])
+
+        # 統合TOP5表示
+        show_table("✅ 3モデル統合 TOP5", final_top5, rows=5)
+
+    except Exception as e:
+        st.error("AI予測の実行中にエラーが発生しました")
+        st.exception(e)
+
+# ====================== 呼び出し ======================
+def show_page():
+    show_ai_predictions("data/n4.csv")
+
+show_page()
+
+
+
+
+
+
+
 def show_ai_predictions_n4(csv_path):
     try:
         # CSV読み込みと整形
