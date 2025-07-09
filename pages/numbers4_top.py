@@ -190,46 +190,101 @@ def show_ai_predictions(csv_path):
 
         df = df.dropna(subset=required_cols)
         df[required_cols] = df[required_cols].astype(int)
-        df = df.tail(min(len(df), 100)).reset_index(drop=True)
 
-        # 学習データ作成
-        X, y1, y2, y3, y4 = [], [], [], [], []
-        for i in range(len(df) - 1):
-            prev = df.iloc[i + 1]
-            curr = df.iloc[i]
-            X.append([prev["第1数字"], prev["第2数字"], prev["第3数字"], prev["第4数字"]])
-            y1.append(curr["第1数字"])
-            y2.append(curr["第2数字"])
-            y3.append(curr["第3数字"])
-            y4.append(curr["第4数字"])
+        # 全体、直近100回、直近24回のデータ分割
+        dfs = {
+            "全データ": df,
+            "直近100回": df.tail(100),
+            "直近24回": df.tail(24)
+        }
 
-        rf_models = [RandomForestClassifier() for _ in range(4)]
-        nn_models = [MLPClassifier(max_iter=500) for _ in range(4)]
-        targets = [y1, y2, y3, y4]
+        # 風車盤（ナンバーズ4）
+        wheels = [
+            [0, 3, 6, 9, 2, 5, 8, 1, 4, 7],
+            [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+            [0, 7, 4, 1, 8, 5, 2, 9, 6, 3],
+            [0, 9, 8, 7, 6, 5, 4, 3, 2, 1]
+        ]
 
-        for i in range(4):
-            rf_models[i].fit(X, targets[i])
-            nn_models[i].fit(X, targets[i])
+        def run_models(df_sub):
+            X, y1, y2, y3, y4 = [], [], [], [], []
+            for i in range(len(df_sub) - 1):
+                prev = df_sub.iloc[i + 1]
+                curr = df_sub.iloc[i]
+                X.append([prev[c] for c in required_cols])
+                y1.append(curr["第1数字"])
+                y2.append(curr["第2数字"])
+                y3.append(curr["第3数字"])
+                y4.append(curr["第4数字"])
+            rf_models = [RandomForestClassifier() for _ in range(4)]
+            nn_models = [MLPClassifier(max_iter=500) for _ in range(4)]
+            targets = [y1, y2, y3, y4]
+            for i in range(4):
+                rf_models[i].fit(X, targets[i])
+                nn_models[i].fit(X, targets[i])
+            latest_input = [[df_sub.iloc[0][col] for col in required_cols]]
 
-        latest_input = [[df.iloc[0][col] for col in ["第1数字", "第2数字", "第3数字", "第4数字"]]]
+            def get_top3(model):
+                probs = model.predict_proba(latest_input)[0]
+                return sorted(range(len(probs)), key=lambda i: probs[i], reverse=True)[:3]
 
-        def get_top3(model):
-            probs = model.predict_proba(latest_input)[0]
-            return sorted(range(len(probs)), key=lambda i: probs[i], reverse=True)[:3]
+            rf_top3 = [get_top3(m) for m in rf_models]
+            nn_top3 = [get_top3(m) for m in nn_models]
 
-        rf_top3 = [get_top3(model) for model in rf_models]
-        nn_top3 = [get_top3(model) for model in nn_models]
+            def markov_top3(series):
+                transitions = defaultdict(Counter)
+                for i in range(len(series) - 1):
+                    transitions[series[i]][series[i+1]] += 1
+                last = series[0]
+                return [num for num, _ in transitions[last].most_common(3)]
 
-        def markov_top3(series):
-            transitions = defaultdict(Counter)
-            for i in range(len(series) - 1):
-                transitions[series[i]][series[i+1]] += 1
-            last = series[0]
-            return [num for num, _ in transitions[last].most_common(3)]
+            mc_top3 = [markov_top3(df_sub[f"第{i+1}数字"].tolist()) for i in range(4)]
 
-        mc_top3 = [markov_top3(df[f"第{i+1}数字"].tolist()) for i in range(4)]
+            # 風車盤位置出現頻度 →出現上位3位の数字を返す
+            wheel_top3 = []
+            for i in range(4):
+                counter = Counter()
+                wheel = wheels[i]
+                for val in df_sub[f"第{i+1}数字"]:
+                    pos = wheel.index(val)
+                    counter[pos] += 1
+                top_pos = [pos for pos, _ in counter.most_common(3)]
+                wheel_top3.append([wheel[pos] for pos in top_pos])
 
-        def show_table(title, data, rows=3):
+            return rf_top3, nn_top3, mc_top3, wheel_top3
+
+        tables = {}
+        for label, subset in dfs.items():
+            rf, nn, mc, wh = run_models(subset)
+            tables[label] = {"RF": rf, "NN": nn, "MC": mc, "WH": wh}
+
+        def show_3x3_table(title, table_dict):
+            df_show = pd.DataFrame({
+                "ランダムフォレスト": ["・".join(map(str, tables[title]["RF"][i])) for i in range(2)],
+                "ニューラルネット": ["・".join(map(str, tables[title]["NN"][i])) for i in range(2)],
+                "マルコフ連鎖": ["・".join(map(str, tables[title]["MC"][i])) for i in range(2)],
+                "風車盤予想": ["・".join(map(str, tables[title]["WH"][i])) for i in range(2)]
+            }, index=["第1数字", "第2数字"])
+            st.subheader(f"📊 {title} 各予測TOP3")
+            st.dataframe(df_show)
+
+        for k in dfs.keys():
+            show_3x3_table(k, tables[k])
+
+        # ✅ 5x5x5 スコア集計
+        final_score = [Counter() for _ in range(4)]
+        for model in [tables["全データ"], tables["直近100回"], tables["直近24回"]]:
+            for i in range(4):
+                for rank, val in enumerate(model["RF"][i]): final_score[i][val] += 3 - rank
+                for rank, val in enumerate(model["NN"][i]): final_score[i][val] += 3 - rank
+                for rank, val in enumerate(model["MC"][i]): final_score[i][val] += 3 - rank
+                for rank, val in enumerate(model["WH"][i]): final_score[i][val] += 3 - rank
+
+        top5_all = [
+            [num for num, _ in final_score[i].most_common(5)] for i in range(4)
+        ]
+
+        def show_table(title, data, rows=5):
             st.subheader(title)
             df_show = pd.DataFrame({
                 "第1数字": data[0][:rows],
@@ -240,25 +295,7 @@ def show_ai_predictions(csv_path):
             df_show.index = [f"{i+1}番目" for i in range(rows)]
             st.dataframe(df_show.style.set_properties(**{'text-align': 'center'}), use_container_width=True)
 
-        # ✅ 各モデル表示
-        show_table("🌲 ランダムフォレスト TOP3", rf_top3)
-        show_table("🧠 ニューラルネット TOP3", nn_top3)
-        show_table("🔁 マルコフ連鎖 TOP3", mc_top3)
-
-        # ✅ スコア合算による統合TOP5
-        final_top5 = []
-        for i in range(4):
-            score = Counter()
-            for rank, num in enumerate(rf_top3[i]):
-                score[num] += 3 - rank  # 1位:3点, 2位:2点, 3位:1点
-            for rank, num in enumerate(nn_top3[i]):
-                score[num] += 3 - rank
-            for rank, num in enumerate(mc_top3[i]):
-                score[num] += 3 - rank
-            top5 = [num for num, _ in score.most_common(5)]
-            final_top5.append(top5)
-
-        show_table("✅ 3モデル統合 TOP5", final_top5, rows=5)
+        show_table("🏆 各モデル合算スコア TOP5", top5_all, rows=5)
 
     except Exception as e:
         st.error("AI予測の実行中にエラーが発生しました")
@@ -269,6 +306,7 @@ def show_page():
     show_ai_predictions("data/n4.csv")
 
 show_page()
+
 
 # ④ W/S/T カウント
 st.subheader("シングル・ダブル・トリプル分析")
