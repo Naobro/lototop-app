@@ -267,7 +267,12 @@ def show_ai_predictions(csv_path):
                            ", ".join(map(str, model_dict["WH"][3]))],
             }, index=["ランダムフォレスト", "ニューラルネット", "マルコフ", "風車盤"])
             st.subheader(f"📊 {title} 各予測TOP3")
-            st.dataframe(df_show)
+            st.dataframe(
+                df_show.style.set_properties(**{'text-align': 'center'}).set_table_styles([
+                    {"selector": "th.row_heading", "props": [("min-width", "100px")]}
+                ]),
+                use_container_width=True
+            )
 
         for label in dfs:
             show_models(label, results[label])
@@ -291,8 +296,14 @@ def show_ai_predictions(csv_path):
             "第3数字": top5_combined[2],
             "第4数字": top5_combined[3],
         }, index=["第1位🥇", "第2位🥈", "第3位🥉", "第4位⭐", "第5位⭐"])
+
         st.subheader("🏆 各モデル合算スコア TOP5")
-        st.dataframe(df_final.style.set_properties(**{'text-align': 'center'}), use_container_width=True)
+        st.dataframe(
+            df_final.style.set_properties(**{'text-align': 'center'}).set_table_styles([
+                {"selector": "th.row_heading", "props": [("min-width", "80px")]}
+            ]),
+            use_container_width=True
+        )
 
     except Exception as e:
         st.error("AI予測の実行中にエラーが発生しました")
