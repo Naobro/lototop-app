@@ -285,6 +285,7 @@ def show_ai_predictions(csv_path):
             get_top5(nn_y2, latest_input),
             get_top5(nn_y3, latest_input)
         ]
+
         # マルコフ連鎖（簡易版：直前の数字に基づく遷移）
         def markov_chain_prediction(series):
             transitions = defaultdict(Counter)
@@ -301,7 +302,7 @@ def show_ai_predictions(csv_path):
             markov_chain_prediction(df["第3数字"].tolist())
         ]
 
-        # 最終候補生成（各桁ごとに5個ずつ）
+        # 最終候補生成（各桁ごとに5個ずつ、AI統合結果）
         final_top5 = []
         for i in range(3):
             combined = rf_top5[i] + nn_top5[i] + mc_top5[i]
@@ -310,19 +311,46 @@ def show_ai_predictions(csv_path):
             top5_int = sorted(set(map(int, top5)))[:5]
             final_top5.append(top5_int)
 
-        # 各桁3個に絞ったリストも作成（3×3×3）
         final_top3 = [lst[:3] for lst in final_top5]
 
-        # 組合せ生成（5×5×5 = 125通り）
-        comb_5x5x5 = list(itertools.product(*final_top5))
+        # AI統合候補 表示
+        st.subheader("🧠 AIが導き出した各桁のTOP5候補（統合結果）")
+        df_ai = pd.DataFrame({
+            "第1数字": final_top5[0],
+            "第2数字": final_top5[1],
+            "第3数字": final_top5[2]
+        })
+        df_ai.index = [f"{i+1}番目" for i in range(5)]
+        st.dataframe(df_ai.style.set_properties(**{'text-align': 'center'}), use_container_width=True)
+
+        # ==============================
+        # ✅ あなたが指定した固定候補を追加表示
+        # ==============================
+        st.subheader("🔧 次回の候補数字（各桁5個ずつ）")
+
+        custom_top5 = {
+            "第1数字": [1, 2, 5, 6, 7],
+            "第2数字": [5, 3, 1, 6, 7],
+            "第3数字": [9, 0, 2, 3, 1]
+        }
+
+        df_custom = pd.DataFrame(custom_top5)
+        df_custom.index = [f"{i+1}番目" for i in range(5)]
+        st.dataframe(df_custom.style.set_properties(**{'text-align': 'center'}), use_container_width=True)
+
+        # 組合せ生成（固定候補から）
+        comb_5x5x5 = list(itertools.product(*custom_top5.values()))
         df_5 = pd.DataFrame(comb_5x5x5, columns=["第1数字", "第2数字", "第3数字"])
-        st.subheader("🎯 このサイトが推す125通り（5×5×5）")
+        st.subheader("🎯 このサイトが推す125通り（候補：5×5×5）")
         st.dataframe(df_5, use_container_width=True)
 
-        # 絞り込み組合せ（3×3×3 = 27通り）
-        comb_3x3x3 = list(itertools.product(*final_top3))
+        comb_3x3x3 = list(itertools.product(
+            custom_top5["第1数字"][:3],
+            custom_top5["第2数字"][:3],
+            custom_top5["第3数字"][:3]
+        ))
         df_3 = pd.DataFrame(comb_3x3x3, columns=["第1数字", "第2数字", "第3数字"])
-        st.subheader("🔍 絞り込んだ27通り（3×3×3）")
+        st.subheader("🔍 更に絞り込んだ27通り（手動候補：3×3×3）")
         st.dataframe(df_3, use_container_width=True)
 
     except Exception as e:
