@@ -213,10 +213,10 @@ st.header("分析セクション")
 
 import pandas as pd
 import streamlit as st
-from collections import Counter, defaultdict
+from collections import Counter
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.neural_network import MLPClassifier
-from sklearn.exceptions import NotFittedError
+from collections import defaultdict
 import itertools
 
 # ====================== AI予測関数 ======================
@@ -230,19 +230,18 @@ def show_ai_predictions(csv_path):
         # カラム名の正規化（全角→半角）
         df.columns = [col.replace('（', '(').replace('）', ')') for col in df.columns]
 
-        # 必要なカラムが揃っているか確認
         required_cols = ["第1数字", "第2数字", "第3数字"]
         if not all(col in df.columns for col in required_cols):
             st.error("必要なカラム（第1数字〜第3数字）が見つかりません")
             st.write("現在のカラム:", df.columns.tolist())
             return
 
-        # 前処理
+        # 数値化＆直近最大100回に制限
         df = df.dropna(subset=required_cols)
         df[required_cols] = df[required_cols].astype(int)
-        st.write(f"📦 データ件数: {len(df)}")
+        df = df.tail(min(len(df), 100)).reset_index(drop=True)
 
-        # 学習データ作成
+        # 入力と出力データ作成
         X, y1, y2, y3 = [], [], [], []
         for i in range(len(df) - 1):
             prev = df.iloc[i + 1]
@@ -252,92 +251,75 @@ def show_ai_predictions(csv_path):
             y2.append(curr["第2数字"])
             y3.append(curr["第3数字"])
 
-        if len(X) == 0:
-            st.warning("❗データ数が不足しています（最低2件必要）")
-            return
+        # モデル学習
+        rf = RandomForestClassifier(n_estimators=100, random_state=0)
+        nn = MLPClassifier(max_iter=500, random_state=0)
+        rf.fit(X, y1)
+        nn.fit(X, y1)
+        rf_y2 = RandomForestClassifier(n_estimators=100, random_state=0)
+        rf_y2.fit(X, y2)
+        nn_y2 = MLPClassifier(max_iter=500, random_state=0)
+        nn_y2.fit(X, y2)
+        rf_y3 = RandomForestClassifier(n_estimators=100, random_state=0)
+        rf_y3.fit(X, y3)
+        nn_y3 = MLPClassifier(max_iter=500, random_state=0)
+        nn_y3.fit(X, y3)
 
-        st.write(f"✅ 学習データ件数: {len(X)}")
+        # 次回入力データ（直近1回）
+        latest = df.iloc[0]
+        latest_input = [[latest["第1数字"], latest["第2数字"], latest["第3数字"]]]
 
-        latest = [int(df.iloc[0][f"第{i}数字"]) for i in range(1, 4)]
+        # モデル予測（各桁ごとにTOP5候補を取得）
+        def get_top5(model, X_input):
+            probs = model.predict_proba(X_input)[0]
+            top_indices = sorted(range(len(probs)), key=lambda i: probs[i], reverse=True)[:5]
+            return top_indices
 
-        def get_top_n(model, x, n=3):
-            try:
-                probs = model.predict_proba([x])[0]
-                return [str(i) for i, _ in sorted(enumerate(probs), key=lambda x: -x[1])[:n]]
-            except (AttributeError, NotFittedError):
-                pred = model.predict([x])[0]
-                return [str(pred)]
-
-        # モデル初期化
-        rf_model = RandomForestClassifier(n_estimators=100, random_state=42)
-        nn_model = MLPClassifier(hidden_layer_sizes=(50,), max_iter=1000, random_state=42)
-
-        # 各桁ごとに予測
         rf_top5 = [
-            get_top_n(rf_model.fit(X, y1), latest, 5),
-            get_top_n(rf_model.fit(X, y2), latest, 5),
-            get_top_n(rf_model.fit(X, y3), latest, 5)
+            get_top5(rf, latest_input),
+            get_top5(rf_y2, latest_input),
+            get_top5(rf_y3, latest_input)
         ]
         nn_top5 = [
-            get_top_n(nn_model.fit(X, y1), latest, 5),
-            get_top_n(nn_model.fit(X, y2), latest, 5),
-            get_top_n(nn_model.fit(X, y3), latest, 5)
+            get_top5(nn, latest_input),
+            get_top5(nn_y2, latest_input),
+            get_top5(nn_y3, latest_input)
         ]
-
-        def markov_top_n(col, n=5):
-            transition = defaultdict(list)
-            values = df[col].astype(str).tolist()
-            for i in range(len(values) - 1):
-                transition[values[i]].append(values[i + 1])
-            last = values[0]
-            count = Counter(transition[last])
-            return [v for v, _ in count.most_common(n)]
+        # マルコフ連鎖（簡易版：直前の数字に基づく遷移）
+        def markov_chain_prediction(series):
+            transitions = defaultdict(Counter)
+            for i in range(len(series) - 1):
+                curr, next_ = series[i], series[i + 1]
+                transitions[curr][next_] += 1
+            last = series[0]
+            next_counts = transitions.get(last, {})
+            return [num for num, _ in next_counts.most_common(5)]
 
         mc_top5 = [
-            markov_top_n("第1数字", 5),
-            markov_top_n("第2数字", 5),
-            markov_top_n("第3数字", 5)
+            markov_chain_prediction(df["第1数字"].tolist()),
+            markov_chain_prediction(df["第2数字"].tolist()),
+            markov_chain_prediction(df["第3数字"].tolist())
         ]
 
-        # 上位3に絞る
-        rf_top3 = [lst[:3] for lst in rf_top5]
-        nn_top3 = [lst[:3] for lst in nn_top5]
-        mc_top3 = [lst[:3] for lst in mc_top5]
-
-        # 表示テーブル
-        result_df = pd.DataFrame([
-            ["🌲 ランダムフォレスト"] + [", ".join(rf_top3[i]) for i in range(3)],
-            ["🧠 ニューラルネット"] + [", ".join(nn_top3[i]) for i in range(3)],
-            ["🔁 マルコフ連鎖"] + [", ".join(mc_top3[i]) for i in range(3)],
-        ], columns=["モデル名", "第1数字候補", "第2数字候補", "第3数字候補"])
-
-        st.subheader("🔍 AIモデル予測（次に来る数字の上位3候補）")
-        st.dataframe(result_df, use_container_width=True)
-
-        # 共通数字表示
-        st.subheader("✅ 3手法で一致した数字")
-        for i, k in enumerate(["第1数字", "第2数字", "第3数字"]):
-            common = set(rf_top3[i]) & set(nn_top3[i]) & set(mc_top3[i])
-            if common:
-                st.markdown(f"**{k}**：{'、'.join(sorted(common))}")
-            else:
-                st.markdown(f"**{k}**：一致なし")
-
-        # 最終候補生成（ユニーク化して整数化）
+        # 最終候補生成（各桁ごとに5個ずつ）
         final_top5 = []
         for i in range(3):
-            combined = list(set(rf_top5[i] + nn_top5[i] + mc_top5[i]))
-            combined_int = sorted(set(map(int, combined)))[:5]
-            final_top5.append(combined_int)
+            combined = rf_top5[i] + nn_top5[i] + mc_top5[i]
+            freq = Counter(combined)
+            top5 = [num for num, count in freq.most_common()]
+            top5_int = sorted(set(map(int, top5)))[:5]
+            final_top5.append(top5_int)
+
+        # 各桁3個に絞ったリストも作成（3×3×3）
         final_top3 = [lst[:3] for lst in final_top5]
 
-        # 組合せ生成（5×5×5）
+        # 組合せ生成（5×5×5 = 125通り）
         comb_5x5x5 = list(itertools.product(*final_top5))
         df_5 = pd.DataFrame(comb_5x5x5, columns=["第1数字", "第2数字", "第3数字"])
         st.subheader("🎯 このサイトが推す125通り（5×5×5）")
         st.dataframe(df_5, use_container_width=True)
 
-        # 絞り込み組合せ（3×3×3）
+        # 絞り込み組合せ（3×3×3 = 27通り）
         comb_3x3x3 = list(itertools.product(*final_top3))
         df_3 = pd.DataFrame(comb_3x3x3, columns=["第1数字", "第2数字", "第3数字"])
         st.subheader("🔍 絞り込んだ27通り（3×3×3）")
