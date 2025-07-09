@@ -287,12 +287,12 @@ def show_ai_predictions(csv_path):
             df_show.index = [f"{i+1}番目" for i in range(rows)]
             st.dataframe(df_show.style.set_properties(**{'text-align': 'center'}), use_container_width=True)
 
-        # モデル別TOP3
+        # モデル別TOP3表示
         show_table("🌲 ランダムフォレスト TOP3", rf_top3)
         show_table("🧠 ニューラルネット TOP3", nn_top3)
         show_table("🔁 マルコフ連鎖 TOP3", mc_top3)
 
-        # ✅ 統合 → TOP5抽出
+        # ✅ 統合 → TOP5抽出（表示のみ）
         final_top5 = []
         for i in range(3):
             combined = rf_top3[i] + nn_top3[i] + mc_top3[i]
@@ -302,10 +302,6 @@ def show_ai_predictions(csv_path):
 
         # ✅ TOP5 表示（5×3テーブル）
         show_table("✅ 3モデル統合 TOP5", final_top5, rows=5)
-
-        # ✅ TOP3 表示（3×3テーブル）
-        final_top3 = [lst[:3] for lst in final_top5]
-        show_table("🔍 絞り込まれた各桁のTOP3候補", final_top3, rows=3)
 
     except Exception as e:
         st.error("AI予測の実行中にエラーが発生しました")
