@@ -217,15 +217,6 @@ from collections import Counter, defaultdict
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.neural_network import MLPClassifier
 
-# マルコフ連鎖
-def markov_top3(series):
-    trans = defaultdict(Counter)
-    for i in range(len(series) - 1):
-        trans[series[i]][series[i + 1]] += 1
-    last = series[0]
-    return [n for n, _ in trans[last].most_common(3)]
-
-# モデル精度からスコア重みを自動学習
 def evaluate_hit_rate(df, required_cols, recent=30):
     weights = defaultdict(lambda: [0, 0, 0])
     for i in range(recent, 1, -1):
@@ -233,33 +224,29 @@ def evaluate_hit_rate(df, required_cols, recent=30):
         current = df.iloc[i - 2][required_cols].values.tolist()
         for j, col in enumerate(required_cols):
             rf_top3 = window[col].mode().tolist()[:3]
-            if current[j] in rf_top3: weights["RF"][j] += 1
+            if current[j] in rf_top3:
+                weights["RF"][j] += 1
             nn_top3 = list(window[col].value_counts().index[:3])
-            if current[j] in nn_top3: weights["NN"][j] += 1
+            if current[j] in nn_top3:
+                weights["NN"][j] += 1
             mc_top3 = markov_top3(window[col].tolist())
-            if current[j] in mc_top3: weights["MC"][j] += 1
+            if current[j] in mc_top3:
+                weights["MC"][j] += 1
             wh_top3 = list(window[col].value_counts().index[:3])
-            if current[j] in wh_top3: weights["WH"][j] += 1
+            if current[j] in wh_top3:
+                weights["WH"][j] += 1
     model_weights = {}
     for model, hits in weights.items():
         total = sum(hits)
         model_weights[model] = [round(h / total, 3) if total else 1/3 for h in hits]
     return model_weights
 
-# 頻出数字に補正（直近24回）
-def boost_frequent_numbers(df_tail):
-    boost_map = [{}, {}, {}]
-    for i in range(3):
-        freq = Counter(df_tail[f"第{i+1}数字"])
-        ranked = [n for n, _ in freq.most_common()]
-        for rank, n in enumerate(ranked):
-            if rank < 4:
-                boost_map[i][n] = 1.2
-            elif rank < 7:
-                boost_map[i][n] = 1.1
-            else:
-                boost_map[i][n] = 1.0
-    return boost_map
+def markov_top3(series):
+    trans = defaultdict(Counter)
+    for i in range(len(series) - 1):
+        trans[series[i]][series[i + 1]] += 1
+    last = series[0]
+    return [n for n, _ in trans[last].most_common(3)]
 
 def show_ai_predictions(csv_path):
     st.header("🎯 ナンバーズ3 AIによる次回数字予測")
@@ -321,18 +308,58 @@ def show_ai_predictions(csv_path):
             return {"RF": rf_top3, "NN": nn_top3, "MC": mc_top3, "WH": wheel_top3}
 
         results = {label: run_models(data) for label, (data, _) in dfs.items()}
+
+        def show_models(title, model_dict):
+            df_show = pd.DataFrame({
+                "第1数字": [", ".join(map(str, model_dict["RF"][0])),
+                           ", ".join(map(str, model_dict["NN"][0])),
+                           ", ".join(map(str, model_dict["MC"][0])),
+                           ", ".join(map(str, model_dict["WH"][0]))],
+                "第2数字": [", ".join(map(str, model_dict["RF"][1])),
+                           ", ".join(map(str, model_dict["NN"][1])),
+                           ", ".join(map(str, model_dict["MC"][1])),
+                           ", ".join(map(str, model_dict["WH"][1]))],
+                "第3数字": [", ".join(map(str, model_dict["RF"][2])),
+                           ", ".join(map(str, model_dict["NN"][2])),
+                           ", ".join(map(str, model_dict["MC"][2])),
+                           ", ".join(map(str, model_dict["WH"][2]))],
+            }, index=["ランダムフォレスト", "ニューラルネット", "マルコフ", "風車盤"])
+            st.subheader(f"📊 {title} 各予測TOP3")
+            st.dataframe(
+                df_show.style.set_properties(**{'text-align': 'center'}).set_table_styles([
+                    {"selector": "th.row_heading", "props": [("min-width", "100px")]}
+                ]),
+                use_container_width=True
+            )
+
+        for label in dfs:
+            show_models(label, results[label])
+
         model_weights = evaluate_hit_rate(df, required_cols)
-        boost_map = boost_frequent_numbers(df.tail(24))
 
         final_scores = [Counter() for _ in range(3)]
+
+        df_recent24 = df.tail(24)
+        boost_map = [{} for _ in range(3)]
+        for i, col in enumerate(required_cols):
+            freq_list = df_recent24[col].value_counts().index.tolist()
+            for rank, num in enumerate(freq_list):
+                if rank < 4:
+                    boost_map[i][num] = 1.2
+                elif rank < 7:
+                    boost_map[i][num] = 1.1
+                else:
+                    boost_map[i][num] = 1.0
+
         for label, (data, weight_df) in dfs.items():
             model_set = results[label]
             for i in range(3):
                 for model_key in ["RF", "NN", "MC", "WH"]:
                     weight = model_weights[model_key][i]
                     for rank, n in enumerate(model_set[model_key][i]):
+                        score = (3 - rank) * weight_df * weight
                         boost = boost_map[i].get(n, 1.0)
-                        final_scores[i][n] += (3 - rank) * weight_df * weight * boost
+                        final_scores[i][n] += score * boost
 
         top5_combined = [
             [n for n, _ in final_scores[i].most_common(5)] for i in range(3)
@@ -344,10 +371,10 @@ def show_ai_predictions(csv_path):
             "第3数字": top5_combined[2],
         }, index=["第1位🥇", "第2位🥈", "第3位🥉", "第4位⭐", "第5位⭐"])
 
-        st.subheader("🏆 各モデル合算スコア TOP5（自動学習＋頻出強調）")
+        st.subheader("🏆 各モデル合算スコア TOP5（自動学習＋直近頻出補正）")
         st.dataframe(
             df_final.style.set_properties(**{'text-align': 'center'}).set_table_styles([
-                {"selector": "th.row_heading", "props": [("min-width", "100px")]}
+                {"selector": "th.row_heading", "props": [("min-width", "80px")]}
             ]),
             use_container_width=True
         )
@@ -360,6 +387,7 @@ def show_page():
     show_ai_predictions("data/n3.csv")
 
 show_page()
+
 
 
 
