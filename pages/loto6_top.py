@@ -203,7 +203,7 @@ render_scrollable_table(pattern_counts)
 
 
 
-st.header("🎯 AIによる次回出現数字候補（20個に絞り込み）")
+st.header("🎯 AIによる次回出現数字候補（20個：各位5個ずつ）")
 
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.neural_network import MLPClassifier
@@ -226,19 +226,17 @@ for i in range(len(df_ai) - 1):
 rf = RandomForestClassifier(n_estimators=100, random_state=42)
 rf.fit(X, y)
 rf_probs = rf.predict_proba([X[-1]])[0]
-rf_top = list(np.argsort(rf_probs)[::-1][:15] + 1)
 
 # --- Neural Network ---
 mlp = MLPClassifier(hidden_layer_sizes=(100,), max_iter=500, random_state=42)
 mlp.fit(X, y)
 mlp_probs = mlp.predict_proba([X[-1]])[0]
-mlp_top = list(np.argsort(mlp_probs)[::-1][:15] + 1)
 
 # --- マルコフ連鎖スコア ---
 transition = defaultdict(lambda: defaultdict(int))
 for i in range(len(df_ai) - 1):
-    curr = [df_ai.loc[i + 1, f"第{j}数字"] for j in range(1, 6+1)]
-    next_ = [df_ai.loc[i, f"第{j}数字"] for j in range(1, 6+1)]
+    curr = [df_ai.loc[i + 1, f"第{j}数字"] for j in range(1, 7)]
+    next_ = [df_ai.loc[i, f"第{j}数字"] for j in range(1, 7)]
     for c in curr:
         for n in next_:
             transition[c][n] += 1
@@ -248,53 +246,65 @@ markov_scores = defaultdict(int)
 for c in last_draw:
     for n, cnt in transition[c].items():
         markov_scores[n] += cnt
-markov_top = sorted(markov_scores, key=markov_scores.get, reverse=True)[:15]
 
-# --- 集計：重複を優先して20個に絞り込み ---
-all_candidates = rf_top + mlp_top + markov_top
-counter = Counter(all_candidates)
-top20 = [num for num, _ in counter.most_common(20)]
-top20 = sorted(set(top20))[:20]
-top20 = list(map(int, top20))  # ← ★ここ追加で整数に！
+# --- 全数字スコア合成 ---
+score_dict = {n: 0 for n in range(1, 44)}
+for i, s in enumerate(rf_probs):
+    score_dict[i+1] += s
+for i, s in enumerate(mlp_probs):
+    score_dict[i+1] += s
+for n, s in markov_scores.items():
+    score_dict[n] += s
 
-# --- 表示 ---
-st.success(f"🧠 次回出現候補（AI予測・20個）: {sorted(top20)}")
+# --- 位ごとに分類 ---
+def which_kurai(n):
+    if 1 <= n <= 9:
+        return "1の位"
+    elif 10 <= n <= 19:
+        return "10の位"
+    elif 20 <= n <= 29:
+        return "20の位"
+    elif 30 <= n <= 43:
+        return "30の位"
+    else:
+        return "その他"
+
+by_kurai = {"1の位":[], "10の位":[], "20の位":[], "30の位": []}
+for n, s in sorted(score_dict.items(), key=lambda x: -x[1]):
+    k = which_kurai(n)
+    if k in by_kurai:
+        by_kurai[k].append((n, s))
+
+# --- 各位ごとに上位5個（合計20個）を選ぶ ---
+top20 = []
+for k in ["1の位", "10の位", "20の位", "30の位"]:
+    nums = [num for num, _ in by_kurai[k][:5]]
+    top20.extend(nums)
+
+assert len(top20) == 20
+
+st.success(f"🧠 次回出現候補（AI予測・20個・各位5個ずつ）: {sorted(top20)}")
 
 with st.expander("📊 モデル別候補を表示"):
+    rf_top = list(np.argsort(rf_probs)[::-1][:15] + 1)
+    mlp_top = list(np.argsort(mlp_probs)[::-1][:15] + 1)
+    markov_top = sorted(markov_scores, key=markov_scores.get, reverse=True)[:15]
     st.write("🔹 ランダムフォレスト:", sorted(map(int, rf_top)))
     st.write("🔹 ニューラルネット:", sorted(map(int, mlp_top)))
     st.write("🔹 マルコフ連鎖:", sorted(map(int, markov_top)))
 
-# --- ロト6用：候補数字を位ごとに分類 ---
-grouped6 = {
-    "1の位": [],
-    "10の位": [],
-    "20の位": [],
-    "30の位": [],
-    "40の位": [],
-}
+# --- 位ごとにテーブル整形 ---
+grouped6 = {"1の位": [], "10の位": [], "20の位": [], "30の位": []}
 for n in top20:
-    if 1 <= n <= 9:
-        grouped6["1の位"].append(n)
-    elif 10 <= n <= 19:
-        grouped6["10の位"].append(n)
-    elif 20 <= n <= 29:
-        grouped6["20の位"].append(n)
-    elif 30 <= n <= 39:
-        grouped6["30の位"].append(n)
-    elif 40 <= n <= 43:
-        grouped6["40の位"].append(n)
+    k = which_kurai(n)
+    grouped6[k].append(n)
 
-# --- 表形式に整形（整数表示＋Noneは空文字） ---
-max_len6 = max(len(v) for v in grouped6.values())
 group_df6 = pd.DataFrame({
-    k: grouped6[k] + [None] * (max_len6 - len(grouped6[k]))
+    k: grouped6[k]
     for k in grouped6
 })
-group_df6 = group_df6.applymap(lambda x: str(int(x)) if pd.notnull(x) else "")
 
-# --- 表示 ---
-st.markdown("### 🧮 候補数字の位別分類（1の位・10の位・20の位・30の位・40の位）")
+st.markdown("### 🧮 候補数字の位別分類（1の位・10の位・20の位・30〜43の位・各5個）")
 st.markdown(f"""
 <div style='overflow-x: auto;'>
 {group_df6.to_html(index=False, escape=False)}
