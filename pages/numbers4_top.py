@@ -277,15 +277,30 @@ def show_ai_predictions(csv_path):
         for label in dfs:
             show_models(label, results[label])
 
-        # ✅ スコア合算：重み付き
+        # --- 加点重み（風車盤を強く・24回ランキングも合算） ---
         final_scores = [Counter() for _ in range(4)]
+        WH_WEIGHT = 2.0  # 風車盤（WH）重み強化
+        RANK_SCORES = [2.0, 1.5, 1.0, 0.7, 0.5]  # 直近24回ランキング加点
+
         for label, (data, weight) in dfs.items():
             model_set = results[label]
             for i in range(4):
-                for rank, n in enumerate(model_set["RF"][i]): final_scores[i][n] += (3 - rank) * weight
-                for rank, n in enumerate(model_set["NN"][i]): final_scores[i][n] += (3 - rank) * weight
-                for rank, n in enumerate(model_set["MC"][i]): final_scores[i][n] += (3 - rank) * weight
-                for rank, n in enumerate(model_set["WH"][i]): final_scores[i][n] += (3 - rank) * weight
+                # 各モデル
+                for rank, n in enumerate(model_set["RF"][i]):
+                    final_scores[i][n] += (3 - rank) * weight
+                for rank, n in enumerate(model_set["NN"][i]):
+                    final_scores[i][n] += (3 - rank) * weight
+                for rank, n in enumerate(model_set["MC"][i]):
+                    final_scores[i][n] += (3 - rank) * weight
+                for rank, n in enumerate(model_set["WH"][i]):
+                    final_scores[i][n] += (3 - rank) * weight * WH_WEIGHT
+
+        # --- 直近24回ランキングで加点 ---
+        df_recent24 = df.tail(24)
+        for i, col in enumerate(required_cols):
+            freq_list = df_recent24[col].value_counts().index.tolist()
+            for rank, num in enumerate(freq_list[:5]):
+                final_scores[i][num] += RANK_SCORES[rank]
 
         top5_combined = [
             [n for n, _ in final_scores[i].most_common(5)] for i in range(4)
@@ -298,7 +313,7 @@ def show_ai_predictions(csv_path):
             "第4数字": top5_combined[3],
         }, index=["第1位🥇", "第2位🥈", "第3位🥉", "第4位⭐", "第5位⭐"])
 
-        st.subheader("🏆 各モデル合算スコア TOP5")
+        st.subheader("🏆 各モデル合算スコア TOP5（風車盤＋直近24回ランキング加点強化）")
         st.dataframe(
             df_final.style.set_properties(**{'text-align': 'center'}).set_table_styles([
                 {"selector": "th.row_heading", "props": [("min-width", "80px")]}
