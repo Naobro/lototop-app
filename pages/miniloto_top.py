@@ -323,18 +323,17 @@ st.markdown(f"""
 st.header("A数字・B数字の位別分類（ミニロト）")
 
 def style_table(df: pd.DataFrame) -> str:
-    # ★ DataFrame → Styler に変換してスタイルを適用（set_table_stylesはStyler専用）
     return (
         df.style
           .set_table_styles([
               {'selector': 'th', 'props': [('text-align', 'center')]},
               {'selector': 'td', 'props': [('text-align', 'center')]}
           ], overwrite=False)
-          .hide_index()
-          .to_html()  # .render()でも可
+          .hide(axis="index")  # ← ここを修正
+          .to_html()
     )
 
-# --- 最新行が先頭に来ている前提で最新行を取得 ---
+# --- 最新回の当選数字（最上行）を取得 ---
 df = df.reset_index(drop=True)
 latest = df.iloc[0]
 latest_numbers = {
@@ -362,14 +361,8 @@ B_bins = classify_numbers_mini_loto(B_set)
 
 digit_table = pd.DataFrame({
     "位": list(A_bins.keys()),
-    "A数字": [
-        ', '.join(highlight_number(n) for n in sorted(A_bins[k]))
-        for k in A_bins
-    ],
-    "B数字": [
-        ', '.join(highlight_number(n) for n in sorted(B_bins[k]))
-        for k in B_bins
-    ]
+    "A数字": [', '.join(highlight_number(n) for n in sorted(A_bins[k])) for k in A_bins],
+    "B数字": [', '.join(highlight_number(n) for n in sorted(B_bins[k])) for k in B_bins]
 })
 
 html = style_table(digit_table)
