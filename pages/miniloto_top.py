@@ -328,9 +328,9 @@ def style_table(df):
         {'selector': 'td', 'props': [('text-align', 'center')]}
     ]).to_html(escape=False, index=False)
 
-# 最新回の当選数字
+# 最新回の当選数字（第1数字～第5数字のみ）
 latest = df.iloc[-1]
-latest_numbers = [int(latest[f"第{i}数字"]) for i in range(1, 6+1) if f"第{i}数字" in latest and pd.notnull(latest[f"第{i}数字"])]
+latest_numbers = [int(latest[f"第{i}数字"]) for i in range(1, 6) if pd.notnull(latest.get(f"第{i}数字"))]
 
 def highlight_number(n):
     return f"<span style='color:red; font-weight:bold'>{n}</span>" if n in latest_numbers else str(n)
