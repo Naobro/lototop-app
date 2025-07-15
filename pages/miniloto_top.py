@@ -207,19 +207,20 @@ pattern_counts = pattern_series.value_counts().reset_index()
 pattern_counts.columns = ['パターン', '出現回数']
 st.markdown(style_table(pattern_counts), unsafe_allow_html=True)
 
-st.header("🎯 AIによる次回出現数字候補（18個に絞り込み）")
-
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.neural_network import MLPClassifier
-from collections import defaultdict, Counter
+import streamlit as st
 import numpy as np
 import pandas as pd
+from collections import defaultdict, Counter
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.neural_network import MLPClassifier
 
-# --- 最大100回まで使用（少なければ全部使う） ---
+st.header("🎯 AIによる次回出現数字候補（1の位・10の位・20の位 各6個／計18個）")
+
+# --- データ準備 ---
 df_ai = df.copy().dropna(subset=[f"第{i}数字" for i in range(1, 6)])
 df_ai = df_ai.tail(min(len(df_ai), 100)).reset_index(drop=True)
 
-# --- 学習データ作成（前回 → 今回の出目） ---
+# --- 学習データ作成 ---
 X, y = [], []
 for i in range(len(df_ai) - 1):
     prev_nums = [df_ai.loc[i + 1, f"第{j}数字"] for j in range(1, 6)]
@@ -228,19 +229,18 @@ for i in range(len(df_ai) - 1):
         X.append(prev_nums)
         y.append(target)
 
-# --- ランダムフォレスト予測 ---
+# --- AIモデル予測 ---
 rf = RandomForestClassifier(n_estimators=100, random_state=42)
 rf.fit(X, y)
 rf_probs = rf.predict_proba([X[-1]])[0]
-rf_top = list(np.argsort(rf_probs)[::-1][:15] + 1)
+rf_top = list(np.argsort(rf_probs)[::-1][:18] + 1)
 
-# --- ニューラルネット予測 ---
 mlp = MLPClassifier(hidden_layer_sizes=(100,), max_iter=500, random_state=42)
 mlp.fit(X, y)
 mlp_probs = mlp.predict_proba([X[-1]])[0]
-mlp_top = list(np.argsort(mlp_probs)[::-1][:15] + 1)
+mlp_top = list(np.argsort(mlp_probs)[::-1][:18] + 1)
 
-# --- マルコフ連鎖予測 ---
+# --- マルコフ連鎖 ---
 transition = defaultdict(lambda: defaultdict(int))
 for i in range(len(df_ai) - 1):
     curr = [df_ai.loc[i + 1, f"第{j}数字"] for j in range(1, 6)]
@@ -254,39 +254,58 @@ markov_scores = defaultdict(int)
 for c in last_draw:
     for n, cnt in transition[c].items():
         markov_scores[n] += cnt
-markov_top = sorted(markov_scores, key=markov_scores.get, reverse=True)[:15]
+markov_top = sorted(markov_scores, key=markov_scores.get, reverse=True)[:18]
 
-# --- 候補を重複頻度で集計し、上位18個を抽出 ---
+# --- 直近24回の出現ランキングを加点 ---
+latest_24 = df_ai.head(24)
+flat_24 = latest_24[[f"第{i}数字" for i in range(1, 6)]].values.flatten()
+rank_24 = Counter(flat_24)
+
+# --- 全モデル候補を集計 ---
 all_candidates = rf_top + mlp_top + markov_top
 counter = Counter(all_candidates)
-top18 = [num for num, _ in counter.most_common(18)]
-top18 = sorted(set(top18))[:18]
-top18 = list(map(int, top18))
+
+# --- 加点（AI候補のスコア＋直近24回出現回数*1.5） ---
+score_dict = defaultdict(float)
+for n in range(1, 32):
+    score_dict[n] = counter[n] + rank_24[n] * 1.5
+
+# --- 位ごとにスコア順で抽出 ---
+digit_bins = {
+    "1の位": [],
+    "10の位": [],
+    "20の位": [],
+}
+for n in range(1, 32):
+    if 1 <= n <= 9:
+        digit_bins["1の位"].append((n, score_dict[n]))
+    elif 10 <= n <= 19:
+        digit_bins["10の位"].append((n, score_dict[n]))
+    elif 20 <= n <= 31:
+        digit_bins["20の位"].append((n, score_dict[n]))
+
+top_1 = [n for n, _ in sorted(digit_bins["1の位"], key=lambda x: -x[1])[:6]]
+top_10 = [n for n, _ in sorted(digit_bins["10の位"], key=lambda x: -x[1])[:6]]
+top_20 = [n for n, _ in sorted(digit_bins["20の位"], key=lambda x: -x[1])[:6]]
+
+top18 = sorted(top_1 + top_10 + top_20)
 
 # --- 表示 ---
-st.success(f"🧠 次回出現候補（AI予測・18個）: {sorted(top18)}")
+st.success(f"🧠 次回出現候補（AI予測・各位6個ずつ）: {top18}")
 
 # --- モデル別候補表示（展開式） ---
 with st.expander("📊 モデル別候補を表示"):
     st.write("🔹 ランダムフォレスト:", ", ".join(map(str, sorted(rf_top))))
     st.write("🔹 ニューラルネット:", ", ".join(map(str, sorted(mlp_top))))
     st.write("🔹 マルコフ連鎖:", ", ".join(map(str, sorted(markov_top))))
+    st.write("🔹 直近24回出現ランキング:", ", ".join(f"{k}({v})" for k, v in rank_24.most_common()))
 
-# --- 位別分類（30・31は20の位に入れる） ---
+# --- 位別分類表示 ---
 grouped = {
-    "1の位": [],
-    "10の位": [],
-    "20の位": [],
+    "1の位": top_1,
+    "10の位": top_10,
+    "20の位": top_20,
 }
-for n in top18:
-    if 1 <= n <= 9:
-        grouped["1の位"].append(n)
-    elif 10 <= n <= 19:
-        grouped["10の位"].append(n)
-    elif 20 <= n <= 31:  # ← 30・31もここに入れる
-        grouped["20の位"].append(n)
-
-# --- 表形式に整形・表示 ---
 max_len = max(len(v) for v in grouped.values())
 group_df = pd.DataFrame({
     k: grouped[k] + [""] * (max_len - len(grouped[k]))
@@ -301,47 +320,6 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-
-# ⑥-A A数字・B数字の位別分類（最新当選番号に応じて赤文字強調）
-st.header("A数字・B数字の位別分類")
-
-# 最新当選番号（df の先頭行を参照）
-latest_numbers = [df.iloc[0][f"第{i}数字"] for i in range(1, 6)]
-
-# 赤文字で強調する関数
-def highlight_number(n):
-    if n in latest_numbers:
-        return f"<span style='color:red; font-weight:bold'>{n}</span>"
-    return str(n)
-
-# 位別に分類
-def classify_numbers_by_digit_group(numbers):
-    bins = {'1の位': [], '10の位': [], '20/30の位': []}
-    for n in numbers:
-        if 1 <= n <= 9:
-            bins['1の位'].append(n)
-        elif 10 <= n <= 19:
-            bins['10の位'].append(n)
-        elif 20 <= n <= 31:
-            bins['20/30の位'].append(n)
-    return bins
-
-A_bins = classify_numbers_by_digit_group(A_set)
-B_bins = classify_numbers_by_digit_group(B_set)
-
-# 表示用テーブル（赤文字に整形）
-digit_table = pd.DataFrame({
-    "位": ['1の位', '10の位', '20/30の位'],
-    "A数字": [
-        ', '.join([highlight_number(n) for n in A_bins[k]]) for k in ['1の位', '10の位', '20/30の位']
-    ],
-    "B数字": [
-        ', '.join([highlight_number(n) for n in B_bins[k]]) for k in ['1の位', '10の位', '20/30の位']
-    ]
-})
-
-# 表示（HTMLスタイルで）
-st.markdown(style_table(digit_table), unsafe_allow_html=True)
 
 st.header("各位の出現回数TOP5")
 
