@@ -322,25 +322,23 @@ st.markdown(f"""
 
 st.header("A数字・B数字の位別分類（ミニロト）")
 
-def style_table(styler: pd.io.formats.style.Styler) -> str:
+def style_table(df: pd.DataFrame) -> str:
+    # ★ DataFrame → Styler に変換してスタイルを適用（set_table_stylesはStyler専用）
     return (
-        styler
-        .set_table_styles([
-            {'selector': 'th', 'props': [('text-align', 'center')]},
-            {'selector': 'td', 'props': [('text-align', 'center')]}
-        ])
-        .hide_index()
-        .render()
+        df.style
+          .set_table_styles([
+              {'selector': 'th', 'props': [('text-align', 'center')]},
+              {'selector': 'td', 'props': [('text-align', 'center')]}
+          ], overwrite=False)
+          .hide_index()
+          .to_html()  # .render()でも可
     )
 
-# --- 最新回の当選数字（最終行）を取得 ---
-df = df.reset_index(drop=True)  # 念のためインデックスを振り直し
-# 最新行（最上行）を取得
+# --- 最新行が先頭に来ている前提で最新行を取得 ---
+df = df.reset_index(drop=True)
 latest = df.iloc[0]
-
 latest_numbers = {
-    int(latest[f"第{i}数字"])
-    for i in range(1, 6)
+    int(latest[f"第{i}数字"]) for i in range(1, 6)
     if pd.notnull(latest.get(f"第{i}数字"))
 }
 
@@ -350,6 +348,7 @@ def highlight_number(n: int) -> str:
 def classify_numbers_mini_loto(numbers: list[int]) -> dict[str, list[int]]:
     bins = {'1の位': [], '10の位': [], '20の位': []}
     for n in numbers:
+        n = int(n)
         if 1 <= n <= 9:
             bins['1の位'].append(n)
         elif 10 <= n <= 19:
@@ -358,7 +357,6 @@ def classify_numbers_mini_loto(numbers: list[int]) -> dict[str, list[int]]:
             bins['20の位'].append(n)
     return bins
 
-# A_set, B_set は予め定義されていることが前提
 A_bins = classify_numbers_mini_loto(A_set)
 B_bins = classify_numbers_mini_loto(B_set)
 
@@ -374,9 +372,9 @@ digit_table = pd.DataFrame({
     ]
 })
 
-# HTML 表示
 html = style_table(digit_table)
 st.markdown(html, unsafe_allow_html=True)
+
 
 
 
