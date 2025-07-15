@@ -322,25 +322,31 @@ st.markdown(f"""
 
 st.header("A数字・B数字の位別分類（ミニロト）")
 
-def style_table(df):
-    return df.style.set_table_styles([
-        {'selector': 'th', 'props': [('text-align', 'center')]},
-        {'selector': 'td', 'props': [('text-align', 'center')]}
-    ]).to_html(escape=False, index=False)
+def style_table(styler: pd.io.formats.style.Styler) -> str:
+    return (
+        styler
+        .set_table_styles([
+            {'selector': 'th', 'props': [('text-align', 'center')]},
+            {'selector': 'td', 'props': [('text-align', 'center')]}
+        ])
+        .hide_index()
+        .render()
+    )
 
-# 最新回の当選数字（第1数字～第5数字のみ）
+# --- 最新回の当選数字（最終行）を取得 ---
+df = df.reset_index(drop=True)  # 念のためインデックスを振り直し
 latest = df.iloc[-1]
-latest_numbers = [int(latest[f"第{i}数字"]) for i in range(1, 6) if pd.notnull(latest.get(f"第{i}数字"))]
+latest_numbers = {
+    int(latest[f"第{i}数字"])
+    for i in range(1, 6)
+    if pd.notnull(latest.get(f"第{i}数字"))
+}
 
-def highlight_number(n):
+def highlight_number(n: int) -> str:
     return f"<span style='color:red; font-weight:bold'>{n}</span>" if n in latest_numbers else str(n)
 
-def classify_numbers_mini_loto(numbers):
-    bins = {
-        '1の位': [],
-        '10の位': [],
-        '20の位': []
-    }
+def classify_numbers_mini_loto(numbers: list[int]) -> dict[str, list[int]]:
+    bins = {'1の位': [], '10の位': [], '20の位': []}
     for n in numbers:
         if 1 <= n <= 9:
             bins['1の位'].append(n)
@@ -350,16 +356,25 @@ def classify_numbers_mini_loto(numbers):
             bins['20の位'].append(n)
     return bins
 
+# A_set, B_set は予め定義されていることが前提
 A_bins = classify_numbers_mini_loto(A_set)
 B_bins = classify_numbers_mini_loto(B_set)
 
 digit_table = pd.DataFrame({
     "位": list(A_bins.keys()),
-    "A数字": [', '.join([highlight_number(n) for n in sorted(A_bins[k])]) for k in A_bins],
-    "B数字": [', '.join([highlight_number(n) for n in sorted(B_bins[k])]) for k in B_bins]
+    "A数字": [
+        ', '.join(highlight_number(n) for n in sorted(A_bins[k]))
+        for k in A_bins
+    ],
+    "B数字": [
+        ', '.join(highlight_number(n) for n in sorted(B_bins[k]))
+        for k in B_bins
+    ]
 })
 
-st.markdown(style_table(digit_table), unsafe_allow_html=True)
+# HTML 表示
+html = style_table(digit_table)
+st.markdown(html, unsafe_allow_html=True)
 
 
 
