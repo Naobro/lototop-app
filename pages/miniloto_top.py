@@ -335,7 +335,7 @@ def style_table(styler: pd.io.formats.style.Styler) -> str:
 
 # --- 最新回の当選数字（最終行）を取得 ---
 df = df.reset_index(drop=True)  # 念のためインデックスを振り直し
-latest = df.iloc[0]
+latest = df.iloc[-1]
 latest_numbers = {
     int(latest[f"第{i}数字"])
     for i in range(1, 6)
