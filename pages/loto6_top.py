@@ -591,3 +591,52 @@ if st.button("🎯 セレクト予想を出す"):
         st.success(f"🎉 セレクト予想: {result}")
     else:
         st.error("条件に合致する数字が不足しています。候補を増やしてください。")
+# --- 以下、改善ロジックの追加部分（既存コード593行目の直後にコピペ可） ---
+
+st.markdown("## 🆕 ロジック強化パート：出現頻度・引っ張り・連続重視")
+
+# 過去100回集計
+df100 = df.tail(100)
+freq_counts = pd.Series(df100[[f"第{i}数字" for i in range(1,7)]].values.flatten()).value_counts()
+
+# 直近24回の連続ペア集計
+pairs = []
+for row in df100.tail(24)[[f"第{i}数字" for i in range(1,7)]].values:
+    row = sorted(row)
+    for a,b in zip(row, row[1:]):
+        if b - a == 1:
+            pairs.append((a,b))
+pair_counts = Counter(pairs)
+
+# 候補スコアリング
+improved_scores = {n: 0 for n in range(1,44)}
+for n, cnt in freq_counts.items():
+    improved_scores[n] += cnt * 1.5  # 頻出重み
+for (a,b), cnt in pair_counts.items():
+    improved_scores[a] += cnt * 1.0
+    improved_scores[b] += cnt * 1.0
+
+# モデルスコアとマークスコアに合成
+for n in improved_scores:
+    improved_scores[n] += score_dict.get(n,0)
+
+# 新たに位ごとに上位候補を
+new_by_kurai = {"1の位":[], "10の位":[], "20の位":[], "30の位":[]}
+for n,s in sorted(improved_scores.items(), key=lambda x: -x[1]):
+    k = which_kurai(n)
+    if k in new_by_kurai and len(new_by_kurai[k])<5:
+        new_by_kurai[k].append(n)
+
+new_top20 = sum([nums for nums in new_by_kurai.values()], [])
+
+st.success(f"🧠 改善AI予測候補（20個・各位5個）：{sorted(new_top20)}")
+
+# モデルとの一致率チェック機能
+common_with_prev = len(set(new_top20) & set(last_draw))
+st.write(f"🔁 前回数字との共通数: {common_with_prev}個")
+
+# 連続含み候補数
+consec_included = sum(any(abs(n - m)==1 for m in new_top20) for n in new_top20)
+st.write(f"🔗 候補内連続ペア含み数: {consec_included}個")
+
+# --- 改善ロジックここまで ---

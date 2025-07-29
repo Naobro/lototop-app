@@ -760,3 +760,52 @@ if st.button("🎯 セレクト予想を出す（ミニロト）"):
         st.success(f"🎉 セレクト予想: {result}")
     else:
         st.error("条件に合致する数字が不足しています。候補を増やしてください。")
+        # --- 以下：改善ロジック追加パート（既存コード末尾にコピペ可） ---
+
+st.markdown("## 🆕 ロジック強化パート（ミニロト版）：頻出・引っ張り・連続を重視")
+
+# 過去100回の出現頻度計算
+freq_counts = pd.Series(df[[f"第{i}数字" for i in range(1,6)]].tail(100).values.flatten()).value_counts()
+
+# 最新24回で連続ペア出現数集計
+pairs = []
+for row in df_recent[[f"第{i}数字" for i in range(1,6)]].values:
+    row_sorted = sorted(row)
+    for a,b in zip(row_sorted, row_sorted[1:]):
+        if b - a == 1:
+            pairs.append((a,b))
+pair_counts = Counter(pairs)
+
+# 既存のscore_dict（RF/MLP/マルコフ＋出現補正）前提
+# 新たなスコア辞書を初期化
+improved_scores = {n: 0 for n in range(1, 32)}
+for n, cnt in freq_counts.items():
+    improved_scores[n] += cnt * 1.5  # 頻出数字に重み付け
+for (a,b), cnt in pair_counts.items():
+    improved_scores[a] += cnt * 1.0
+    improved_scores[b] += cnt * 1.0
+
+# 既存 AI スコアに加算（score_dictが前提変数）
+for n in improved_scores:
+    improved_scores[n] += score_dict.get(n, 0)
+
+# 位別上位6個を選出（1の位／10の位／20の位）
+new_bins = {"1の位":[], "10の位":[], "20の位":[]}
+for n, sc in sorted(improved_scores.items(), key=lambda x: -x[1]):
+    if 1 <= n <= 9 and len(new_bins["1の位"]) < 6:
+        new_bins["1の位"].append(n)
+    elif 10 <= n <= 19 and len(new_bins["10の位"]) < 6:
+        new_bins["10の位"].append(n)
+    elif 20 <= n <= 31 and len(new_bins["20の位"]) < 6:
+        new_bins["20の位"].append(n)
+new_top18 = sorted(sum(new_bins.values(), []))
+
+st.success(f"🧠 改善AI予測候補（18個：各位上位6個）: {new_top18}")
+
+# 可視化出力：前回数字との共通数、連続ペア候補数
+common_prev = len(set(new_top18) & set(last_draw))
+st.write(f"🔁 前回当せん数字との共通数: {common_prev}個")
+consec_count = sum(any(abs(n - m) == 1 for m in new_top18) for n in new_top18)
+st.write(f"🔗 候補内に含まれる連続ペア数: {consec_count}個")
+
+# ─── ここまで改善ロジック追加パート ───
