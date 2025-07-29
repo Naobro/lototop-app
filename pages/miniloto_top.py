@@ -291,7 +291,8 @@ top_20 = [n for n, _ in sorted(digit_bins["20の位"], key=lambda x: -x[1])[:6]]
 top18 = sorted(top_1 + top_10 + top_20)
 
 # --- 表示 ---
-st.success(f"🧠 次回出現候補（AI予測・各位6個ずつ）: {top18}")
+st.success(f"🧠 改善AI予測候補（18個：各位上位6個）: {new_top18}")
+
 
 # --- モデル別候補表示（展開式） ---
 with st.expander("📊 モデル別候補を表示"):
