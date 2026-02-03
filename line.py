@@ -1,9 +1,9 @@
-import requests
+ACCESS_TOKEN =import requests
 import datetime
 import hashlib
 
 # ✅ あなたの長期チャネルアクセストークンをここに貼り付け
-ACCESS_TOKEN = "+HMYlGC9ttjEo1MrJ8Wi4XmXpzJvss+3OpFdIn6LJhlGG26wxrzIUSPfpu7URIc8NkrEz6LR6dRW2geYSTDiVSZv3RpS/icR9OXDYokmaa/vgbcyeOLhjpZERlDWPkG77esxKwhtHFjtSkmxR6PTLQdB04t89/1O/w1cDnyilFU="
+ACCESS_TOKEN = "bGNsZk/NT6rdJN8nhUbwoO70GcsudYLv3Mhu3klBfP5ONPHQb9h21IQjr2LtspNVNkrEz6LR6dRW2geYSTDiVSZv3RpS/icR9OXDYokmaa+xzitu/YNQkxgGYhXNW8aJwEg7ZDivEs7LQwqTHa7hDgdB04t89/1O/w1cDnyilFU="
 
 # ✅ あなたのLINE User ID（Webhook.siteで取得したもの）
 USER_ID = "U65332dba1dd92fae81532e458c130a63"
