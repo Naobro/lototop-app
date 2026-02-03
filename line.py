@@ -1,21 +1,22 @@
-ACCESS_TOKEN =import requests
+import requests
 import datetime
 import hashlib
+import os
 
-# ✅ あなたの長期チャネルアクセストークンをここに貼り付け
-ACCESS_TOKEN = "bGNsZk/NT6rdJN8nhUbwoO70GcsudYLv3Mhu3klBfP5ONPHQb9h21IQjr2LtspNVNkrEz6LR6dRW2geYSTDiVSZv3RpS/icR9OXDYokmaa+xzitu/YNQkxgGYhXNW8aJwEg7ZDivEs7LQwqTHa7hDgdB04t89/1O/w1cDnyilFU="
+# ✅ 環境変数からLINEアクセストークンを取得
+ACCESS_TOKEN = os.getenv("LINE_CHANNEL_ACCESS_TOKEN")
 
-# ✅ あなたのLINE User ID（Webhook.siteで取得したもの）
+# ✅ あなたのLINE User ID
 USER_ID = "U65332dba1dd92fae81532e458c130a63"
 
-# ✅ 今月のパスワードを自動生成（member.pyと同一ロジック）
+# ✅ 今月のパスワード生成
 def generate_password():
     now = datetime.datetime.now()
     base = f"NAOsecure-{now.year}{now.month:02d}"
     hashed = hashlib.sha256(base.encode()).hexdigest()
-    return hashed[:10]  # member.pyもこれと揃える
+    return hashed[:10]
 
-# ✅ LINEにプッシュ送信する関数
+# ✅ LINEにプッシュ送信
 def send_push_message(message):
     url = "https://api.line.me/v2/bot/message/push"
     headers = {
@@ -24,16 +25,18 @@ def send_push_message(message):
     }
     data = {
         "to": USER_ID,
-        "messages": [{
-            "type": "text",
-            "text": message
-        }]
+        "messages": [
+            {
+                "type": "text",
+                "text": message
+            }
+        ]
     }
     response = requests.post(url, headers=headers, json=data)
     print("送信ステータス:", response.status_code)
     print("レスポンス:", response.text)
 
-# ✅ 実行時処理
+# ✅ 実行
 if __name__ == "__main__":
     password = generate_password()
     message = f"🔐 今月のNAOLoto会員パスワード：\n{password}"
