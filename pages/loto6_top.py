@@ -6,7 +6,7 @@ import streamlit as st
 from auth import check_password
 
 st.set_page_config(layout="centered")
-check_password()
+
 
 import ssl
 import pandas as pd
