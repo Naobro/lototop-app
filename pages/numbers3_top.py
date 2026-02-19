@@ -1,7 +1,6 @@
 import streamlit as st
 from auth import check_password  # type: ignore
 
-check_password()
 st.set_page_config(layout="centered")
 
 import ssl
