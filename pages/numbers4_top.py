@@ -865,3 +865,23 @@ if st.button("AI風ロジックで20通り生成"):
         st.dataframe(pd.DataFrame(predictions, columns=["予測1", "予測2", "予測3", "予測4"]))
     else:
         st.warning("条件に合致する予測が生成できませんでした。")
+if st.button("🎨 画像生成テスト"):
+    test_predictions = pd.DataFrame({
+        "第1数字": [6, 3, 9, 2, 0],
+        "第2数字": [5, 1, 9, 4, 3], 
+        "第3数字": [2, 7, 1, 0, 8],
+        "第4数字": [5, 6, 4, 7, 8]
+    })
+    
+    image_path = create_naoki_prediction_image(
+        current_predictions_df=test_predictions,
+        current_round=6928,
+        current_date=datetime(2026, 2, 26),
+        output_path="test.png"
+    )
+    
+    if image_path:
+        st.success("✅ 画像生成成功")
+        st.image(image_path)
+    else:
+        st.error("❌ 生成失敗")
