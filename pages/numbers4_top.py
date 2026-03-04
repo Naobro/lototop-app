@@ -487,6 +487,11 @@ def show_ai_predictions(csv_path):
     try:
         df = pd.read_csv(csv_path)
         st.write("✅ CSV読み込み成功")
+        # データを最新順にソート（show_latest_resultsと同じ処理）
+        df["抽せん日"] = pd.to_datetime(df["抽せん日"], errors="coerce")
+        df = df.dropna(subset=["抽せん日"])
+        df = df.sort_values(by="抽せん日", ascending=False).reset_index(drop=True)
+
 
         df.columns = [col.replace('（', '(').replace('）', ')') for col in df.columns]
         required_cols = ["第1数字", "第2数字", "第3数字", "第4数字"]
