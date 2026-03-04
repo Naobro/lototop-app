@@ -11,6 +11,7 @@ import ssl
 import pandas as pd
 import random
 import html
+import json 
 from datetime import datetime, timedelta
 from collections import Counter, defaultdict
 from sklearn.ensemble import RandomForestClassifier
@@ -624,7 +625,139 @@ def show_ai_predictions(csv_path):
             ]),
             use_container_width=True
         )
+        # ==========================================
+        # AI分析用データエクスポート機能（完全版）
+        # ==========================================
+        st.markdown("---")
+        st.subheader("🤖 AI分析用データエクスポート")
+        st.info("右上の📄ボタンでワンクリックコピー → AI（Claude/ChatGPT/Gemini）に貼り付け")
         
+        # タブで形式を選択
+        tab1, tab2, tab3 = st.tabs(["📋 簡単コピー", "📊 JSON形式", "📝 詳細分析用"])
+        
+        with tab1:
+            # シンプルな4桁リスト（最も使いやすい）
+            try:
+                simple_text = "【ナンバーズ4 AI予測TOP5】\n\n"
+                simple_text += f"生成日時: {datetime.now().strftime('%Y-%m-%d %H:%M')}\n"
+                simple_text += f"次回予想: 第{int(df.iloc[0]['回号']) + 1}回\n\n"
+                
+                for idx in range(5):
+                    nums = [int(df_final.iloc[idx][f'第{i}数字']) for i in range(1, 5)]
+                    num_str = ''.join(map(str, nums))
+                    total = sum(nums)
+                    pattern = "シングル" if len(set(nums)) == 4 else "ダブル" if len(set(nums)) == 3 else "トリプル"
+                    simple_text += f"{idx+1}位: {num_str} (合計:{total}, {pattern})\n"
+                
+                simple_text += f"\n📊 各桁TOP5詳細:\n{df_final.to_string()}"
+                st.code(simple_text, language='text')
+                
+            except Exception as e:
+                st.error(f"簡単コピー生成エラー: {e}")
+        
+        with tab2:
+            # JSON形式（プログラム処理用）
+            try:
+                prediction_data = {
+                    "meta": {
+                        "generated_at": datetime.now().isoformat(),
+                        "current_round": int(df.iloc[0]["回号"]),
+                        "next_round": int(df.iloc[0]["回号"]) + 1,
+                        "previous_winning": [int(df.iloc[0][f"第{i}数字"]) for i in range(1, 5)]
+                    },
+                    "ai_predictions": []
+                }
+                
+                for idx in range(5):
+                    nums = [int(df_final.iloc[idx][f'第{i}数字']) for i in range(1, 5)]
+                    prediction_data["ai_predictions"].append({
+                        "rank": idx + 1,
+                        "numbers": nums,
+                        "four_digit": ''.join(map(str, nums)),
+                        "sum": sum(nums),
+                        "pattern": "シングル" if len(set(nums)) == 4 else "ダブル",
+                        "odd_count": sum(1 for n in nums if n % 2 == 1),
+                        "even_count": sum(1 for n in nums if n % 2 == 0)
+                    })
+                
+                json_str = json.dumps(prediction_data, ensure_ascii=False, indent=2)
+                st.code(json_str, language='json')
+                
+                # ダウンロード機能
+                st.download_button(
+                    label="📥 JSONファイルダウンロード",
+                    data=json_str,
+                    file_name=f"numbers4_prediction_{datetime.now().strftime('%Y%m%d_%H%M')}.json",
+                    mime="application/json"
+                )
+                
+            except Exception as e:
+                st.error(f"JSON生成エラー: {e}")
+                st.code("エラーが発生しました。簡単コピーをご利用ください。", language='text')
+        
+        with tab3:
+            # 詳細分析用（統計情報含む）
+            try:
+                # 統計情報の計算
+                df_recent_calc = df.head(24)
+                s_count = d_count = t_count = 0
+                for _, row in df_recent_calc.iterrows():
+                    cnts = Counter([row[f"第{i}数字"] for i in range(1, 5)])
+                    vals = list(cnts.values())
+                    if 3 in vals or 4 in vals:
+                        t_count += 1
+                    elif vals.count(2) >= 1:
+                        d_count += 1
+                    else:
+                        s_count += 1
+                
+                prev_winning = '-'.join([str(int(df.iloc[0][f'第{i}数字'])) for i in range(1, 5)])
+                prev_sum = sum([int(df.iloc[0][f'第{i}数字']) for i in range(1, 5)])
+                
+                detailed_text = f"""【ナンバーズ4 詳細分析データ】
+
+=== 基本情報 ===
+生成日時: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+現在回号: 第{int(df.iloc[0]['回号'])}回
+次回予想: 第{int(df.iloc[0]['回号']) + 1}回
+
+=== 前回結果 ===
+当選番号: {prev_winning}
+合計値: {prev_sum}
+
+=== AI予測TOP5 ==="""
+                
+                for idx in range(5):
+                    nums = [int(df_final.iloc[idx][f'第{i}数字']) for i in range(1, 5)]
+                    num_str = ''.join(map(str, nums))
+                    total = sum(nums)
+                    pattern = "シングル" if len(set(nums)) == 4 else "ダブル" if len(set(nums)) == 3 else "トリプル"
+                    detailed_text += f"\n{idx+1}位: {num_str} (合計:{total}, {pattern})"
+                
+                detailed_text += f"""
+
+=== 各桁詳細予測 ===
+{df_final.to_string()}
+
+=== 直近24回統計 ===
+シングル: {s_count}回 ({s_count/24*100:.1f}%)
+ダブル: {d_count}回 ({d_count/24*100:.1f}%)
+トリプル: {t_count}回 ({t_count/24*100:.1f}%)
+
+=== 分析手法 ===
+- ランダムフォレスト（機械学習）
+- ニューラルネットワーク（深層学習）
+- マルコフ連鎖（確率論）
+- 風車盤パターン分析（物理的配置）
+- 直近24回重点ランキング
+"""
+                
+                st.code(detailed_text, language='text')
+                
+            except Exception as e:
+                st.error(f"詳細分析生成エラー: {e}")
+                st.code("エラーが発生しました。他のタブをご利用ください。", language='text')
+
         return df, df_final
 
     except Exception as e:
