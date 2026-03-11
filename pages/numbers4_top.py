@@ -161,27 +161,51 @@ def run_ai_prediction_logic(df_data):
             for rank, n in enumerate(top3):
                 final_scores[i][n] += (3 - rank) * weight * WH_WEIGHT
 
-    # 直近24回ランキング加点
+       # 直近24回ランキング加点
     df_recent = data.tail(min(24, len(data)))
     for i, col in enumerate(required_cols):
         freq_list = df_recent[col].value_counts().index.tolist()
         for rank, num in enumerate(freq_list[:5]):
             final_scores[i][num] += RANK_SCORES[rank]
 
-    # TOP5抽出
-    top5_combined = []
+    # === TOP5抽出（トリプル除外版） ===
+    ranked_candidates = []
     for i in range(4):
         if len(final_scores[i]) == 0:
-            # スコアがない場合はランダム
-            top5_combined.append(random.sample(range(10), 5))
+            ranked_candidates.append(list(range(10)))
         else:
-            top5_combined.append([n for n, _ in final_scores[i].most_common(5)])
-    
+            ranked_candidates.append([n for n, _ in final_scores[i].most_common(15)])
+
+    final_rows = []
+    attempts = 0
+    max_attempts = 1000
+
+    while len(final_rows) < 5 and attempts < max_attempts:
+        current_row = []
+        for col_idx in range(4):
+            candidates = ranked_candidates[col_idx]
+            weights = [len(candidates) - i for i in range(len(candidates))]
+            selected = random.choices(candidates, weights=weights, k=1)[0]
+            current_row.append(selected)
+        
+        # トリプル除外判定（核心ロジック）
+        counter = Counter(current_row)
+        if max(counter.values()) <= 2:  # シングル or ダブルのみ許可
+            if current_row not in final_rows:
+                final_rows.append(current_row)
+        attempts += 1
+
+    # 保険処理
+    while len(final_rows) < 5:
+        combo = [random.randint(0, 9) for _ in range(4)]
+        if max(Counter(combo).values()) <= 2:
+            final_rows.append(combo)
+
     return pd.DataFrame({
-        "第1数字": top5_combined[0],
-        "第2数字": top5_combined[1],
-        "第3数字": top5_combined[2],
-        "第4数字": top5_combined[3],
+        "第1数字": [row[0] for row in final_rows],
+        "第2数字": [row[1] for row in final_rows],
+        "第3数字": [row[2] for row in final_rows],
+        "第4数字": [row[3] for row in final_rows],
     })
 
 def create_naoki_prediction_image(
@@ -612,15 +636,44 @@ def show_ai_predictions(csv_path):
             for rank, num in enumerate(freq_list[:5]):
                 final_scores[i][num] += RANK_SCORES[rank]
 
-        top5_combined = [
-            [n for n, _ in final_scores[i].most_common(5)] for i in range(4)
-        ]
+                # === TOP5抽出（トリプル除外版・メイン画面用） ===
+        ranked_candidates = []
+        for i in range(4):
+            if len(final_scores[i]) == 0:
+                ranked_candidates.append(list(range(10)))
+            else:
+                ranked_candidates.append([n for n, _ in final_scores[i].most_common(15)])
+
+        final_combinations = []
+        attempts = 0
+        max_attempts = 2000
+
+        while len(final_combinations) < 5 and attempts < max_attempts:
+            combination = []
+            for col_idx in range(4):
+                candidates = ranked_candidates[col_idx][:10]
+                weights = [10 - i for i in range(len(candidates))]
+                selected = random.choices(candidates, weights=weights, k=1)[0]
+                combination.append(selected)
+            
+            # トリプル除外判定（核心ロジック）
+            counter = Counter(combination)
+            if max(counter.values()) <= 2:  # シングル or ダブルのみ許可
+                if combination not in final_combinations:
+                    final_combinations.append(combination)
+            attempts += 1
+
+        # 保険処理
+        while len(final_combinations) < 5:
+            combo = [random.randint(0, 9) for _ in range(4)]
+            if max(Counter(combo).values()) <= 2:
+                final_combinations.append(combo)
 
         df_final = pd.DataFrame({
-            "第1数字": top5_combined[0],
-            "第2数字": top5_combined[1],
-            "第3数字": top5_combined[2],
-            "第4数字": top5_combined[3],
+            "第1数字": [combo[0] for combo in final_combinations],
+            "第2数字": [combo[1] for combo in final_combinations],
+            "第3数字": [combo[2] for combo in final_combinations],
+            "第4数字": [combo[3] for combo in final_combinations],
         }, index=["予想1", "予想2", "予想3", "予想4", "予想5"])
 
         st.subheader("🏆 各モデル合算スコア TOP5（風車盤＋直近24回ランキング加点強化）")
@@ -651,7 +704,13 @@ def show_ai_predictions(csv_path):
                     nums = [int(df_final.iloc[idx][f'第{i}数字']) for i in range(1, 5)]
                     num_str = ''.join(map(str, nums))
                     total = sum(nums)
-                    pattern = "シングル" if len(set(nums)) == 4 else "ダブル" if len(set(nums)) == 3 else "トリプル"
+                                        # トリプル除外チェック（保険）
+                    counter = Counter(nums)
+                    if max(counter.values()) >= 3:
+                        continue
+
+                    pattern = "シングル" if len(set(nums)) == 4 else "ダブル"
+
                     simple_text += f"{idx+1}位: {num_str} (合計:{total}, {pattern})\n"
                 
                 simple_text += f"\n📊 各桁TOP5詳細:\n{df_final.to_string()}"
@@ -672,9 +731,15 @@ def show_ai_predictions(csv_path):
                     },
                     "ai_predictions": []
                 }
-                
-                for idx in range(5):
+                               for idx in range(5):
                     nums = [int(df_final.iloc[idx][f'第{i}数字']) for i in range(1, 5)]
+                    
+                    # ▼▼▼ トリプル除外チェック（append の前に実行） ▼▼▼
+                    counter = Counter(nums)
+                    if max(counter.values()) >= 3:
+                        continue  # トリプルならスキップ
+                    # ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
+                    
                     prediction_data["ai_predictions"].append({
                         "rank": idx + 1,
                         "numbers": nums,
@@ -684,6 +749,7 @@ def show_ai_predictions(csv_path):
                         "odd_count": sum(1 for n in nums if n % 2 == 1),
                         "even_count": sum(1 for n in nums if n % 2 == 0)
                     })
+
                 
                 json_str = json.dumps(prediction_data, ensure_ascii=False, indent=2)
                 st.code(json_str, language='json')
@@ -736,10 +802,28 @@ def show_ai_predictions(csv_path):
                     nums = [int(df_final.iloc[idx][f'第{i}数字']) for i in range(1, 5)]
                     num_str = ''.join(map(str, nums))
                     total = sum(nums)
-                    pattern = "シングル" if len(set(nums)) == 4 else "ダブル" if len(set(nums)) == 3 else "トリプル"
-                    detailed_text += f"\n{idx+1}位: {num_str} (合計:{total}, {pattern})"
-                
-                detailed_text += f"""
+                                        # トリプル除外チェック
+                    counter = Counter(nums)
+                    if max(counter.values()) >= 3:
+                        continue
+
+                    pattern = "シングル" if len(set(nums)) == 4 else "ダブル"
+
+                                    rank = 1  # 実際に表示される順位カウンター
+                for idx in range(5):
+                    nums = [int(df_final.iloc[idx][f'第{i}数字']) for i in range(1, 5)]
+                    
+                    # トリプル除外チェック
+                    counter = Counter(nums)
+                    if max(counter.values()) >= 3:
+                        continue  # トリプルはスキップ
+                    
+                    num_str = ''.join(map(str, nums))
+                    total = sum(nums)
+                    pattern = "シングル" if len(set(nums)) == 4 else "ダブル"
+                    detailed_text += f"\n{rank}位: {num_str} (合計:{total}, {pattern})"
+                    rank += 1  # 実際に表示した時だけカウントアップ
+
 
 === 各桁詳細予測 ===
 {df_final.to_string()}
