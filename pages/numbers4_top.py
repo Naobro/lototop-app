@@ -793,6 +793,30 @@ if df_main is not None:
                     prev_winning = '-'.join([str(int(df.iloc[0][f'第{i}数字'])) for i in range(1, 5)])
                     prev_sum = sum([int(df.iloc[0][f'第{i}数字']) for i in range(1, 5)])
                     
+                    # ★★★ 各桁出現ランキング生成（直近24回）★★★
+                    ranking_text = "\n=== 各桁出現ランキング（直近24回）===\n"
+                    ranking_text += "順位    第1数字  第2数字  第3数字  第4数字\n"
+                    
+                    # 各桁のランキングを取得
+                    digit_rankings = []
+                    for i in range(1, 5):
+                        col_name = f"第{i}数字"
+                        value_counts = df_recent_calc[col_name].value_counts().sort_values(ascending=False)
+                        ranking = value_counts.index.tolist()
+                        # 10位まで確保（足りない場合は-で埋める）
+                        while len(ranking) < 10:
+                            ranking.append('-')
+                        digit_rankings.append(ranking)
+                    
+                    # ランキングテーブル作成
+                    for rank in range(10):
+                        ranking_text += f"{rank+1}位     "
+                        for digit_idx in range(4):
+                            num = digit_rankings[digit_idx][rank]
+                            ranking_text += f"{num:>3}      "
+                        ranking_text += "\n"
+                    
+                    # ★★★ 詳細分析テキストの作成 ★★★
                     detailed_text = f"""【ナンバーズ4 詳細分析データ】
 
 === 基本情報 ===
@@ -825,7 +849,7 @@ if df_main is not None:
 
 === 各桁詳細予測 ===
 {df_final.to_string()}
-
+{ranking_text}
 === 直近24回統計 ===
 シングル: {s_count}回 ({s_count/24*100:.1f}%)
 ダブル: {d_count}回 ({d_count/24*100:.1f}%)
@@ -838,11 +862,13 @@ if df_main is not None:
 - 風車盤パターン分析（物理的配置）
 - 直近24回重点ランキング
 """
+                    
                     st.code(detailed_text, language='text')
                     
                 except Exception as e:
                     st.error(f"詳細分析生成エラー: {e}")
                     st.code("エラーが発生しました。他のタブをご利用ください。", language='text')
+
 
             return df, df_final
 
