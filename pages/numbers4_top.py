@@ -793,29 +793,89 @@ if df_main is not None:
                     prev_winning = '-'.join([str(int(df.iloc[0][f'第{i}数字'])) for i in range(1, 5)])
                     prev_sum = sum([int(df.iloc[0][f'第{i}数字']) for i in range(1, 5)])
                     
-                                        # ★★★ 各桁出現ランキング生成（直近24回・出現回数付き）★★★
+                    # ★★★ 各桁出現ランキング生成（直近24回・出現回数付き）★★★
                     ranking_text = "\n=== 各桁出現ランキング（直近24回）===\n"
                     ranking_text += "順位  第1数字(回) 第2数字(回) 第3数字(回) 第4数字(回)\n"
                     
                     # 各桁のランキングを取得（0〜9すべてを含む）
                     digit_rankings = []
+                    abc_sets = []
+                    
                     for i in range(1, 5):
                         col_name = f"第{i}数字"
                         # 0〜9のすべての数字を強制的に含め、未出現は0回とする
                         value_counts = df_recent_calc[col_name].value_counts().reindex(range(10), fill_value=0).sort_values(ascending=False)
                         ranking = value_counts.index.tolist()
                         digit_rankings.append(ranking)
+                        
+                        # ABC分類セットを保存
+                        abc_sets.append({
+                            'A': set(ranking[0:3]),   # 1-3位
+                            'B': set(ranking[3:6]),   # 4-6位  
+                            'C': set(ranking[6:10])   # 7-10位
+                        })
                     
                     # ランキングテーブル作成（出現回数付き）
                     for rank in range(10):
                         ranking_text += f"{rank+1}位   "
                         for digit_idx in range(4):
                             num = digit_rankings[digit_idx][rank]
-                            # 出現回数を取得
                             count = df_recent_calc[f"第{digit_idx+1}数字"].value_counts().get(num, 0)
                             ranking_text += f"  {num}  ({count})    "
                         ranking_text += "\n"
-
+                    
+                    # ★★★ ABC出現割合の計算 ★★★
+                    abc_counts = {'A': 0, 'B': 0, 'C': 0}
+                    
+                    # 直近24回の全数字（96個）をABC分類で判定
+                    for _, row in df_recent_calc.iterrows():
+                        for i in range(4):
+                            val = int(row[f"第{i+1}数字"])
+                            if val in abc_sets[i]['A']:
+                                abc_counts['A'] += 1
+                            elif val in abc_sets[i]['B']:
+                                abc_counts['B'] += 1
+                            else:
+                                abc_counts['C'] += 1
+                    
+                    # ABC統計テキスト作成
+                    abc_text = "\n=== 直近24回 ABC出現統計 ===\n"
+                    abc_text += "【定義】A(1-3位):頻出 / B(4-6位):中位 / C(7-10位):低頻出\n\n"
+                    
+                    total_digits = 96
+                    for rank_char in ['A', 'B', 'C']:
+                        count = abc_counts[rank_char]
+                        percent = (count / total_digits) * 100
+                        abc_text += f"{rank_char}数字: {count:2}回 ({percent:5.1f}%) - "
+                        if rank_char == 'A':
+                            abc_text += "1回平均 {:.1f}個\n".format(count/24)
+                        elif rank_char == 'B':
+                            abc_text += "1回平均 {:.1f}個\n".format(count/24)
+                        else:
+                            abc_text += "1回平均 {:.1f}個\n".format(count/24)
+                    
+                    # 前回のABCパターン判定
+                    latest_abc = []
+                    prev_nums = [int(df.iloc[0][f'第{i}数字']) for i in range(1, 5)]
+                    for i in range(4):
+                        val = prev_nums[i]
+                        if val in abc_sets[i]['A']:
+                            latest_abc.append("A")
+                        elif val in abc_sets[i]['B']:
+                            latest_abc.append("B")
+                        else:
+                            latest_abc.append("C")
+                    
+                    abc_text += f"\n前回パターン: {','.join(latest_abc)} ({prev_winning})"
+                    
+                    # 戦略的示唆
+                    a_dominance = abc_counts['A'] / total_digits
+                    if a_dominance > 0.65:
+                        abc_text += "\n→ A数字超優勢期（堅実予想推奨）"
+                    elif abc_counts['C'] / total_digits > 0.15:
+                        abc_text += "\n→ C数字活発期（ダークホース狙い）"
+                    else:
+                        abc_text += "\n→ バランス期（標準戦略適用）"
                     
                     # ★★★ 詳細分析テキストの作成 ★★★
                     detailed_text = f"""【ナンバーズ4 詳細分析データ】
@@ -851,6 +911,8 @@ if df_main is not None:
 === 各桁詳細予測 ===
 {df_final.to_string()}
 {ranking_text}
+{abc_text}
+
 === 直近24回統計 ===
 シングル: {s_count}回 ({s_count/24*100:.1f}%)
 ダブル: {d_count}回 ({d_count/24*100:.1f}%)
