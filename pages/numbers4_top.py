@@ -793,28 +793,29 @@ if df_main is not None:
                     prev_winning = '-'.join([str(int(df.iloc[0][f'第{i}数字'])) for i in range(1, 5)])
                     prev_sum = sum([int(df.iloc[0][f'第{i}数字']) for i in range(1, 5)])
                     
-                    # ★★★ 各桁出現ランキング生成（直近24回）★★★
+                                        # ★★★ 各桁出現ランキング生成（直近24回・出現回数付き）★★★
                     ranking_text = "\n=== 各桁出現ランキング（直近24回）===\n"
-                    ranking_text += "順位    第1数字  第2数字  第3数字  第4数字\n"
+                    ranking_text += "順位  第1数字(回) 第2数字(回) 第3数字(回) 第4数字(回)\n"
                     
-                    # 各桁のランキングを取得
+                    # 各桁のランキングを取得（0〜9すべてを含む）
                     digit_rankings = []
                     for i in range(1, 5):
                         col_name = f"第{i}数字"
-                        value_counts = df_recent_calc[col_name].value_counts().sort_values(ascending=False)
+                        # 0〜9のすべての数字を強制的に含め、未出現は0回とする
+                        value_counts = df_recent_calc[col_name].value_counts().reindex(range(10), fill_value=0).sort_values(ascending=False)
                         ranking = value_counts.index.tolist()
-                        # 10位まで確保（足りない場合は-で埋める）
-                        while len(ranking) < 10:
-                            ranking.append('-')
                         digit_rankings.append(ranking)
                     
-                    # ランキングテーブル作成
+                    # ランキングテーブル作成（出現回数付き）
                     for rank in range(10):
-                        ranking_text += f"{rank+1}位     "
+                        ranking_text += f"{rank+1}位   "
                         for digit_idx in range(4):
                             num = digit_rankings[digit_idx][rank]
-                            ranking_text += f"{num:>3}      "
+                            # 出現回数を取得
+                            count = df_recent_calc[f"第{digit_idx+1}数字"].value_counts().get(num, 0)
+                            ranking_text += f"  {num}  ({count})    "
                         ranking_text += "\n"
+
                     
                     # ★★★ 詳細分析テキストの作成 ★★★
                     detailed_text = f"""【ナンバーズ4 詳細分析データ】
