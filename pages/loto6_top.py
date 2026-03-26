@@ -639,4 +639,129 @@ st.write(f"🔁 前回数字との共通数: {common_with_prev}個")
 consec_included = sum(any(abs(n - m)==1 for m in new_top20) for n in new_top20)
 st.write(f"🔗 候補内連続ペア含み数: {consec_included}個")
 
+st.write(f"🔗 候補内連続ペア含み数: {consec_included}個")
+
+# --- 第一回から・直近100回・直近24回の各数字 出現回数 / 出現率 ---
+st.header("各数字の出現回数・出現率一覧")
+
+def build_frequency_table(source_df, label_count, label_rate):
+    total_draws = len(source_df)
+    all_vals = source_df[[f"第{i}数字" for i in range(1, 7)]].values.flatten()
+    all_vals = pd.to_numeric(pd.Series(all_vals), errors="coerce").dropna().astype(int)
+    count_map = all_vals.value_counts().to_dict()
+
+    rows = []
+    for num in range(1, 44):
+        cnt = int(count_map.get(num, 0))
+        rate = round(cnt / total_draws * 100, 1) if total_draws > 0 else 0
+        rows.append({
+            "数字": num,
+            label_count: cnt,
+            label_rate: f"{rate}%"
+        })
+    return pd.DataFrame(rows)
+
+df_all_sorted = df.sort_values("回号", ascending=True).reset_index(drop=True)
+df_100 = df_all_sorted.tail(min(100, len(df_all_sorted))).copy()
+df_24 = df_all_sorted.tail(min(24, len(df_all_sorted))).copy()
+
+freq_all_df = build_frequency_table(df_all_sorted, "第1回から出現回数", "第1回から出現率")
+freq_100_df = build_frequency_table(df_100, "直近100回出現回数", "直近100回出現率")
+freq_24_df = build_frequency_table(df_24, "直近24回出現回数", "直近24回出現率")
+
+freq_summary_df = freq_all_df.merge(freq_100_df, on="数字").merge(freq_24_df, on="数字")
+render_scrollable_table(freq_summary_df)
+
+# --- 出現間隔分析テーブル ---
+st.header("各数字の出現間隔分析一覧")
+
+def get_hit_positions(source_df, number):
+    hit_positions = []
+    for idx, row in source_df.reset_index(drop=True).iterrows():
+        nums = [int(row[f"第{i}数字"]) for i in range(1, 7)]
+        if number in nums:
+            hit_positions.append(idx + 1)
+    return hit_positions
+
+def get_intervals_from_positions(positions):
+    if len(positions) < 2:
+        return []
+    return [positions[i] - positions[i - 1] for i in range(1, len(positions))]
+
+def format_avg_interval(intervals):
+    if len(intervals) == 0:
+        return "-"
+    return str(round(sum(intervals) / len(intervals), 1))
+
+def format_last5_intervals(intervals):
+    if len(intervals) == 0:
+        return "-"
+    recent5 = list(reversed(intervals[-5:]))
+    return "-".join(str(int(x)) for x in recent5)
+
+def get_last_elapsed_count(source_df, number):
+    source_df = source_df.reset_index(drop=True)
+    latest_nums = [int(source_df.iloc[-1][f"第{i}数字"]) for i in range(1, 7)]
+    if number in latest_nums:
+        return "-"
+    for idx in range(len(source_df) - 1, -1, -1):
+        nums = [int(source_df.iloc[idx][f"第{i}数字"]) for i in range(1, 7)]
+        if number in nums:
+            return str(len(source_df) - (idx + 1))
+    return "-"
+
+def get_last_hit_date(source_df, number):
+    source_df = source_df.reset_index(drop=True)
+    for idx in range(len(source_df) - 1, -1, -1):
+        nums = [int(source_df.iloc[idx][f"第{i}数字"]) for i in range(1, 7)]
+        if number in nums:
+            dt = pd.to_datetime(source_df.iloc[idx]["抽せん日"], errors="coerce")
+            return dt.strftime("%Y-%m-%d") if pd.notna(dt) else "-"
+    return "-"
+
+df_interval_base = df.sort_values(["抽せん日", "回号"], ascending=True).reset_index(drop=True)
+
+latest_draw_date = pd.to_datetime(df_interval_base.iloc[-1]["抽せん日"], errors="coerce")
+if pd.notna(latest_draw_date):
+    last_12m_start = latest_draw_date - pd.DateOffset(months=12)
+    df_last12m = df_interval_base[df_interval_base["抽せん日"] >= last_12m_start].copy().reset_index(drop=True)
+else:
+    df_last12m = df_interval_base.copy()
+
+df_monday = df_interval_base[df_interval_base["抽せん日"].dt.weekday == 0].copy().reset_index(drop=True)
+df_thursday = df_interval_base[df_interval_base["抽せん日"].dt.weekday == 3].copy().reset_index(drop=True)
+
+interval_rows = []
+
+for num in range(1, 44):
+    all_positions = get_hit_positions(df_interval_base, num)
+    all_intervals = get_intervals_from_positions(all_positions)
+
+    last12_positions = get_hit_positions(df_last12m, num)
+    last12_intervals = get_intervals_from_positions(last12_positions)
+
+    monday_positions = get_hit_positions(df_monday, num)
+    monday_intervals = get_intervals_from_positions(monday_positions)
+
+    thursday_positions = get_hit_positions(df_thursday, num)
+    thursday_intervals = get_intervals_from_positions(thursday_positions)
+
+    interval_rows.append({
+        "数字": num,
+        "第1回目から平均間隔": format_avg_interval(all_intervals),
+        "直近12ケ月平均間隔": format_avg_interval(last12_intervals),
+        "月曜日平均間隔": format_avg_interval(monday_intervals),
+        "木曜日平均間隔": format_avg_interval(thursday_intervals),
+        "最大経過回数": str(max(all_intervals)) if len(all_intervals) > 0 else "-",
+        "最小経過回数": str(min(all_intervals)) if len(all_intervals) > 0 else "-",
+        "直近5回の出現間隔": format_last5_intervals(all_intervals),
+        "最後の出現経過回数": get_last_elapsed_count(df_interval_base, num),
+        "一番最近の出現日": get_last_hit_date(df_interval_base, num),
+    })
+
+interval_analysis_df = pd.DataFrame(interval_rows)
+render_scrollable_table(interval_analysis_df)
+
+# --- 改善ロジックここまで ---
+
 # --- 改善ロジックここまで ---
