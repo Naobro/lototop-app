@@ -639,6 +639,8 @@ st.write(f"🔁 前回数字との共通数: {common_with_prev}個")
 consec_included = sum(any(abs(n - m)==1 for m in new_top20) for n in new_top20)
 st.write(f"🔗 候補内連続ペア含み数: {consec_included}個")
 
+st.write(f"🔗 候補内連続ペア含み数: {consec_included}個")
+
 st.header("各数字の出現回数・出現率一覧")
 
 # --- 直近100回・24回のみの出現回数＆出現率 ---
@@ -659,6 +661,43 @@ def build_frequency_table(source_df, label_count, label_rate):
         })
     return pd.DataFrame(rows)
 
+def add_sequential_rank(df_in, count_col, rate_col, rank_col):
+    ranked = df_in.sort_values(
+        by=[count_col, rate_col, "数字"],
+        ascending=[False, False, True]
+    ).reset_index(drop=True)
+    ranked[rank_col] = range(1, len(ranked) + 1)
+    return df_in.merge(ranked[["数字", rank_col]], on="数字", how="left")
+
+def highlight_rank(val):
+    try:
+        v = int(val)
+        if v <= 10:
+            return "background-color:#fff3b0; color:#000; font-weight:bold;"
+        elif v >= 34:
+            return "background-color:#cfe2ff; color:#000; font-weight:bold;"
+        return ""
+    except:
+        return ""
+
+def render_rank_table(df_in):
+    styled_html = (
+        df_in.style
+        .applymap(highlight_rank, subset=["100回ランク", "24回ランク"])
+        .set_properties(**{
+            "text-align": "center",
+            "white-space": "nowrap"
+        })
+        .set_table_styles([
+            {"selector": "table", "props": [("border-collapse", "collapse"), ("width", "100%"), ("font-size", "14px")]},
+            {"selector": "th", "props": [("border", "1px solid #ccc"), ("padding", "8px"), ("background-color", "#f2f2f2"), ("text-align", "center")]},
+            {"selector": "td", "props": [("border", "1px solid #ccc"), ("padding", "8px"), ("text-align", "center")]}
+        ])
+        .hide(axis="index")
+        .to_html(escape=False)
+    )
+    st.markdown(f"<div style='overflow-x:auto;'>{styled_html}</div>", unsafe_allow_html=True)
+
 df_all_sorted = df.sort_values("回号", ascending=True).reset_index(drop=True)
 df_100 = df_all_sorted.tail(min(100, len(df_all_sorted))).copy()
 df_24 = df_all_sorted.tail(min(24, len(df_all_sorted))).copy()
@@ -667,33 +706,13 @@ freq_100_df = build_frequency_table(df_100, "直近100回出現回数", "直近1
 freq_24_df = build_frequency_table(df_24, "直近24回出現回数", "直近24回出現率")
 
 freq_summary_df = freq_100_df.merge(freq_24_df, on="数字")
+freq_summary_df = add_sequential_rank(freq_summary_df, "直近100回出現回数", "直近100回出現率", "100回ランク")
+freq_summary_df = add_sequential_rank(freq_summary_df, "直近24回出現回数", "直近24回出現率", "24回ランク")
 
-freq_summary_df["100回順位"] = freq_summary_df["直近100回出現率"].rank(ascending=False, method="min")
-freq_summary_df["24回順位"] = freq_summary_df["直近24回出現率"].rank(ascending=False, method="min")
+freq_summary_df["直近100回出現率"] = freq_summary_df["直近100回出現率"].map(lambda x: f"{x:.1f}%")
+freq_summary_df["直近24回出現率"] = freq_summary_df["直近24回出現率"].map(lambda x: f"{x:.1f}%")
 
-def label_rank_100(r):
-    if r <= 10:
-        return "上位10"
-    elif r >= 34:
-        return "下位10"
-    else:
-        return ""
-
-def label_rank_24(r):
-    if r <= 10:
-        return "上位10"
-    elif r >= 34:
-        return "下位10"
-    else:
-        return ""
-
-freq_summary_df["100回ランク"] = freq_summary_df["100回順位"].apply(label_rank_100)
-freq_summary_df["24回ランク"] = freq_summary_df["24回順位"].apply(label_rank_24)
-
-freq_summary_df["直近100回出現率"] = freq_summary_df["直近100回出現率"].astype(str) + "%"
-freq_summary_df["直近24回出現率"] = freq_summary_df["直近24回出現率"].astype(str) + "%"
-
-render_scrollable_table(freq_summary_df[[
+render_rank_table(freq_summary_df[[
     "数字",
     "直近100回出現回数", "直近100回出現率", "100回ランク",
     "直近24回出現回数", "直近24回出現率", "24回ランク"
@@ -780,7 +799,6 @@ for num in range(1, 44):
         "月曜日平均間隔": format_avg_interval(monday_intervals),
         "木曜日平均間隔": format_avg_interval(thursday_intervals),
         "直近100回最大経過回数": str(max(all_intervals)) if len(all_intervals) > 0 else "-",
-        "直近100回最小経過回数": str(min(all_intervals)) if len(all_intervals) > 0 else "-",
         "直近5回の出現間隔": format_last5_intervals(all_intervals),
         "最後の出現経過回数": get_last_elapsed_count(df_interval_100, num),
         "一番最近の出現日": get_last_hit_date(df_interval_100, num),
