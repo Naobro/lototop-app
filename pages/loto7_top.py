@@ -281,7 +281,7 @@ group_df = pd.DataFrame({
 })
 
 # 数値を整数の文字列に変換し、小数点を消す（Noneは空文字に）
-置き換えコード
+
 if isinstance(group_df, pd.Series):
     group_df = group_df.map(lambda x: str(int(x)) if pd.notnull(x) else "")
 else:
