@@ -344,7 +344,7 @@ group_df = pd.DataFrame({
     k: grouped[k] + [""] * (max_len - len(grouped[k]))
     for k in grouped
 })
-group_df = group_df.applymap(lambda x: str(int(x)) if str(x).isdigit() else "")
+group_df = group_df.astype(object).apply(lambda col: col.map(lambda x: str(int(x)) if pd.notnull(x) and str(x).isdigit() else ""))
 
 st.markdown("### 🧮 候補数字の位別分類（1の位・10の位・20の位）")
 st.markdown(f"""
