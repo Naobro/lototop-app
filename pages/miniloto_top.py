@@ -584,6 +584,176 @@ abc_class_df = pd.DataFrame({
 
 # Streamlit用：テーブル表示（style_table関数が必要）
 # st.markdown(style_table(abc_class_df), unsafe_allow_html=True)
+# ==========================================================
+# 各数字の出現回数・出現率一覧
+# ==========================================================
+st.header("各数字の出現回数・出現率一覧")
+
+number_range = range(1, 32)
+
+recent100 = df.sort_values("抽せん日", ascending=False).head(100)
+recent24 = df.sort_values("抽せん日", ascending=False).head(24)
+
+flat100 = recent100[[f"第{i}数字" for i in range(1, 6)]].values.flatten()
+flat24 = recent24[[f"第{i}数字" for i in range(1, 6)]].values.flatten()
+
+count100 = pd.Series(flat100).value_counts()
+count24 = pd.Series(flat24).value_counts()
+
+freq_rows = []
+
+for num in number_range:
+
+    c100 = int(count100.get(num, 0))
+    c24 = int(count24.get(num, 0))
+
+    freq_rows.append({
+        "数字": num,
+        "直近100回出現回数": c100,
+        "直近100回出現率": round(c100 / 100 * 100, 1),
+        "直近24回出現回数": c24,
+        "直近24回出現率": round(c24 / 24 * 100, 1),
+    })
+
+freq_summary_df = pd.DataFrame(freq_rows)
+
+freq_summary_df["100回ランク"] = (
+    freq_summary_df["直近100回出現回数"]
+    .rank(method="min", ascending=False)
+    .astype(int)
+)
+
+freq_summary_df["24回ランク"] = (
+    freq_summary_df["直近24回出現回数"]
+    .rank(method="min", ascending=False)
+    .astype(int)
+)
+
+def highlight_rank(val):
+
+    try:
+
+        val = int(val)
+
+        if val <= 5:
+            return "background-color:#ff4d4d;color:white;font-weight:bold;"
+
+        if val <= 10:
+            return "background-color:#ffcc00;font-weight:bold;"
+
+        if val >= 25:
+            return "background-color:#87cefa;font-weight:bold;"
+
+        return ""
+
+    except:
+        return ""
+
+def render_rank_table(df_show):
+
+    styled = (
+        df_show.style
+        .map(highlight_rank, subset=["100回ランク", "24回ランク"])
+        .format({
+            "直近100回出現率": "{:.1f}%",
+            "直近24回出現率": "{:.1f}%"
+        })
+    )
+
+    st.dataframe(
+        styled,
+        use_container_width=True,
+        height=900
+    )
+
+render_rank_table(
+    freq_summary_df[[
+        "数字",
+        "直近100回出現回数",
+        "直近100回出現率",
+        "100回ランク",
+        "直近24回出現回数",
+        "直近24回出現率",
+        "24回ランク"
+    ]]
+)
+
+# ==========================================================
+# 各数字の出現間隔分析一覧
+# ==========================================================
+st.header("各数字の出現間隔分析一覧")
+
+df_interval = df.sort_values("抽せん日", ascending=False).reset_index(drop=True)
+
+interval_rows = []
+
+for target in range(1, 32):
+
+    hit_idx = []
+
+    for idx, row in df_interval.iterrows():
+
+        nums = [
+            row["第1数字"],
+            row["第2数字"],
+            row["第3数字"],
+            row["第4数字"],
+            row["第5数字"],
+        ]
+
+        if target in nums:
+            hit_idx.append(idx)
+
+    if len(hit_idx) >= 2:
+
+        intervals = [
+            hit_idx[i] - hit_idx[i - 1]
+            for i in range(1, len(hit_idx))
+        ]
+
+        avg100 = round(sum(intervals) / len(intervals), 1)
+
+        recent5 = "-".join(map(str, intervals[:5]))
+
+        max_gap = max(intervals)
+
+    else:
+
+        avg100 = "-"
+        recent5 = "-"
+        max_gap = "-"
+
+    if len(hit_idx) > 0:
+
+        last_gap = hit_idx[0]
+
+        latest_date = (
+            df_interval.iloc[hit_idx[0]]["抽せん日"]
+            .strftime("%Y-%m-%d")
+        )
+
+    else:
+
+        last_gap = "-"
+        latest_date = "-"
+
+    interval_rows.append({
+        "数字": target,
+        "直近100回平均間隔": avg100,
+        "直近24回平均間隔": avg100,
+        "直近100回最大経過回数": max_gap,
+        "直近5回の出現間隔": recent5,
+        "最後の出現経過回数": last_gap,
+        "一番最近の出現日": latest_date
+    })
+
+interval_df = pd.DataFrame(interval_rows)
+
+st.dataframe(
+    interval_df,
+    use_container_width=True,
+    height=1000
+)
 # --- ⑦ 基本予想（構成・出現・ABC優先） ---
 st.header("基本予想（構成・出現・ABC優先）")
 
