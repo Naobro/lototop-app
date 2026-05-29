@@ -695,11 +695,11 @@ def render_rank_table(df_show):
         })
     )
 
-    st.dataframe(
-        styled,
-        use_container_width=True,
-        height=900
-    )
+    st.markdown(
+    styled.to_html(),
+    unsafe_allow_html=True
+)
+
 
 render_rank_table(
     freq_summary_df[[
@@ -784,11 +784,11 @@ for target in range(1, 32):
 
 interval_df = pd.DataFrame(interval_rows)
 
-st.dataframe(
-    interval_df,
-    use_container_width=True,
-    height=1000
+st.markdown(
+    interval_df.to_html(index=False),
+    unsafe_allow_html=True
 )
+   
 # --- ⑦ 基本予想（構成・出現・ABC優先） ---
 st.header("基本予想（構成・出現・ABC優先）")
 
