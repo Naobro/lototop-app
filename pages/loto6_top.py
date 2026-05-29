@@ -683,7 +683,7 @@ def highlight_rank(val):
 def render_rank_table(df_in):
     styled_html = (
         df_in.style
-        .applymap(highlight_rank, subset=["100回ランク", "24回ランク"])
+        .map(highlight_rank, subset=["100回ランク", "24回ランク"])
         .set_properties(**{
             "text-align": "center",
             "white-space": "nowrap"
