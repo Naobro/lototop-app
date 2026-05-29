@@ -38,7 +38,11 @@ function copyAllText() {
 
     let text = document.body.innerText;
 
-    navigator.clipboard.writeText(text);
+    const streamlitDoc = window.parent.document;
+
+let text = streamlitDoc.body.innerText;
+
+navigator.clipboard.writeText(text);
 
     alert("コピー完了");
 }
