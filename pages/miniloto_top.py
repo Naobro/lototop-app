@@ -13,6 +13,39 @@ import random
 
 st.set_page_config(layout="wide")
 st.title("ミニロト AI予想サイト")
+st.title("ミニロト AI予想サイト")
+
+import streamlit.components.v1 as components
+
+copy_button_html = """
+<div style="margin-bottom:20px;">
+<button onclick="copyAllText()" style="
+background:#ff4b4b;
+color:white;
+border:none;
+padding:12px 20px;
+font-size:16px;
+font-weight:bold;
+border-radius:8px;
+cursor:pointer;
+">
+📋 予想ページ全体をコピー
+</button>
+</div>
+
+<script>
+function copyAllText() {
+
+    let text = document.body.innerText;
+
+    navigator.clipboard.writeText(text);
+
+    alert("コピー完了");
+}
+</script>
+"""
+
+components.html(copy_button_html, height=80)
 
 ## ✅ スマホで折り返さず横スクロール可能にするCSS（ミニロト・ロト6・ロト7共通）
 st.markdown("""
