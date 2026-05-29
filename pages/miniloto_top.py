@@ -36,13 +36,11 @@ cursor:pointer;
 <script>
 function copyAllText() {
 
-    let text = document.body.innerText;
-
     const streamlitDoc = window.parent.document;
 
-let text = streamlitDoc.body.innerText;
+    let text = streamlitDoc.body.innerText;
 
-navigator.clipboard.writeText(text);
+    navigator.clipboard.writeText(text);
 
     alert("コピー完了");
 }
