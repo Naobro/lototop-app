@@ -7,6 +7,61 @@ from auth import check_password
 
 st.set_page_config(layout="centered")
 
+copy_button_html = """
+<div style="margin-bottom:20px;">
+  <button onclick="copyAllText()" style="
+    background:#ff4b4b;
+    color:white;
+    border:none;
+    padding:12px 20px;
+    font-size:16px;
+    font-weight:bold;
+    border-radius:8px;
+    cursor:pointer;
+  ">
+    📋 予想ページ全体をコピー
+  </button>
+</div>
+
+<script>
+function copyAllText() {
+    const streamlitDoc = window.parent.document;
+
+    // メインコンテンツ領域を取得（サイドバーを除外）
+    const mainEl = streamlitDoc.querySelector('section.main')
+                || streamlitDoc.querySelector('[data-testid="stMain"]')
+                || streamlitDoc.querySelector('[data-testid="stAppViewContainer"]');
+
+    let text = "";
+    if (mainEl) {
+        // メイン要素のクローンを作って、サイドバーやヘッダー・ボタン自身を除去
+        const clone = mainEl.cloneNode(true);
+        clone.querySelectorAll(
+            'section[data-testid="stSidebar"], header, [data-testid="stToolbar"], [data-testid="stHeader"], iframe, button'
+        ).forEach(el => el.remove());
+        text = clone.innerText;
+    } else {
+        text = streamlitDoc.body.innerText;
+    }
+
+    // 念のため「Stop / Fork / Deploy」などのキーワード行を除去
+    const excludeKeywords = ["Stop", "Fork", "Deploy", "Running", "Rerun"];
+    text = text.split("\\n")
+               .filter(line => {
+                   const t = line.trim();
+                   if (t === "") return true;
+                   return !excludeKeywords.includes(t);
+               })
+               .join("\\n");
+
+    navigator.clipboard.writeText(text);
+    alert("コピー完了");
+}
+</script>
+"""
+components.html(copy_button_html, height=80)
+
+
 
 import ssl
 import pandas as pd
