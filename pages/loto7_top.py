@@ -4,6 +4,8 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 import streamlit as st
 from auth import check_password
+import streamlit.components.v1 as components
+
 
 st.set_page_config(layout="centered")
 
