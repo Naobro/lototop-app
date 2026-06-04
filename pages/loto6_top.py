@@ -6,6 +6,42 @@ import streamlit as st
 from auth import check_password
 
 st.set_page_config(layout="centered")
+import streamlit as st
+from auth import check_password
+import streamlit.components.v1 as components  # ← 追加
+
+st.set_page_config(layout="centered")
+
+st.title("ロト6 AI予想サイト")  # ← 追加（任意）
+
+# 📋 コピーボタン
+copy_button_html = """
+<div style="margin-bottom:20px;">
+  <button onclick="copyAllText()" style="
+    background:#ff4b4b;
+    color:white;
+    border:none;
+    padding:12px 20px;
+    font-size:16px;
+    font-weight:bold;
+    border-radius:8px;
+    cursor:pointer;
+  ">
+    📋 予想ページ全体をコピー
+  </button>
+</div>
+
+<script>
+function copyAllText() {
+    const streamlitDoc = window.parent.document;
+    let text = streamlitDoc.body.innerText;
+    navigator.clipboard.writeText(text);
+    alert("コピー完了");
+}
+</script>
+"""
+components.html(copy_button_html, height=80)
+
 
 
 import ssl
