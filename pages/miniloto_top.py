@@ -13,7 +13,6 @@ import random
 
 st.set_page_config(layout="wide")
 st.title("ミニロト AI予想サイト")
-st.title("ミニロト AI予想サイト")
 
 import streamlit.components.v1 as components
 
