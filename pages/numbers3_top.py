@@ -6,15 +6,109 @@ st.set_page_config(layout="centered")
 import ssl
 import pandas as pd
 import random
+import json
+import streamlit.components.v1 as components
 from collections import Counter
 import html
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.neural_network import MLPClassifier
 from collections import defaultdict
 
-# ✅ 外部モジュール読み込みはこれでOK。以下2行は完全に不要なので削除済み
-# import sys
-# from numbers3_ai import show_ai_predictions
+CSV_PATH = "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/numbers3_24.csv"
+
+
+# ============================================
+# ★ 最上部：ワンクリックコピーボタン
+# ============================================
+
+def build_copy_text(csv_path):
+    """最新当選番号・直近24回・各桁ランキングをコピー用テキストにする（事実データのみ）"""
+    try:
+        df = pd.read_csv(csv_path)
+        df.columns = [c.replace('（', '(').replace('）', ')') for c in df.columns]
+        cols = ["第1数字", "第2数字", "第3数字"]
+        df = df.dropna(subset=cols)
+        df[cols] = df[cols].astype(int)
+        df["抽せん日"] = pd.to_datetime(df["抽せん日"], errors="coerce")
+        df = df.dropna(subset=["抽せん日"]).sort_values("抽せん日", ascending=False).reset_index(drop=True)
+
+        latest = df.iloc[0]
+        latest_round = int(latest["回号"])
+        next_round = latest_round + 1
+        prev_winning = "".join(str(int(latest[c])) for c in cols)
+
+        df24 = df.head(24).reset_index(drop=True)
+
+        text = "【ナンバーズ3 直近データ】\n"
+        text += f"取得日時: {pd.Timestamp.now().strftime('%Y-%m-%d %H:%M')}\n"
+        text += f"最新回号: 第{latest_round}回 / 次回: 第{next_round}回\n"
+        text += f"最新当選番号: {prev_winning}\n\n"
+
+        text += "=== 直近24回の当選番号 ===\n"
+        text += "回号  抽せん日  第1 第2 第3\n"
+        for _, row in df24.iterrows():
+            text += (f"{int(row['回号'])}  {row['抽せん日'].strftime('%Y-%m-%d')}  "
+                     f"{int(row['第1数字'])} {int(row['第2数字'])} {int(row['第3数字'])}\n")
+
+        text += "\n=== 各桁出現ランキング（直近24回・回数）===\n"
+        text += "順位  第1数字  第2数字  第3数字\n"
+        rankings = []
+        for i in range(1, 4):
+            vc = df24[f"第{i}数字"].value_counts().reindex(range(10), fill_value=0).sort_values(ascending=False)
+            rankings.append(vc)
+        for rank in range(10):
+            text += f"{rank+1}位 "
+            for i in range(3):
+                num = rankings[i].index[rank]
+                cnt = rankings[i].iloc[rank]
+                text += f"  {num}({cnt})"
+            text += "\n"
+
+        text += "\n（出典: https://naobillionaire.synergy.cfbx.jp/ ）\n"
+        return text
+    except Exception as e:
+        return f"データ取得エラー: {e}"
+
+
+def render_copy_button(text):
+    safe = json.dumps(text)
+    components.html(f"""
+    <div style="font-family:sans-serif; margin-bottom:10px;">
+      <button id="copyBtn" style="
+          width:100%; padding:16px; font-size:18px; font-weight:bold;
+          color:#fff; background:#1a5490; border:none; border-radius:10px;
+          cursor:pointer; box-shadow:0 3px 8px rgba(0,0,0,0.2);">
+          📋 データをコピー
+      </button>
+      <span id="copyMsg" style="display:block; margin-top:8px; color:#2e7d32; font-weight:bold;"></span>
+    </div>
+    <script>
+      const data = {safe};
+      const btn = document.getElementById("copyBtn");
+      const msg = document.getElementById("copyMsg");
+      btn.addEventListener("click", async () => {{
+        try {{
+          await navigator.clipboard.writeText(data);
+          msg.textContent = "✅ コピーしました！";
+        }} catch (e) {{
+          const ta = document.createElement("textarea");
+          ta.value = data;
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand("copy");
+          document.body.removeChild(ta);
+          msg.textContent = "✅ コピーしました！";
+        }}
+      }});
+    </script>
+    """, height=110)
+
+
+_copy_text = build_copy_text(CSV_PATH)
+render_copy_button(_copy_text)
+with st.expander("コピーされる内容を確認する"):
+    st.code(_copy_text, language="text")
+st.markdown("---")
 
 
 # 最新の当選結果表示関数
@@ -78,40 +172,27 @@ def show_latest_results(csv_path):
     except Exception as e:
         st.error(f"エラーが発生しました: {e}")
         st.error(f"エラー詳細: {type(e)}")
-CSV_PATH = "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/numbers3_24.csv"
+
 
 # Streamlit表示
 def show_page():
     st.title("ナンバーズ3 - 当選予想ページ")
     show_latest_results(CSV_PATH)
 
-# 実行
-# ✅ 修正後（この1行だけにする）
 show_page()
 
-import pandas as pd
-import streamlit as st
-
-import pandas as pd
-import streamlit as st
-
-import pandas as pd
-import streamlit as st
 
 st.header("② 直近24回の当選番号（ABC分類付き）")
 
 def generate_recent_numbers3_table(csv_path):
     try:
-        # CSV読み込みと整形
         df = pd.read_csv(csv_path)
         df = df.dropna(subset=["第1数字", "第2数字", "第3数字"])
         df[["第1数字", "第2数字", "第3数字"]] = df[["第1数字", "第2数字", "第3数字"]].astype(int)
         df["抽せん日"] = pd.to_datetime(df["抽せん日"], errors="coerce").dt.strftime("%Y-%m-%d")
 
-        # 直近24回に絞る
         df_recent = df.sort_values("回号", ascending=False).head(24).reset_index(drop=True)
 
-        # ABC分類マップ（直近24回のみ）
         def get_abc_rank_map(series):
             counts = series.value_counts().sort_values(ascending=False)
             digits = counts.index.tolist()
@@ -129,7 +210,6 @@ def generate_recent_numbers3_table(csv_path):
         abc_map_2 = get_abc_rank_map(df_recent["第2数字"])
         abc_map_3 = get_abc_rank_map(df_recent["第3数字"])
 
-        # ABC分類（Aだけ赤色HTMLで装飾）
         def abc_with_color(d1, d2, d3):
             def colorize(x):
                 return f'<span style="color:red;font-weight:bold">{x}</span>' if x == "A" else x
@@ -143,17 +223,16 @@ def generate_recent_numbers3_table(csv_path):
             axis=1
         )
 
-        # 表示用テーブル（HTML形式）
         df_display = df_recent[["回号", "抽せん日", "第1数字", "第2数字", "第3数字", "ABC分類"]]
         st.write(df_display.to_html(escape=False, index=False), unsafe_allow_html=True)
 
     except Exception as e:
         st.error(f"エラーが発生しました: {e}")
 
-# 実行
 recent_csv_path = "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/numbers3_24.csv"
 generate_recent_numbers3_table(recent_csv_path)
-# **③ ランキングの作成**
+
+
 st.header("ランキング")
 
 def generate_ranking(csv_path):
@@ -164,7 +243,6 @@ def generate_ranking(csv_path):
         df["第2数字"] = df["第2数字"].astype(int)
         df["第3数字"] = df["第3数字"].astype(int)
 
-        # 直近24回のみを抽出（回号の降順）
         df = df.sort_values("回号", ascending=False).head(24)
 
         def rank_counts(series):
@@ -191,7 +269,6 @@ def generate_ranking(csv_path):
             "第3桁目": fill([f"{row['数字']}（{row['出現回数']}回）" for _, row in top_3rd.iterrows()])
         })
 
-        # スタイル適用：上位3位まで黄色、文字を中央揃え
         def highlight(row):
             if row["順位"] in ["1位", "2位", "3位"]:
                 return ['background-color: gold; color: black; font-weight: bold; text-align: center'] * len(row)
@@ -203,18 +280,11 @@ def generate_ranking(csv_path):
         st.write(f"エラーが発生しました: {e}")
         st.write(f"エラー詳細: {e.__class__}")
 
-# CSVパス指定
 ranking_csv_path = "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/numbers3_24.csv"
 generate_ranking(ranking_csv_path)
 
-# **④分析セクション**
-st.header("分析セクション")
 
-import pandas as pd
-import streamlit as st
-from collections import Counter, defaultdict
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.neural_network import MLPClassifier
+st.header("分析セクション")
 
 def evaluate_hit_rate(df, required_cols, recent=30):
     weights = defaultdict(lambda: [0, 0, 0])
@@ -382,45 +452,34 @@ def show_ai_predictions(csv_path):
         st.error("AI予測の実行中にエラーが発生しました")
         st.exception(e)
 
-def show_page():
+def show_page_ai():
     show_ai_predictions("data/n3.csv")
 
-show_page()
+show_page_ai()
 
 
-
-
-# **ナンバーズ3 直近24回のWとSの回数**
 st.subheader("直近24回のWとSの回数")
 
 def generate_w_and_s(csv_path):
     try:
-        # CSVを読み込む
         df = pd.read_csv(csv_path)
-        df = df.fillna("未定義")  # 欠損値を"未定義"で埋める
+        df = df.fillna("未定義")
         df["第1数字"] = df["第1数字"].astype(int)
         df["第2数字"] = df["第2数字"].astype(int)
         df["第3数字"] = df["第3数字"].astype(int)
 
-        # 直近24回のデータを取得
         df_recent = df.tail(24)
 
-        # WとSの回数をカウント
         w_count = 0
         s_count = 0
 
-        # 各回の当選番号を調べる
         for _, row in df_recent.iterrows():
             numbers = [row['第1数字'], row['第2数字'], row['第3数字']]
-            
-            # 重複が2個ある場合W（ダブル）
-            if len(set(numbers)) == 2:  # 2つの異なる数字がある
+            if len(set(numbers)) == 2:
                 w_count += 1
-            # すべて異なる場合S（シングル）
-            elif len(set(numbers)) == 3:  # 3つすべて異なる数字
+            elif len(set(numbers)) == 3:
                 s_count += 1
 
-        # WとSの回数をデータフレームで表示
         result_df = pd.DataFrame({
             "分析項目": ["W（ダブル）", "S（シングル）"],
             "回数": [w_count, s_count]
@@ -431,38 +490,30 @@ def generate_w_and_s(csv_path):
         st.write(f"エラーが発生しました: {e}")
         st.write(f"エラー詳細: {e.__class__}")
 
-# CSVのパス
 csv_path = "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/numbers3_24.csv"
 generate_w_and_s(csv_path)
 
-# **ナンバーズ3 直近24回のひっぱり数字の回数**
+
 st.subheader("直近24回のひっぱり回数")
 
 def generate_hoppari_numbers(csv_path):
     try:
-        # CSVを読み込む
         df = pd.read_csv(csv_path)
-        df = df.fillna("未定義")  # 欠損値を"未定義"で埋める
+        df = df.fillna("未定義")
         df["第1数字"] = df["第1数字"].astype(int)
         df["第2数字"] = df["第2数字"].astype(int)
         df["第3数字"] = df["第3数字"].astype(int)
 
-        # 直近24回のデータを取得
         df_recent = df.tail(24)
 
-        # ひっぱり数字の回数をカウント
         hoppari_count = 0
 
-        # 各回の当選番号を調べる
         for i in range(1, len(df_recent)):
             current_numbers = {df_recent.iloc[i]['第1数字'], df_recent.iloc[i]['第2数字'], df_recent.iloc[i]['第3数字']}
             previous_numbers = {df_recent.iloc[i-1]['第1数字'], df_recent.iloc[i-1]['第2数字'], df_recent.iloc[i-1]['第3数字']}
-            
-            # 現在の回と前回の当選番号に共通する数字があれば「ひっぱり数字」
             if len(current_numbers.intersection(previous_numbers)) > 0:
                 hoppari_count += 1
 
-        # ひっぱり数字の回数を表示
         result_df = pd.DataFrame({
             "分析項目": ["ひっぱり数字"],
             "回数": [hoppari_count]
@@ -473,29 +524,24 @@ def generate_hoppari_numbers(csv_path):
         st.write(f"エラーが発生しました: {e}")
         st.write(f"エラー詳細: {e.__class__}")
 
-# CSVのパス
 csv_path = "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/numbers3_24.csv"
 generate_hoppari_numbers(csv_path)
 
-# **ナンバーズ3 直近24回の数字の分布（範囲ごとの分布）**
+
 st.subheader("直近24回の数字の分布（範囲ごとの分布）")
 
 def generate_range_distribution(csv_path):
     try:
-        # CSVを読み込む
         df = pd.read_csv(csv_path)
-        df = df.fillna("未定義")  # 欠損値を"未定義"で埋める
+        df = df.fillna("未定義")
         df["第1数字"] = df["第1数字"].astype(int)
         df["第2数字"] = df["第2数字"].astype(int)
         df["第3数字"] = df["第3数字"].astype(int)
 
-        # 直近24回のデータを取得
         df_recent = df.tail(24)
 
-        # 範囲ごとのカウント
         range_counts = {'A (0-2)': 0, 'B (3-5)': 0, 'C (6-9)': 0}
 
-        # 各回の当選番号を調べ、範囲に分けてカウント
         for _, row in df_recent.iterrows():
             numbers = [row['第1数字'], row['第2数字'], row['第3数字']]
             for num in numbers:
@@ -506,7 +552,6 @@ def generate_range_distribution(csv_path):
                 elif 6 <= num <= 9:
                     range_counts['C (6-9)'] += 1
 
-        # 範囲ごとの分布をデータフレームで表示
         result_df = pd.DataFrame({
             "範囲": list(range_counts.keys()),
             "出現回数": list(range_counts.values())
@@ -517,40 +562,31 @@ def generate_range_distribution(csv_path):
         st.write(f"エラーが発生しました: {e}")
         st.write(f"エラー詳細: {e.__class__}")
 
-# CSVのパス
 csv_path = "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/numbers3_24.csv"
 generate_range_distribution(csv_path)
 
 
-        
-# **組み合わせパターン（ペア）のカウント**
 st.subheader("直近24回の組み合わせパターン（ペア）のカウント")
 
 def generate_combinations(csv_path):
     try:
-        # CSVを読み込む
         df = pd.read_csv(csv_path)
-        df = df.fillna("未定義")  # 欠損値を"未定義"で埋める
+        df = df.fillna("未定義")
         df["第1数字"] = df["第1数字"].astype(int)
         df["第2数字"] = df["第2数字"].astype(int)
         df["第3数字"] = df["第3数字"].astype(int)
 
-        # 直近24回のデータを取得
         df_recent = df.tail(24)
 
-        # ペアのカウント
         pair_counts = Counter()
 
-        # 各回の当選番号を調べる
         for _, row in df_recent.iterrows():
             numbers = [row['第1数字'], row['第2数字'], row['第3数字']]
-            # ペア（2つの数字の組み合わせ）
             for i in range(len(numbers)):
                 for j in range(i + 1, len(numbers)):
-                    pair = tuple(sorted([numbers[i], numbers[j]]))  # ペアをソートして重複を避ける
+                    pair = tuple(sorted([numbers[i], numbers[j]]))
                     pair_counts[pair] += 1
 
-        # 結果をデータフレームで表示
         pair_df = pd.DataFrame(pair_counts.items(), columns=["ペア", "出現回数"]).sort_values(by="出現回数", ascending=False).reset_index(drop=True)
 
         st.write("ペアの出現回数：")
@@ -560,34 +596,28 @@ def generate_combinations(csv_path):
         st.write(f"エラーが発生しました: {e}")
         st.write(f"エラー詳細: {e.__class__}")
 
-# CSVのパス
 csv_path = "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/numbers3_24.csv"
 generate_combinations(csv_path)
 
-# **数字の合計値の分析**
+
 st.subheader("直近24回の数字の合計値の分析")
 
 def generate_sum_analysis(csv_path):
     try:
-        # CSVを読み込む
         df = pd.read_csv(csv_path)
-        df = df.fillna("未定義")  # 欠損値を"未定義"で埋める
+        df = df.fillna("未定義")
         df["第1数字"] = df["第1数字"].astype(int)
         df["第2数字"] = df["第2数字"].astype(int)
         df["第3数字"] = df["第3数字"].astype(int)
 
-        # 直近24回のデータを取得
         df_recent = df.tail(24)
 
-        # 合計値のカウント
         sum_counts = Counter()
 
-        # 各回の当選番号の合計を計算
         for _, row in df_recent.iterrows():
             total = row['第1数字'] + row['第2数字'] + row['第3数字']
             sum_counts[total] += 1
 
-        # 結果をデータフレームで表示
         sum_df = pd.DataFrame(sum_counts.items(), columns=["合計値", "出現回数"]).sort_values(by="出現回数", ascending=False).reset_index(drop=True)
 
         st.write("数字の合計値の出現回数：")
@@ -597,33 +627,27 @@ def generate_sum_analysis(csv_path):
         st.write(f"エラーが発生しました: {e}")
         st.write(f"エラー詳細: {e.__class__}")
 
-# CSVのパス
 csv_path = "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/numbers3_24.csv"
 generate_sum_analysis(csv_path)
 
-# **予測セクション**
+
 st.header("ナンバーズ3 予測")
 st.write("軸数字を1つ選択")
 
-# ① ランダム予測（軸数字を必ず含む）
 def generate_random_predictions(n, axis_number):
     predictions = []
     for _ in range(n):
-        # ランダム予測：軸数字を含んだ予測
         prediction = [axis_number, random.choice([i for i in range(10) if i != axis_number]), random.choice([i for i in range(10) if i != axis_number])]
-        prediction = sorted(prediction)  # 順番を無視するためにソート
-        if prediction not in predictions:  # 重複を排除
+        prediction = sorted(prediction)
+        if prediction not in predictions:
             predictions.append(prediction)
     return predictions
 
-# **予測のボタン処理**
 axis_number = st.selectbox("軸数字を選択 (0〜9)", list(range(10)), key="axis_number")
-num_predictions = 20  # 予測数を20に固定
+num_predictions = 20
 
-# ランダム予測ボタン
 if st.button("20パターン予測", key="random_predict_button"):
     random_predictions = generate_random_predictions(num_predictions, axis_number)
     st.write(f"ランダム予測 (20パターン)：")
     df_random_predictions = pd.DataFrame(random_predictions, columns=[f'予測番号{i+1}' for i in range(3)])
     st.dataframe(df_random_predictions)
-
