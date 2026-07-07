@@ -36,12 +36,175 @@ def format_number(val):
 
 
 # ============================================
+# 予想モデル（RF/NN/マルコフ/風車盤）＋合算スコアTOP5テキスト生成
+# ============================================
+
+def build_prediction_section_text(df):
+    """ランダムフォレスト・ニューラルネット・マルコフ連鎖・風車盤の
+    各モデル予測TOP3と合算スコアTOP5をテキスト化して返す"""
+    try:
+        required_cols = ["第1数字", "第2数字", "第3数字", "第4数字"]
+        wheels = [
+            [0, 3, 6, 9, 2, 5, 8, 1, 4, 7],
+            [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+            [0, 7, 4, 1, 8, 5, 2, 9, 6, 3],
+            [0, 9, 8, 7, 6, 5, 4, 3, 2, 1]
+        ]
+        # df は抽せん日降順（最新が先頭）で渡される前提
+        dfs_map = {
+            "全データ":   (df,                            0.1),
+            "直近100回": (df.head(min(100, len(df))),      0.3),
+            "直近24回":  (df.head(min(24,  len(df))),      0.6),
+        }
+
+        def run_models_for_text(df_sub):
+            X, ys = [], [[] for _ in range(4)]
+            for i in range(len(df_sub) - 1):
+                prev = df_sub.iloc[i + 1]
+                curr = df_sub.iloc[i]
+                X.append([prev[c] for c in required_cols])
+                for j in range(4):
+                    ys[j].append(curr[required_cols[j]])
+            if len(X) == 0:
+                return None
+            latest_input = [[df_sub.iloc[0][c] for c in required_cols]]
+
+            def top3_from_model(model):
+                """model.classes_を参照して数字と確率を正確に対応付ける"""
+                probs = model.predict_proba(latest_input)[0]
+                classes = model.classes_
+                pairs = sorted(zip(classes, probs), key=lambda x: x[1], reverse=True)[:3]
+                return [int(c) for c, _ in pairs]
+
+            rf_top3, nn_top3 = [], []
+            for i in range(4):
+                try:
+                    rf = RandomForestClassifier(n_estimators=50, random_state=42)
+                    rf.fit(X, ys[i])
+                    rf_top3.append(top3_from_model(rf))
+                except Exception:
+                    rf_top3.append([])
+                try:
+                    nn = MLPClassifier(max_iter=300, random_state=42)
+                    nn.fit(X, ys[i])
+                    nn_top3.append(top3_from_model(nn))
+                except Exception:
+                    nn_top3.append([])
+
+            mc_top3 = []
+            for i in range(4):
+                series = df_sub[f"第{i+1}数字"].tolist()
+                trans = defaultdict(Counter)
+                for k in range(len(series) - 1):
+                    trans[series[k]][series[k+1]] += 1
+                if len(series) > 0:
+                    last = series[0]
+                    mc_top3.append([n for n, _ in trans[last].most_common(3)])
+                else:
+                    mc_top3.append([])
+
+            wh_top3 = []
+            for i in range(4):
+                count = Counter()
+                wheel = wheels[i]
+                for val in df_sub[f"第{i+1}数字"]:
+                    if val in wheel:
+                        count[wheel.index(val)] += 1
+                top_pos = [p for p, _ in count.most_common(3)]
+                wh_top3.append([wheel[p] for p in top_pos if p < len(wheel)])
+
+            return {"RF": rf_top3, "NN": nn_top3, "MC": mc_top3, "WH": wh_top3}
+
+        text = "\n=== 次回予想：各モデルTOP3（桁別） ===\n"
+        text += "※ RF=ランダムフォレスト / NN=ニューラルネット / MC=マルコフ連鎖 / WH=風車盤\n\n"
+
+        all_results = {}
+        for label, (data, weight) in dfs_map.items():
+            if len(data) < 5:
+                continue
+            result = run_models_for_text(data)
+            if result is None:
+                continue
+            all_results[label] = (result, weight)
+
+            text += f"【{label}】\n"
+            for model_key, model_name in [
+                ("RF", "ランダムフォレスト"),
+                ("NN", "ニューラルネット"),
+                ("MC", "マルコフ連鎖"),
+                ("WH", "風車盤"),
+            ]:
+                tops = result[model_key]
+                row = " / ".join(
+                    f"第{i+1}:{','.join(map(str, tops[i])) if tops[i] else '-'}"
+                    for i in range(4)
+                )
+                text += f"  {model_name:<10} {row}\n"
+            text += "\n"
+
+        # 合算スコアTOP5（風車盤加重＋直近24回頻出加点・トリプル除外）
+        final_scores = [Counter() for _ in range(4)]
+        WH_WEIGHT = 2.0
+        RANK_SCORES = [2.0, 1.5, 1.0, 0.7, 0.5]
+        for label, (result, weight) in all_results.items():
+            for i in range(4):
+                for rank, n in enumerate(result["RF"][i]):
+                    final_scores[i][n] += (3 - rank) * weight
+                for rank, n in enumerate(result["NN"][i]):
+                    final_scores[i][n] += (3 - rank) * weight
+                for rank, n in enumerate(result["MC"][i]):
+                    final_scores[i][n] += (3 - rank) * weight
+                for rank, n in enumerate(result["WH"][i]):
+                    final_scores[i][n] += (3 - rank) * weight * WH_WEIGHT
+
+        df_recent24 = df.head(min(24, len(df)))
+        for i, col in enumerate(required_cols):
+            freq_list = df_recent24[col].value_counts().index.tolist()
+            for rank, num in enumerate(freq_list[:5]):
+                final_scores[i][num] += RANK_SCORES[rank]
+
+        ranked_candidates = []
+        for i in range(4):
+            ranked_candidates.append(
+                [n for n, _ in final_scores[i].most_common(15)] if final_scores[i] else list(range(10))
+            )
+
+        final_combinations = []
+        attempts = 0
+        while len(final_combinations) < 5 and attempts < 2000:
+            combo = []
+            for col_idx in range(4):
+                candidates = ranked_candidates[col_idx][:10]
+                weights = [10 - i for i in range(len(candidates))]
+                combo.append(random.choices(candidates, weights=weights, k=1)[0])
+            if max(Counter(combo).values()) <= 2 and combo not in final_combinations:
+                final_combinations.append(combo)
+            attempts += 1
+        while len(final_combinations) < 5:
+            combo = [random.randint(0, 9) for _ in range(4)]
+            if max(Counter(combo).values()) <= 2:
+                final_combinations.append(combo)
+
+        text += "=== 合算スコアTOP5（風車盤加重＋直近24回加点・トリプル除外） ===\n"
+        for rank, combo in enumerate(final_combinations, 1):
+            num_str = "".join(map(str, combo))
+            total = sum(combo)
+            pattern = "シングル" if len(set(combo)) == 4 else "ダブル"
+            text += f"{rank}位: {num_str}（合計:{total}, {pattern}）\n"
+
+        return text
+    except Exception as e:
+        return f"\n[予想モデルセクション生成エラー: {e}]\n"
+
+
+# ============================================
 # ★ 最上部：AIに渡すデータのワンクリックコピーボタン
 # ============================================
 
 def build_ai_export_text(csv_path):
-    """直近の当選番号・直近24回データ・各桁ランキング・ABC統計を
-    AIに渡すためのテキストとして組み立てる（事実データのみ）"""
+    """直近の当選番号・直近24回データ・各桁ランキング・ABC統計・
+    RF/NN/マルコフ/風車盤の予測結果と合算TOP5を
+    AIに渡すためのテキストとして組み立てる"""
     try:
         df = pd.read_csv(csv_path)
         df.columns = [c.replace('（', '(').replace('）', ')') for c in df.columns]
@@ -121,6 +284,11 @@ def build_ai_export_text(csv_path):
                 s += 1
         text += "\n=== 直近24回 タイプ別 ===\n"
         text += f"シングル: {s}回 / ダブル: {d}回 / トリプル: {t}回\n"
+
+        # ★ ランダムフォレスト・ニューラルネット・マルコフ連鎖・風車盤の予測結果と合算TOP5を追加
+        text += "\n" + "=" * 50 + "\n"
+        text += build_prediction_section_text(df.copy())
+        text += "=" * 50 + "\n"
 
         text += "\n（出典: https://naobillionaire.synergy.cfbx.jp/ ）\n"
         return text
@@ -223,9 +391,9 @@ def run_ai_prediction_logic(df_data):
         return pd.DataFrame(valid_rows, columns=required_cols)
 
     dfs = {
-        "全データ": (df_data, 0.1),
-        "直近100回": (df_data.tail(min(100, len(df_data))), 0.3),
-        "直近24回": (df_data.tail(min(24, len(df_data))), 0.6)
+        "全データ":   (df_data,                              0.1),
+        "直近100回": (df_data.head(min(100, len(df_data))),   0.3),
+        "直近24回":  (df_data.head(min(24,  len(df_data))),   0.6)
     }
 
     wheels = [
@@ -258,7 +426,9 @@ def run_ai_prediction_logic(df_data):
                 rf = RandomForestClassifier(n_estimators=50, random_state=42)
                 rf.fit(X, ys[i])
                 probs = rf.predict_proba(latest_input)[0]
-                top3 = sorted(range(len(probs)), key=lambda x: probs[x], reverse=True)[:3]
+                classes = rf.classes_
+                pairs = sorted(zip(classes, probs), key=lambda x: x[1], reverse=True)[:3]
+                top3 = [int(c) for c, _ in pairs]
                 for rank, n in enumerate(top3):
                     final_scores[i][n] += (3 - rank) * weight
         except Exception:
@@ -269,7 +439,9 @@ def run_ai_prediction_logic(df_data):
                 nn = MLPClassifier(max_iter=300, random_state=42)
                 nn.fit(X, ys[i])
                 probs = nn.predict_proba(latest_input)[0]
-                top3 = sorted(range(len(probs)), key=lambda x: probs[x], reverse=True)[:3]
+                classes = nn.classes_
+                pairs = sorted(zip(classes, probs), key=lambda x: x[1], reverse=True)[:3]
+                top3 = [int(c) for c, _ in pairs]
                 for rank, n in enumerate(top3):
                     final_scores[i][n] += (3 - rank) * weight
         except Exception:
@@ -298,7 +470,7 @@ def run_ai_prediction_logic(df_data):
             for rank, n in enumerate(top3):
                 final_scores[i][n] += (3 - rank) * weight * WH_WEIGHT
 
-    df_recent_local = df_data.tail(min(24, len(df_data)))
+    df_recent_local = df_data.head(min(24, len(df_data)))
     for i, col in enumerate(required_cols):
         freq_list = df_recent_local[col].value_counts().index.tolist()
         for rank, num in enumerate(freq_list[:5]):
@@ -615,9 +787,9 @@ if df_main is not None:
             df[required_cols] = df[required_cols].astype(int)
 
             dfs = {
-                "全データ": (df, 0.1),
-                "直近100回": (df.tail(100), 0.3),
-                "直近24回": (df.tail(24), 0.6)
+                "全データ":   (df,                        0.1),
+                "直近100回": (df.head(min(100, len(df))),  0.3),
+                "直近24回":  (df.head(min(24,  len(df))),  0.6)
             }
             wheels = [
                 [0, 3, 6, 9, 2, 5, 8, 1, 4, 7],
@@ -643,7 +815,9 @@ if df_main is not None:
 
                 def get_top3(model):
                     probs = model.predict_proba(latest_input)[0]
-                    return sorted(range(len(probs)), key=lambda i: probs[i], reverse=True)[:3]
+                    classes = model.classes_
+                    pairs = sorted(zip(classes, probs), key=lambda x: x[1], reverse=True)[:3]
+                    return [int(c) for c, _ in pairs]
 
                 rf_top3 = [get_top3(m) for m in rf_models]
                 nn_top3 = [get_top3(m) for m in nn_models]
@@ -711,7 +885,7 @@ if df_main is not None:
                     for rank, n in enumerate(model_set["WH"][i]):
                         final_scores[i][n] += (3 - rank) * weight * WH_WEIGHT
 
-            df_recent24 = df.tail(24)
+            df_recent24 = df.head(24)
             for i, col in enumerate(required_cols):
                 freq_list = df_recent24[col].value_counts().index.tolist()
                 for rank, num in enumerate(freq_list[:5]):
@@ -778,6 +952,12 @@ if df_main is not None:
                         simple_text += f"{rank}位: {num_str} (合計:{total}, {pattern})\n"
                         rank += 1
                     simple_text += f"\n各桁TOP5詳細:\n{df_final.to_string()}"
+
+                    # ★ 予想モデルセクション（RF/NN/MC/WH＋合算TOP5）を追加
+                    simple_text += "\n\n" + "=" * 50 + "\n"
+                    simple_text += build_prediction_section_text(df.copy())
+                    simple_text += "=" * 50 + "\n"
+
                     st.code(simple_text, language='text')
                 except Exception as e:
                     st.error(f"簡単コピー生成エラー: {e}")
@@ -920,6 +1100,11 @@ if df_main is not None:
 ダブル: {d_count}回 ({d_count/24*100:.1f}%)
 トリプル: {t_count}回 ({t_count/24*100:.1f}%)
 """
+                    # ★ 予想モデルセクション（RF/NN/MC/WH＋合算TOP5）を追加
+                    detailed_text += "\n" + "=" * 50 + "\n"
+                    detailed_text += build_prediction_section_text(df.copy())
+                    detailed_text += "=" * 50 + "\n"
+
                     st.code(detailed_text, language='text')
                 except Exception as e:
                     st.error(f"詳細分析生成エラー: {e}")
