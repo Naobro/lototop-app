@@ -5,6 +5,8 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 import streamlit as st
 import streamlit.components.v1 as components
 import ssl
+import json
+import re
 import pandas as pd
 import random
 import numpy as np
@@ -14,7 +16,9 @@ from sklearn.neural_network import MLPClassifier
 
 st.set_page_config(layout="centered")
 
-# ✅ 修正されたコピーボタン（CSS・Script完全除外）
+# ============================================================
+# 📋 予想ページ全体をコピー（既存機能：そのまま維持）
+# ============================================================
 copy_button_html = """
 <div style="margin-bottom:20px;">
   <button onclick="copyAllText()" style="
@@ -42,7 +46,6 @@ function copyAllText() {
     let text = "";
     if (mainEl) {
         const clone = mainEl.cloneNode(true);
-        // ★重要修正：style, scriptタグも除去対象に追加
         clone.querySelectorAll(
             'style, script, section[data-testid="stSidebar"], header, [data-testid="stToolbar"], [data-testid="stHeader"], iframe, button'
         ).forEach(el => el.remove());
@@ -72,6 +75,9 @@ components.html(copy_button_html, height=80)
 
 ssl._create_default_https_context = ssl._create_unverified_context
 
+# ============================================================
+# 共通スタイル
+# ============================================================
 st.markdown("""
 <style>
 table {
@@ -100,11 +106,19 @@ thead {
 def style_table(df):
     return df.to_html(index=False, escape=False)
 
+# ============================================================
+# データ読み込み（キャッシュ化・型変換を明示化）
+# ============================================================
 @st.cache_data
 def load_data():
     df = pd.read_csv("https://raw.githubusercontent.com/Naobro/lototop-app/main/data/loto7_50.csv")
     df["抽せん日"] = pd.to_datetime(df["抽せん日"], errors="coerce")
-    df = df.sort_values(by="抽せん日").reset_index(drop=True)
+    df = df.sort_values(by="抽せん日").reset_index(drop=True)  # 昇順：末尾が最新
+    for i in range(1, 8):
+        df[f"第{i}数字"] = pd.to_numeric(df[f"第{i}数字"], errors="coerce")
+    df["BONUS数字1"] = pd.to_numeric(df["BONUS数字1"], errors="coerce")
+    df["BONUS数字2"] = pd.to_numeric(df["BONUS数字2"], errors="coerce")
+    df = df.dropna(subset=[f"第{i}数字" for i in range(1, 8)])
     return df
 
 df = load_data()
@@ -178,10 +192,10 @@ for i in range(len(df_recent)):
             abc.append('A'); abc_counts['A'] += 1
         else:
             abc.append('C'); abc_counts['C'] += 1
-    
+
     cont = any(b - a == 1 for a, b in zip(sorted_nums, sorted_nums[1:]))
     if cont: cont_total += 1
-    
+
     if i == 0: pulls_str = "-"
     else:
         pulls = len(set(nums) & set(nums_list[i - 1]))
@@ -196,19 +210,19 @@ for i in range(len(df_recent)):
         'ひっぱり': pulls_str, '連続': "あり" if cont else "なし"
     })
 
-abc_df = pd.DataFrame(abc_rows).sort_values(by="抽せん日", ascending=False)
+abc_df = pd.DataFrame(abc_rows).sort_values(by="抽せん日", ascending=False).reset_index(drop=True)
 st.markdown(abc_df.to_html(index=False), unsafe_allow_html=True)
 
 total_abc = sum(abc_counts.values())
+a_perc = round(abc_counts['A'] / total_abc * 100, 1) if total_abc > 0 else 0
+b_perc = round(abc_counts['B'] / total_abc * 100, 1) if total_abc > 0 else 0
+c_perc = round(abc_counts['C'] / total_abc * 100, 1) if total_abc > 0 else 0
+pull_rate = round(pull_total / (len(df_recent) - 1) * 100, 1) if len(df_recent) > 1 else 0
+cont_rate = round(cont_total / len(df_recent) * 100, 1) if len(df_recent) > 0 else 0
+
 summary_df = pd.DataFrame({
     "分析項目": ["A数字割合", "B数字割合", "C数字割合", "ひっぱり率", "連続数字率"],
-    "値": [
-        f"{round(abc_counts['A']/total_abc*100, 1)}%", 
-        f"{round(abc_counts['B']/total_abc*100, 1)}%", 
-        f"{round(abc_counts['C']/total_abc*100, 1)}%", 
-        f"{round(pull_total/(len(df_recent)-1)*100, 1)}%", 
-        f"{round(cont_total/len(df_recent)*100, 1)}%"
-    ]
+    "値": [f"{a_perc}%", f"{b_perc}%", f"{c_perc}%", f"{pull_rate}%", f"{cont_rate}%"]
 })
 st.subheader("出現傾向サマリー")
 st.table(summary_df)
@@ -222,70 +236,82 @@ pattern_counts = patterns.value_counts().reset_index()
 pattern_counts.columns = ['パターン', '出現回数']
 st.markdown(style_table(pattern_counts), unsafe_allow_html=True)
 
-# 🎯 AI予測
+# 🎯 AI予測（predict_probaのclasses_誤参照バグを修正）
 st.header("🎯 AIによる次回出現数字候補（22個に絞り込み）")
 
-df_ai = df.copy().dropna(subset=[f"第{i}数字" for i in range(1, 8)])
-df_ai = df_ai.tail(min(len(df_ai), 100)).reset_index(drop=True)
-X, y = [], []
-for i in range(len(df_ai) - 1):
-    prev_nums = [df_ai.loc[i + 1, f"第{j}数字"] for j in range(1, 8)]
-    next_nums = [df_ai.loc[i, f"第{j}数字"] for j in range(1, 8)]
-    for target in next_nums:
-        X.append(prev_nums)
-        y.append(target)
+rf_top, mlp_top, markov_top, top22 = [], [], [], []
+group_df = pd.DataFrame()
 
-rf = RandomForestClassifier(n_estimators=100, random_state=42)
-rf.fit(X, y)
-rf_probs = rf.predict_proba([X[-1]])[0]
-rf_top = list(np.argsort(rf_probs)[::-1][:15] + 1)
+try:
+    df_ai = df.copy().dropna(subset=[f"第{i}数字" for i in range(1, 8)])
+    df_ai = df_ai.tail(min(len(df_ai), 100)).reset_index(drop=True)
 
-mlp = MLPClassifier(hidden_layer_sizes=(100,), max_iter=500, random_state=42)
-mlp.fit(X, y)
-mlp_probs = mlp.predict_proba([X[-1]])[0]
-mlp_top = list(np.argsort(mlp_probs)[::-1][:15] + 1)
+    X, y = [], []
+    for i in range(len(df_ai) - 1):
+        prev_nums = [df_ai.loc[i + 1, f"第{j}数字"] for j in range(1, 8)]
+        next_nums = [df_ai.loc[i, f"第{j}数字"] for j in range(1, 8)]
+        for target in next_nums:
+            X.append(prev_nums)
+            y.append(target)
 
-transition = defaultdict(lambda: defaultdict(int))
-for i in range(len(df_ai) - 1):
-    curr = [df_ai.loc[i + 1, f"第{j}数字"] for j in range(1, 8)]
-    next_ = [df_ai.loc[i, f"第{j}数字"] for j in range(1, 8)]
-    for c in curr:
-        for n in next_:
-            transition[c][n] += 1
+    def top_n_from_model(model, n=15):
+        """model.classes_を参照して数字と確率を正確に対応付ける"""
+        probs = model.predict_proba([X[-1]])[0]
+        pairs = sorted(zip(model.classes_, probs), key=lambda x: x[1], reverse=True)[:n]
+        return [int(c) for c, _ in pairs]
 
-last_draw = [df_ai.loc[len(df_ai)-1, f"第{j}数字"] for j in range(1, 8)]
-markov_scores = defaultdict(int)
-for c in last_draw:
-    for n, cnt in transition[c].items():
-        markov_scores[n] += cnt
-markov_top = sorted(markov_scores, key=markov_scores.get, reverse=True)[:15]
+    rf = RandomForestClassifier(n_estimators=100, random_state=42)
+    rf.fit(X, y)
+    rf_top = top_n_from_model(rf, 15)
 
-all_candidates = rf_top + mlp_top + markov_top
-counter = Counter(all_candidates)
-top22 = sorted(set([num for num, _ in counter.most_common(22)]))[:22]
-top22 = list(map(int, top22))
+    mlp = MLPClassifier(hidden_layer_sizes=(100,), max_iter=500, random_state=42)
+    mlp.fit(X, y)
+    mlp_top = top_n_from_model(mlp, 15)
 
-st.success(f"🧠 次回出現候補（AI予測・22個）: {top22}")
+    transition = defaultdict(lambda: defaultdict(int))
+    for i in range(len(df_ai) - 1):
+        curr = [df_ai.loc[i + 1, f"第{j}数字"] for j in range(1, 8)]
+        next_ = [df_ai.loc[i, f"第{j}数字"] for j in range(1, 8)]
+        for c in curr:
+            for n in next_:
+                transition[c][n] += 1
 
-with st.expander("📊 モデル別候補を表示"):
-    st.write("🔹 ランダムフォレスト:", ", ".join(map(str, sorted(map(int, rf_top)))))
-    st.write("🔹 ニューラルネット:", ", ".join(map(str, sorted(map(int, mlp_top)))))
-    st.write("🔹 マルコフ連鎖:", ", ".join(map(str, sorted(map(int, markov_top)))))
+    last_draw = [int(df_ai.loc[len(df_ai)-1, f"第{j}数字"]) for j in range(1, 8)]
+    markov_scores = defaultdict(int)
+    for c in last_draw:
+        for n, cnt in transition[c].items():
+            markov_scores[n] += cnt
+    markov_top = [int(n) for n in sorted(markov_scores, key=markov_scores.get, reverse=True)[:15]]
 
-grouped = {"1の位": [], "10の位": [], "20の位": [], "30の位": []}
-for n in top22:
-    if 1 <= n <= 9: grouped["1の位"].append(n)
-    elif 10 <= n <= 19: grouped["10の位"].append(n)
-    elif 20 <= n <= 29: grouped["20の位"].append(n)
-    elif 30 <= n <= 37: grouped["30の位"].append(n)
+    all_candidates = rf_top + mlp_top + markov_top
+    counter = Counter(all_candidates)
+    top22 = sorted(set([int(num) for num, _ in counter.most_common(22)]))[:22]
 
-max_len = max(len(v) for v in grouped.values())
-group_df = pd.DataFrame({
-    k: grouped[k] + [None] * (max_len - len(grouped[k])) for k in grouped
-}).apply(lambda col: col.map(lambda x: str(int(x)) if pd.notnull(x) else ""))
+    grouped = {"1の位": [], "10の位": [], "20の位": [], "30の位": []}
+    for n in top22:
+        if 1 <= n <= 9: grouped["1の位"].append(n)
+        elif 10 <= n <= 19: grouped["10の位"].append(n)
+        elif 20 <= n <= 29: grouped["20の位"].append(n)
+        elif 30 <= n <= 37: grouped["30の位"].append(n)
 
-st.markdown("### 🧮 候補数字の位別分類（1の位・10の位・20の位・30の位）")
-st.markdown(f"<div style='overflow-x: auto;'>{group_df.to_html(index=False, escape=False)}</div>", unsafe_allow_html=True)
+    max_len = max(len(v) for v in grouped.values()) if grouped else 0
+    group_df = pd.DataFrame({
+        k: grouped[k] + [None] * (max_len - len(grouped[k])) for k in grouped
+    }).apply(lambda col: col.map(lambda x: str(int(x)) if pd.notnull(x) else ""))
+
+    st.success(f"🧠 次回出現候補（AI予測・22個）: {top22}")
+
+    with st.expander("📊 モデル別候補を表示"):
+        st.write("🔹 ランダムフォレスト:", ", ".join(map(str, sorted(rf_top))))
+        st.write("🔹 ニューラルネット:", ", ".join(map(str, sorted(mlp_top))))
+        st.write("🔹 マルコフ連鎖:", ", ".join(map(str, sorted(markov_top))))
+
+    st.markdown("### 🧮 候補数字の位別分類（1の位・10の位・20の位・30の位）")
+    st.markdown(f"<div style='overflow-x: auto;'>{group_df.to_html(index=False, escape=False)}</div>", unsafe_allow_html=True)
+
+except Exception as e:
+    st.warning(f"AI予測の計算中にエラーが発生しました（データ不足の可能性があります）: {e}")
+    last_draw = [int(latest[f"第{i}数字"]) for i in range(1, 8)]
 
 # A数字・B数字の位別分類
 st.header("A数字・B数字の位別分類")
@@ -297,6 +323,7 @@ def highlight_number(n):
 def classify_numbers_loto7(numbers):
     bins = {'1の位': [], '10の位': [], '20の位': [], '30の位': []}
     for n in numbers:
+        n = int(n)
         if 1 <= n <= 9: bins['1の位'].append(n)
         elif 10 <= n <= 19: bins['10の位'].append(n)
         elif 20 <= n <= 29: bins['20の位'].append(n)
@@ -323,13 +350,13 @@ for i in range(1, 8):
     number_groups['20'].extend(col[col.between(20, 29)].values)
     number_groups['30'].extend(col[col.between(30, 37)].values)
 
-top5_df = pd.DataFrame({
+position_top5_df = pd.DataFrame({
     '1の位': pd.Series(number_groups['1']).value_counts().head(5).index.tolist(),
     '10の位': pd.Series(number_groups['10']).value_counts().head(5).index.tolist(),
     '20の位': pd.Series(number_groups['20']).value_counts().head(5).index.tolist(),
     '30の位': pd.Series(number_groups['30']).value_counts().head(5).index.tolist()
 })
-st.markdown(style_table(top5_df), unsafe_allow_html=True)
+st.markdown(style_table(position_top5_df), unsafe_allow_html=True)
 
 st.header("各数字の出現回数TOP5")
 results = {'順位': ['1位', '2位', '3位', '4位', '5位']}
@@ -339,7 +366,9 @@ for i in range(1, 8):
     results[col] = [f"{num} ({cnt}回)" for num, cnt in counts_top5.items()]
     while len(results[col]) < 5: results[col].append("")
 
-st.markdown(style_table(pd.DataFrame(results)), unsafe_allow_html=True)
+# ★ 修正：元のコードでは変数化されず使い捨てられていたため、digits_top5_dfとして保存
+digits_top5_df = pd.DataFrame(results)
+st.markdown(style_table(digits_top5_df), unsafe_allow_html=True)
 
 # 出現回数ランキング & 連続数字ペア
 st.header("直近24回 出現回数ランキング")
@@ -364,7 +393,7 @@ consecutive_pairs = []
 for row in df.tail(24)[[f"第{i}数字" for i in range(1, 8)]].values.tolist():
     sorted_row = sorted(row)
     for a, b in zip(sorted_row, sorted_row[1:]):
-        if b - a == 1: consecutive_pairs.append(f"{a}-{b}")
+        if b - a == 1: consecutive_pairs.append(f"{int(a)}-{int(b)}")
 
 consec_df = pd.DataFrame(Counter(consecutive_pairs).items(), columns=["連続ペア", "出現回数"]).sort_values(by="出現回数", ascending=False).reset_index(drop=True)
 st.markdown(style_table(consec_df), unsafe_allow_html=True)
@@ -391,13 +420,13 @@ else:
     predictions = []
     top_patterns = pattern_counts.head(3)['パターン'].tolist()
     last_numbers = [df.iloc[-2][f"第{i}数字"] for i in range(1, 8)]
-    
+
     for pattern, count in zip(top_patterns, [3, 2, 2]):
         groups = pattern.split('-')
         for _ in range(count):
             selected, used = [], set()
             for g in groups:
-                num = choose_number(RANGES[g], used)
+                num = choose_number(RANGES.get(g, list(range(1, 38))), used)
                 selected.append(num); used.add(num)
             if random.random() < 0.3:
                 pulled = random.choice(last_numbers)
@@ -423,7 +452,7 @@ remove_numbers = st.multiselect("削除数字を選んでください (最大20�
 if st.button("予想を生成"):
     available_numbers = set(range(1, 38)) - set(remove_numbers)
     ranges = [list(range(1, 14)), list(range(2, 18)), list(range(5, 23)), list(range(8, 28)), list(range(14, 34)), list(range(20, 37)), list(range(26, 38))]
-    
+
     predictions = []
     for _ in range(20):
         selected = list(axis_numbers)
@@ -476,11 +505,11 @@ if st.button("🎯 セレクト予想を出す（ロト7）"):
         if group_nums:
             chosen = random.choice(group_nums)
             prediction.append(chosen); used.add(chosen)
-    
+
     if len(prediction) == 7: st.success(f"🎉 セレクト予想: {sorted(prediction)}")
     else: st.error("条件に合致する数字が不足しています。候補を増やしてください。")
 
-# ★ 復元：各数字の出現回数・出現率一覧
+# 各数字の出現回数・出現率一覧
 st.header("各数字の出現回数・出現率一覧")
 
 def build_frequency_table(source_df, label_count, label_rate):
@@ -540,7 +569,7 @@ styled_html = (
 )
 st.markdown(f"<div style='overflow-x:auto;'>{styled_html}</div>", unsafe_allow_html=True)
 
-# ★ 復元：各数字の出現間隔分析一覧
+# 各数字の出現間隔分析一覧
 st.header("各数字の出現間隔分析一覧")
 
 def get_hit_positions(source_df, number):
@@ -602,3 +631,137 @@ for num in range(1, 38):
 
 interval_analysis_df = pd.DataFrame(interval_rows)
 st.markdown(f"<div style='overflow-x:auto;'>{interval_analysis_df.to_html(index=False, escape=False)}</div>", unsafe_allow_html=True)
+
+
+# ============================================================
+# 🤖 AI予想用コピーボタン（ロト6と同型・全データをMarkdown形式でコピー）
+# ============================================================
+
+def df_to_md(df_in: pd.DataFrame) -> str:
+    """DataFrameをAIが読みやすいMarkdown表形式に変換する（HTMLタグは除去）"""
+    def strip_html(val):
+        return re.sub(r'<[^>]+>', '', str(val))
+
+    cols = df_in.columns.tolist()
+    header = "| " + " | ".join(str(c) for c in cols) + " |"
+    sep    = "| " + " | ".join(["---"] * len(cols)) + " |"
+    rows   = "\n".join(
+        "| " + " | ".join(strip_html(v) for v in row.tolist()) + " |"
+        for _, row in df_in.iterrows()
+    )
+    return "\n".join([header, sep, rows])
+
+def build_ai_copy_text():
+    latest_numbers_local = [int(latest[f"第{i}数字"]) for i in range(1, 8)]
+
+    def mark_if_latest(n):
+        return f"{n}*" if n in latest_numbers_local else str(n)
+
+    lines = []
+    lines.append(f"# ロト7 AI予想用データ（第{latest['回号']}回時点）")
+
+    lines.append("\n## 1. 最新抽せん結果")
+    lines.append(f"- 回号: 第{latest['回号']}回")
+    lines.append(f"- 抽せん日: {latest['抽せん日'].strftime('%Y-%m-%d')}")
+    lines.append(f"- 本数字: {', '.join(str(n) for n in latest_numbers_local)}")
+    lines.append(f"- ボーナス数字: {int(latest['BONUS数字1'])}, {int(latest['BONUS数字2'])}")
+    lines.append(f"- 1等: {format_count(latest['1等口数'])} / {format_yen(latest['1等賞金'])}")
+    lines.append(f"- 2等: {format_count(latest['2等口数'])} / {format_yen(latest['2等賞金'])}")
+    lines.append(f"- 3等: {format_count(latest['3等口数'])} / {format_yen(latest['3等賞金'])}")
+    lines.append(f"- 4等: {format_count(latest['4等口数'])} / {format_yen(latest['4等賞金'])}")
+    lines.append(f"- 5等: {format_count(latest['5等口数'])} / {format_yen(latest['5等賞金'])}")
+    lines.append(f"- 6等: {format_count(latest['6等口数'])} / {format_yen(latest['6等賞金'])}")
+    lines.append(f"- キャリーオーバー: {format_yen(latest['キャリーオーバー'])}")
+
+    lines.append("\n## 2. 直近24回の当選番号・ABC構成・ひっぱり・連続")
+    lines.append(df_to_md(abc_df))
+
+    lines.append("\n## 3. 出現傾向サマリー")
+    lines.append(f"- A数字割合: {a_perc}%")
+    lines.append(f"- B数字割合: {b_perc}%")
+    lines.append(f"- C数字割合: {c_perc}%")
+    lines.append(f"- ひっぱり率: {pull_rate}%")
+    lines.append(f"- 連続数字率: {cont_rate}%")
+
+    lines.append("\n## 4. パターン分析（直近24回）")
+    lines.append(df_to_md(pattern_counts))
+
+    lines.append("\n## 5. AIモデルによる次回候補（22個）")
+    lines.append(f"- 候補数字: {sorted(top22) if top22 else '計算不可（データ不足）'}")
+    if not group_df.empty:
+        lines.append(df_to_md(group_df))
+
+    lines.append("\n## 6. A数字・B数字の位別分類（※ * は最新当選数字と一致）")
+    ab_rows = []
+    for k in ["1の位", "10の位", "20の位", "30の位"]:
+        ab_rows.append({
+            "位": k,
+            "A数字": ", ".join(mark_if_latest(n) for n in sorted(A_bins[k])),
+            "B数字": ", ".join(mark_if_latest(n) for n in sorted(B_bins[k])),
+        })
+    lines.append(df_to_md(pd.DataFrame(ab_rows)))
+
+    lines.append("\n## 7. 各位の出現回数TOP5")
+    lines.append(df_to_md(position_top5_df))
+
+    lines.append("\n## 8. 各数字（第1〜第7数字別）の出現回数TOP5")
+    lines.append(df_to_md(digits_top5_df))
+
+    lines.append("\n## 9. 直近24回 出現回数ランキング（全37数字）")
+    lines.append(df_to_md(ranking_df))
+
+    lines.append("\n## 10. 連続数字ペア 出現ランキング")
+    lines.append(df_to_md(consec_df))
+
+    lines.append("\n## 11. 各数字の出現回数・出現率一覧（直近100回／24回）")
+    freq_cols = [
+        "数字",
+        "直近100回出現回数", "直近100回出現率", "100回ランク",
+        "直近24回出現回数", "直近24回出現率", "24回ランク"
+    ]
+    lines.append(df_to_md(freq_summary_df[freq_cols]))
+
+    lines.append("\n## 12. 各数字の出現間隔分析")
+    lines.append(df_to_md(interval_analysis_df))
+
+    lines.append("\n## 13. 基本予想（パターン構成＋出現頻度＋レンジ構成＋引っ張り）")
+    lines.append(df_to_md(pred_df))
+
+    return "\n".join(lines)
+
+ai_copy_text    = build_ai_copy_text()
+escaped_ai_text = json.dumps(ai_copy_text)
+
+ai_copy_button_html = f"""
+<div style="margin:24px 0;">
+  <button onclick="copyAIDataLoto7()" style="
+    background:#1a73e8;
+    color:white;
+    border:none;
+    padding:14px 22px;
+    font-size:16px;
+    font-weight:bold;
+    border-radius:8px;
+    cursor:pointer;
+  ">
+    🤖 AI予想用データをコピー
+  </button>
+  <span id="ai-copy-status-loto7"
+        style="margin-left:12px; color:green; font-weight:bold;">
+  </span>
+</div>
+<script>
+function copyAIDataLoto7() {{
+  const text = {escaped_ai_text};
+  navigator.clipboard.writeText(text).then(function() {{
+    document.getElementById('ai-copy-status-loto7').innerText = '✅ コピーしました';
+    setTimeout(function() {{
+      document.getElementById('ai-copy-status-loto7').innerText = '';
+    }}, 3000);
+  }}).catch(function(err) {{
+    alert('コピーに失敗しました: ' + err);
+  }});
+}}
+</script>
+"""
+components.html(ai_copy_button_html, height=90)
