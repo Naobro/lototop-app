@@ -86,8 +86,11 @@ def extract_numbers3(text):
     return list(match.group(1)) if match else ["0", "0", "0"]
 
 def extract_numbers4(text):
-    match = re.search(r'抽せん数字[：:\s]*([0-9]{4})', text)
-    return list(match.group(1)) if match else ["0", "0", "0", "0"]
+    match = re.search(r'抽せん数字\s*([0-9]{4})', text)
+    if match:
+        return list(match.group(1))
+    return ["0", "0", "0", "0"]
+
 
 def save_record(file_path, record, columns):
     df = pd.DataFrame([record])
