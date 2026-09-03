@@ -67,8 +67,9 @@ def recent(df: pd.DataFrame, n: int = 24) -> pd.DataFrame:
     return df.head(n).reset_index(drop=True)
 
 
-def abc_maps(df_recent: pd.DataFrame, pick_count: int, pool_size: int) -> dict[int, str]:
-    """既存 pages/loto*_top.py と同一閾値（直近24回で3〜4回=A、5回以上=B、それ以外=C）。"""
+def sab_maps(df_recent: pd.DataFrame, pick_count: int, pool_size: int) -> dict[int, str]:
+    """ナンバーズ・ロト6の既存ページと同一閾値・同一表記（S=直近24回で5回以上出現、
+    A=3〜4回、B=それ以外）。サイト全体でSAB表記に統一するため、ロト側もこの名称で揃える。"""
     cols = digit_cols(pick_count)
     all_numbers = df_recent[cols].values.flatten()
     all_numbers = pd.Series([int(x) for x in all_numbers if pd.notna(x)])
@@ -77,12 +78,16 @@ def abc_maps(df_recent: pd.DataFrame, pick_count: int, pool_size: int) -> dict[i
     for n in range(1, pool_size + 1):
         c = int(counts.get(n, 0))
         if c >= 5:
-            result[n] = "B"
+            result[n] = "S"
         elif c >= 3:
             result[n] = "A"
         else:
-            result[n] = "C"
+            result[n] = "B"
     return result
+
+
+# 後方互換のためのエイリアス（過去にabc_mapsという名前で呼んでいた箇所があっても動くように）
+abc_maps = sab_maps
 
 
 def _recency_weighted_freq(df_window: pd.DataFrame, pick_count: int, pool_size: int, decay: float = 0.95) -> dict[int, float]:

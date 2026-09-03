@@ -55,7 +55,7 @@ def build_stats_html(game_key: str) -> tuple[str, str]:
     latest = df.iloc[0]
     latest_round = int(latest["回号"])
 
-    amap = lc.abc_maps(df_recent, pick_count, pool_size)
+    smap = lc.sab_maps(df_recent, pick_count, pool_size)
     scores = lc.tier_scores(df, pool_size, pick_count)
     tiers = lc.classify_tiers(scores, pool_size, spec["selected_count"])
 
@@ -64,7 +64,7 @@ def build_stats_html(game_key: str) -> tuple[str, str]:
     from collections import Counter
     all_nums = df_recent[cols].values.flatten()
     counts = Counter(int(x) for x in all_nums if x == x)
-    ranking_rows = [{"数字": n, "出現回数(直近24回)": counts.get(n, 0), "ABC分類": amap[n]} for n in range(1, pool_size + 1)]
+    ranking_rows = [{"数字": n, "出現回数(直近24回)": counts.get(n, 0), "SAB分類": smap[n]} for n in range(1, pool_size + 1)]
     ranking_df = pd.DataFrame(ranking_rows).sort_values("出現回数(直近24回)", ascending=False).reset_index(drop=True)
 
     gap_df = lc.gap_table(df, pick_count, pool_size).head(15)
@@ -107,8 +107,8 @@ def build_stats_html(game_key: str) -> tuple[str, str]:
   固定せず、スコアの分かれ目で自動的に決まります。</p>
   {tier_pool_html(tiers)}
 
-  <h2>③ 各数字の出現ランキング（直近24回・ABC分類付き）</h2>
-  <p class="note">ABC分類：A=直近24回で3〜4回出現 / B=5回以上出現 / C=それ以外（ロトのページと同じ定義）</p>
+  <h2>③ 各数字の出現ランキング（直近24回・SAB分類付き）</h2>
+  <p class="note">SAB分類はナンバーズのページと同じ定義：S=直近24回で5回以上出現 / A=3〜4回 / B=2回以下</p>
   {df_to_html_table(ranking_df)}
 
   <h2>④ 出現間隔（最終出現からの回数・上位15）</h2>

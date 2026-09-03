@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NAOKIの宝くじ予想 | データ集計×AIで宝くじを楽しむ</title>
+    <meta name="description" content="2021年から毎日宝くじを買い続けるNAOKIの記録。ロト・ナンバーズの出現データ集計とAIによる数字選びを公開する、宝くじを楽しむための予想サイト。">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&family=Shippori+Mincho:wght@700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background:
+                radial-gradient(circle at 20% 10%, rgba(212,175,55,0.12) 0%, transparent 40%),
+                radial-gradient(circle at 80% 90%, rgba(128,0,64,0.18) 0%, transparent 45%),
+                linear-gradient(160deg, #1a0e05 0%, #2b1606 35%, #1c0a18 70%, #0d0702 100%);
+            background-attachment: fixed;
+            color: #f5ead0;
+            line-height: 1.8;
+        }
+        a { text-decoration: none; transition: all 0.3s ease; }
+        .container { max-width: 900px; margin: 0 auto; padding: 0 20px; }
+        .gold-text {
+            background: linear-gradient(90deg, #fff3c4, #f2c14e, #d4af37, #b8860b, #f2c14e);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .header-image-container {
+            width: 100%;
+            background: linear-gradient(135deg, #2b1606, #4a2a08);
+            text-align: center;
+            box-shadow: 0 4px 30px rgba(0,0,0,0.6);
+            border-bottom: 3px solid #d4af37;
+        }
+        .header-image { max-width: 100%; height: auto; display: block; margin: 0 auto; }
+        .site-title { text-align: center; padding: 45px 20px 35px; }
+        .site-title h1 {
+            font-family: 'Shippori Mincho', serif;
+            font-size: 2.4rem;
+            letter-spacing: 2px;
+            text-shadow: 0 2px 10px rgba(212,175,55,0.4);
+        }
+        .site-title p { color: #cbb988; font-size: 1rem; margin-top: 10px; }
+        section { margin-bottom: 60px; }
+        h2 {
+            font-family: 'Shippori Mincho', serif;
+            font-size: 1.9rem;
+            border-bottom: 3px solid transparent;
+            border-image: linear-gradient(90deg, #d4af37, #8b0000) 1;
+            padding-bottom: 12px;
+            margin: 50px 0 25px 0;
+        }
+        h2 .gold-text { font-weight: 800; }
+        h3 { font-size: 1.3rem; margin-bottom: 15px; color: #fff3c4; }
+        p { margin-bottom: 15px; font-size: 1.05rem; }
+        .highlight { color: #f2c14e; font-weight: bold; }
+        .bold-big { font-size: 1.2rem; font-weight: bold; }
+        .profile-box {
+            background: linear-gradient(135deg, rgba(60,30,10,0.6), rgba(30,12,24,0.6));
+            padding: 35px; border-radius: 20px;
+            border: 1px solid rgba(212,175,55,0.5);
+            backdrop-filter: blur(8px);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5), inset 0 0 30px rgba(212,175,55,0.05);
+        }
+        .achievement-list { list-style: none; }
+        .achievement-item {
+            background: linear-gradient(135deg, #2b1606, #3d1d2e);
+            padding: 20px; margin-bottom: 15px;
+            border-left: 6px solid #d4af37; border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            transition: transform 0.3s ease;
+        }
+        .achievement-item:hover { transform: translateX(5px); }
+        .date { font-size: 1rem; color: #cbb988; margin-bottom: 5px; }
+        .amount {
+            font-size: 1.4rem; color: #f2c14e; font-weight: bold; float: right;
+            text-shadow: 0 2px 6px rgba(0,0,0,0.5);
+        }
+        .philosophy-box {
+            text-align: center;
+            background:
+                radial-gradient(circle at 50% 0%, rgba(212,175,55,0.15), transparent 60%),
+                linear-gradient(135deg, rgba(60,30,10,0.5), rgba(45,10,24,0.5));
+            padding: 45px; border-radius: 20px;
+            border: 2px solid rgba(212,175,55,0.5);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+            margin: 40px 0;
+        }
+        .philosophy-highlight {
+            font-family: 'Shippori Mincho', serif;
+            font-size: 1.6rem; font-weight: 800; margin: 25px 0;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+        }
+        .note-section {
+            background:
+                radial-gradient(circle at 50% 0%, rgba(212,175,55,0.18), transparent 65%),
+                linear-gradient(135deg, #2b1606, #3d1d2e);
+            border: 2px solid #d4af37;
+            border-radius: 25px;
+            padding: 45px 35px;
+            text-align: center;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.5), inset 0 0 40px rgba(212,175,55,0.08);
+        }
+        .note-section h2 { border: none; margin-top: 0; }
+        .compare-table { width: 100%; border-collapse: collapse; margin: 25px 0; }
+        .compare-table th, .compare-table td {
+            border: 1px solid rgba(212,175,55,0.3);
+            padding: 14px 12px; text-align: center; font-size: 0.98rem;
+        }
+        .compare-table th {
+            background: linear-gradient(135deg, #4a2a08, #3d1d2e);
+            color: #f2c14e; font-weight: bold;
+        }
+        .compare-table td { background: rgba(43,22,6,0.6); }
+        .compare-table .col-note { background: rgba(212,175,55,0.12); color: #fff3c4; font-weight: bold; }
+        .price-tag {
+            font-family: 'Shippori Mincho', serif;
+            font-size: 1.5rem; margin: 20px 0 5px;
+        }
+        .price-note { color: #cbb988; font-size: 0.9rem; margin-bottom: 25px; }
+        .note-btn {
+            display: inline-block;
+            background: linear-gradient(135deg, #f2c14e, #d4af37, #b8860b);
+            color: #2b1606; font-size: 1.25rem; font-weight: bold;
+            padding: 18px 45px; border-radius: 50px;
+            box-shadow: 0 8px 25px rgba(212,175,55,0.5);
+        }
+        .note-btn:hover {
+            background: linear-gradient(135deg, #d4af37, #b8860b, #8b6914);
+            transform: translateY(-3px);
+        }
+        .note-btn-mini {
+            display: inline-block;
+            background: linear-gradient(135deg, #f2c14e, #d4af37);
+            color: #2b1606; font-weight: bold;
+            padding: 12px 30px; border-radius: 50px; margin-top: 10px;
+            box-shadow: 0 4px 15px rgba(212,175,55,0.4);
+        }
+        .note-btn-mini:hover { transform: translateY(-2px); }
+        .app-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px; margin-top: 30px;
+        }
+        .app-card {
+            background: linear-gradient(160deg, #2b1606, #1c0a18);
+            padding: 25px; border-radius: 20px; text-align: center;
+            border: 1px solid rgba(212,175,55,0.35);
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+        }
+        .app-card:hover {
+            transform: translateY(-8px); border-color: #f2c14e;
+            box-shadow: 0 12px 30px rgba(212,175,55,0.35);
+        }
+        .app-icon { font-size: 3rem; margin-bottom: 15px; display: block; }
+        .app-name {
+            font-size: 1.3rem; font-weight: bold; color: #fff3c4;
+            display: block; margin-bottom: 15px;
+        }
+        .app-btn {
+            display: block;
+            background: linear-gradient(135deg, #f2c14e, #d4af37, #b8860b);
+            color: #2b1606; padding: 12px 20px; border-radius: 50px;
+            font-weight: bold; margin-top: 15px;
+            box-shadow: 0 4px 15px rgba(212,175,55,0.5);
+        }
+        .app-btn:hover {
+            background: linear-gradient(135deg, #d4af37, #b8860b, #8b6914);
+            transform: translateY(-2px);
+        }
+        .line-section {
+            background: linear-gradient(135deg, #06c755, #05963f);
+            color: #fff; padding: 40px; border-radius: 25px; text-align: center;
+            box-shadow: 0 15px 35px rgba(6, 199, 85, 0.4);
+            border: 2px solid rgba(212,175,55,0.4);
+            margin: 50px 0;
+        }
+        .line-btn {
+            display: inline-block; background: #fff; color: #06c755;
+            font-size: 1.3rem; font-weight: bold; padding: 18px 40px;
+            border-radius: 50px; margin-top: 15px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+            transition: all 0.3s ease;
+        }
+        .line-btn:hover { transform: translateY(-3px); }
+        table.prob {
+            width: 100%; border-collapse: collapse; margin-top: 25px;
+            font-size: 1rem; box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            border-radius: 12px; overflow: hidden;
+        }
+        table.prob th, table.prob td {
+            border: 1px solid rgba(212,175,55,0.25); padding: 15px; text-align: center;
+        }
+        table.prob th {
+            background: linear-gradient(135deg, #4a2a08, #3d1d2e);
+            color: #f2c14e; font-weight: bold;
+        }
+        table.prob td { background: rgba(43,22,6,0.6); }
+        .sns-links {
+            display: flex; justify-content: center; gap: 25px;
+            margin-top: 30px; flex-wrap: wrap;
+        }
+        .sns-btn {
+            background: linear-gradient(135deg, #3d1d2e, #4a2a08);
+            padding: 18px 28px; border-radius: 15px; color: #f5ead0;
+            text-align: center; border: 1px solid rgba(212,175,55,0.35);
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4); line-height: 1.5;
+        }
+        .sns-btn small { color: #cbb988; font-size: 0.8rem; }
+        .sns-btn:hover {
+            background: linear-gradient(135deg, #f2c14e, #d4af37);
+            color: #2b1606; transform: translateY(-3px);
+        }
+        .sns-btn:hover small { color: #4a2a08; }
+        footer {
+            text-align: center; padding: 50px 20px; font-size: 0.9rem;
+            color: #9c8a63; border-top: 2px solid rgba(212,175,55,0.3); margin-top: 80px;
+        }
+        .disclaimer {
+            background: rgba(43,22,6,0.6); padding: 25px; border-radius: 15px;
+            margin-top: 30px; text-align: left; border: 1px solid rgba(212,175,55,0.25);
+        }
+        @media (max-width: 768px) {
+            .amount { float: none; display: block; margin-top: 8px; }
+            .header-image { width: 100%; }
+            .site-title h1 { font-size: 1.8rem; }
+            .sns-links { flex-direction: column; align-items: center; }
+            .container { padding: 0 15px; }
+            .compare-table th, .compare-table td { font-size: 0.82rem; padding: 10px 6px; }
+        }
+    </style>
+</head>
+<body>
+    <!-- ヘッダー画像 -->
+    <div class="header-image-container">
+        <img src="header.png" alt="NAOKIの宝くじ予想 - ロト・ナンバーズのデータ集計" class="header-image">
+    </div>
+    <!-- サイトタイトル -->
+    <div class="site-title">
+        <h1 class="gold-text">NAOKIの宝くじ予想</h1>
+        <p>データを集計して、宝くじを楽しむ</p>
+    </div>
+    <div class="container">
+        <!-- 開設の想い -->
+        <section>
+            <h2><span class="gold-text">🎯 当サイトの目的（開設の想い）</span></h2>
+            <div class="profile-box">
+                <p>このサイトは、<span class="highlight bold-big">2021年から毎日宝くじを買い続けてきた男「NAOKI」</span>の記録としてつくりました。</p>
+                <p>これまでに <strong>ロト7で3等、ナンバーズ4でストレート的中</strong> といった当たりも経験しましたが、これらは確率的な偶然であり、同じ結果を約束するものではありません。</p>
+                <p>このサイトでは、直近24回の出現データ集計、ABC分類、連続数字などの<span class="highlight">「数字を選ぶときの材料」</span>を公開しています。あくまで宝くじをより楽しむための情報であり、当選を予測・保証するものではありません。</p>
+            </div>
+        </section>
+        <!-- スタンス -->
+        <section>
+            <div class="philosophy-box">
+                <h3>🔥 宝くじを「楽しんで」買いたい方へ</h3>
+                <p>ロト・ナンバーズの抽せんは、毎回が独立した抽せんです。過去にどの数字が出たかは、次回の出やすさには影響しません。</p>
+                <div class="philosophy-highlight gold-text">だから「当てる方法」ではなく<br>「楽しみ方」を共有します</div>
+                <p>私はA/B数字の傾向を見ながら自分なりに数字を選んでいます。<br>それは確率を上げるためではなく、<span class="highlight">「選ぶ過程そのものを楽しむ」</span>ためです。</p>
+                <p class="bold-big gold-text" style="margin-top:25px;">買うことが、夢の始まり。<br>でも、無理のない範囲で。</p>
+            </div>
+        </section>
+        <!-- 当選の記録 -->
+        <section>
+            <h2><span class="gold-text">💰 これまでの当選の記録</span></h2>
+            <p style="color:#cbb988; font-size:0.95rem;">※ 以下は過去の当選記録です。宝くじは運によるもので、同様の結果を保証するものではありません。</p>
+            <ul class="achievement-list">
+                <li class="achievement-item">
+                    <div class="date">2022年4月8日 ロト7 3等</div>
+                    <div class="amount">➡️ 801,300円</div>
+                    <div style="clear: both;"></div>
+                </li>
+                <li class="achievement-item">
+                    <div class="date">2024年10月4日 ナンバーズ4 0784 セットストレート</div>
+                    <div class="amount">➡️ 558,000円</div>
+                    <div style="clear: both;"></div>
+                </li>
+                <li class="achievement-item">
+                    <div class="date">2025年4月23日 ナンバーズ4 7059 セットストレート</div>
+                    <div class="amount">➡️ 583,400円</div>
+                    <div style="clear: both;"></div>
+                </li>
+            </ul>
+        </section>
+        <!-- note 商品セクション -->
+        <section class="note-section">
+            <h2><span class="gold-text">📘 NAOKIの予想note</span></h2>
+            <p>無料ページでデータを見たあと、もう一歩踏み込みたい方へ。<br>
+            NAOKIが<span class="highlight">どの数字を選び、どう考えたか</span>を読み物としてまとめています。</p>
+            <table class="compare-table">
+                <thead>
+                    <tr>
+                        <th>内容</th>
+                        <th>無料予想ページ</th>
+                        <th class="col-note">note（有料）</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>直近24回の傾向・出現データ集計</td><td>◯</td><td class="col-note">◯</td></tr>
+                    <tr><td>ABC分類・基本の数字選び</td><td>◯</td><td class="col-note">◯</td></tr>
+                    <tr><td>NAOKIが選んだ注目の買い目</td><td>—</td><td class="col-note">◎</td></tr>
+                    <tr><td>各数字を選んだ／外した考え方・読み物</td><td>—</td><td class="col-note">◎</td></tr>
+                </tbody>
+            </table>
+            <p style="font-size:0.9rem; color:#cbb988;">※ noteで提供するのは「当たる予想」ではなく、データ集計の手間を省いた情報と、NAOKI自身の数字の選び方をまとめた読み物です。</p>
+            <!-- ★要変更★ 価格はご自身の設定に合わせて -->
+            <div class="price-tag gold-text">1記事 500円</div>
+            <p class="price-note">毎回の数字選びを、読み物として note で公開しています。</p>
+            <!-- ★要変更★ noteのURL -->
+            <a href="https://note.com/naobillion" class="note-btn" target="_blank">📘 noteで数字選びを読む →</a>
+        </section>
+        <!-- LINE登録 -->
+        <section class="line-section">
+            <h3>🟢 公式LINEで最新情報をお届け</h3>
+            <p>LINEに登録すると、最新のデータ更新やnote公開のお知らせをお届けします。</p>
+            <!-- ★要変更★ LINE公式アカウントのURL -->
+            <a href="https://lin.ee/K76dVFt" class="line-btn">友だち追加する</a>
+            <p style="margin-top: 20px; font-size: 0.9rem;">QRコードからも登録できます</p>
+        </section>
+        <!-- 無料予想ページ -->
+        <section>
+            <h2><span class="gold-text">🔗 まずは無料ページを見てみる</span></h2>
+            <h3>📄 コンテンツ内容</h3>
+            <p>各宝くじページでは以下の情報をご確認いただけます：</p>
+            <ul style="margin-left: 20px; margin-bottom: 30px;">
+                <li>当選番号・直近24回の当選番号</li>
+                <li>出現傾向・パターンのデータ集計</li>
+                <li>各位の出現回数TOP5・各数字の出現回数TOP5</li>
+                <li>ABC分類・基本の数字選び・セレクト例</li>
+            </ul>
+            <div class="app-grid">
+                <div class="app-card">
+                    <span class="app-icon">🎰</span>
+                    <span class="app-name">ロト7 データ</span>
+                    <p style="font-size: 0.9rem; color: #cbb988; margin: 10px 0;">最高10億円のビッグチャンス</p>
+                    <a href="page/loto7_stats.html" class="app-btn">ロト7 ページ →</a>
+                </div>
+                <div class="app-card">
+                    <span class="app-icon">6️⃣</span>
+                    <span class="app-name">ロト6 データ</span>
+                    <p style="font-size: 0.9rem; color: #cbb988; margin: 10px 0;">キャリーオーバー発生時は特に注目</p>
+                    <a href="page/loto6_stats.html" class="app-btn">ロト6 ページ →</a>
+                </div>
+                <div class="app-card">
+                    <span class="app-icon">🎯</span>
+                    <span class="app-name">ミニロト データ</span>
+                    <p style="font-size: 0.9rem; color: #cbb988; margin: 10px 0;">当選確率が比較的高い種別</p>
+                    <a href="page/miniloto_stats.html" class="app-btn">ミニロト ページ →</a>
+                </div>
+                <div class="app-card">
+                    <span class="app-icon">4️⃣</span>
+                    <span class="app-name">ナンバーズ4 データ</span>
+                    <p style="font-size: 0.9rem; color: #cbb988; margin: 10px 0;">ストレートなら約100万円の配当</p>
+                    <a href="page/numbers4_stats.html" class="app-btn">ナンバーズ4 ページ →</a>
+                </div>
+                <div class="app-card">
+                    <span class="app-icon">3️⃣</span>
+                    <span class="app-name">ナンバーズ3 データ</span>
+                    <p style="font-size: 0.9rem; color: #cbb988; margin: 10px 0;">毎日抽選で頻繁にチャンス</p>
+                    <a href="page/numbers3_stats.html" class="app-btn">ナンバーズ3 ページ →</a>
+                </div>
+            </div>
+            <div style="text-align:center; margin-top:35px;">
+                <p style="color:#cbb988;">データを見て「もっと読みたい」と感じたら…</p>
+                <!-- ★要変更★ noteのURL -->
+                <a href="https://note.com/naobillion" class="note-btn-mini" target="_blank">📘 NAOKIの数字選びnoteへ →</a>
+            </div>
+        </section>
+        <!-- 確率の仕組み（正しい知識） -->
+        <section>
+            <h2><span class="gold-text">📊 知っておきたい「宝くじの確率」</span></h2>
+            <p>数字を選ぶ前に、確率の仕組みを正しく知っておくことは、楽しく無理なく続けるための一番の土台です。</p>
+            <table class="prob">
+                <thead>
+                    <tr>
+                        <th>宝くじ種別</th>
+                        <th>1等当せん確率</th>
+                        <th>各回の抽せん</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>ロト6</td><td>約1/6,096,454</td><td>毎回独立</td></tr>
+                    <tr><td>ロト7</td><td>約1/10,295,472</td><td>毎回独立</td></tr>
+                    <tr><td>ミニロト</td><td>約1/169,911</td><td>毎回独立</td></tr>
+                </tbody>
+            </table>
+            <p style="margin-top:20px; font-size:0.95rem; color:#cbb988;">
+            ※ ロト・ナンバーズの抽せんは毎回独立しており、過去にどの数字が出たかは次回の出やすさに影響しません。出現データの集計は「これまでの記録」であって「次回の予測」ではない、という点だけは正直にお伝えしています。買う口数を増やせば当たる確率は上がりますが、その分支出も増えます。無理のない範囲でお楽しみください。
+            </p>
+        </section>
+        <!-- SNSリンク -->
+        <section>
+            <h2><span class="gold-text">📣 最新情報はこちらから</span></h2>
+            <div class="sns-links">
+                <a href="https://x.com/naobillionaire" class="sns-btn" target="_blank">
+                    🐦 X（旧Twitter）<br><small>ギャンブル全般つぶやいてます</small>
+                </a>
+                <a href="https://note.com/naobillion" class="sns-btn" target="_blank">
+                    📘 note<br><small>数字選び・分析の読み物を公開中</small>
+                </a>
+            </div>
+        </section>
+        <!-- フッター -->
+        <footer>
+            <p style="font-size: 1.1rem; margin-bottom: 20px;">© 2024 NAOKIの宝くじ予想</p>
+            <div class="disclaimer">
+                <strong>📝 ご利用にあたっての注意事項</strong><br>
+                本サイトおよびnoteで提供する情報は、過去のデータ集計とNAOKI個人の数字の選び方をまとめたものであり、当選を予測・保証するものではありません。<br>
+                ロト・ナンバーズの抽せんは毎回独立しており、過去の出現データから当選確率を上げることはできません。<br>
+                宝くじの購入はすべて自己責任で、無理のない範囲でお願いします。<br>
+                情報を利用したことによる損害について、運営者は責任を負いません。<br>
+                ギャンブル依存に関するご相談は、専門の相談窓口をご利用ください。
+            </div>
+        </footer>
+    </div>
+</body>
+</html>
