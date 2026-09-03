@@ -1,1328 +1,213 @@
+import html
+import random
 import sys
 import os
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 import streamlit as st
 
-# authファイルがない場合のエラー回避
 try:
-    from auth import check_password
+    from auth import check_password  # type: ignore
 except ImportError:
     pass
 
 st.set_page_config(layout="centered")
 
-import ssl
 import pandas as pd
-import random
-import html
-import json
-import streamlit.components.v1 as components
-from datetime import datetime, timedelta
-from collections import Counter, defaultdict
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.neural_network import MLPClassifier
-from sklearn.exceptions import NotFittedError
-from PIL import Image, ImageDraw, ImageFont
-import platform
+
+import numbers_common as nc
 
 CSV_PATH = "https://raw.githubusercontent.com/Naobro/lototop-app/main/data/numbers4_24.csv"
+DIGIT_COUNT = 4
 
-def format_number(val):
+
+def format_number(val) -> str:
     try:
         return f"{int(float(val)):,}"
-    except:
+    except Exception:
         return "未定義"
 
 
 # ============================================
-# 予想モデル（RF/NN/マルコフ/風車盤）＋合算スコアTOP5テキスト生成
+# データ読み込み（キャッシュ：毎回GitHubへ再取得しない）
 # ============================================
-
-def build_prediction_section_text(df):
-    """ランダムフォレスト・ニューラルネット・マルコフ連鎖・風車盤の
-    各モデル予測TOP3と合算スコアTOP5をテキスト化して返す"""
-    try:
-        required_cols = ["第1数字", "第2数字", "第3数字", "第4数字"]
-        wheels = [
-            [0, 3, 6, 9, 2, 5, 8, 1, 4, 7],
-            [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
-            [0, 7, 4, 1, 8, 5, 2, 9, 6, 3],
-            [0, 9, 8, 7, 6, 5, 4, 3, 2, 1]
-        ]
-        # df は抽せん日降順（最新が先頭）で渡される前提
-        dfs_map = {
-            "全データ":   (df,                            0.1),
-            "直近100回": (df.head(min(100, len(df))),      0.3),
-            "直近24回":  (df.head(min(24,  len(df))),      0.6),
-        }
-
-        def run_models_for_text(df_sub):
-            X, ys = [], [[] for _ in range(4)]
-            for i in range(len(df_sub) - 1):
-                prev = df_sub.iloc[i + 1]
-                curr = df_sub.iloc[i]
-                X.append([prev[c] for c in required_cols])
-                for j in range(4):
-                    ys[j].append(curr[required_cols[j]])
-            if len(X) == 0:
-                return None
-            latest_input = [[df_sub.iloc[0][c] for c in required_cols]]
-
-            def top3_from_model(model):
-                """model.classes_を参照して数字と確率を正確に対応付ける"""
-                probs = model.predict_proba(latest_input)[0]
-                classes = model.classes_
-                pairs = sorted(zip(classes, probs), key=lambda x: x[1], reverse=True)[:3]
-                return [int(c) for c, _ in pairs]
-
-            rf_top3, nn_top3 = [], []
-            for i in range(4):
-                try:
-                    rf = RandomForestClassifier(n_estimators=50, random_state=42)
-                    rf.fit(X, ys[i])
-                    rf_top3.append(top3_from_model(rf))
-                except Exception:
-                    rf_top3.append([])
-                try:
-                    nn = MLPClassifier(max_iter=300, random_state=42)
-                    nn.fit(X, ys[i])
-                    nn_top3.append(top3_from_model(nn))
-                except Exception:
-                    nn_top3.append([])
-
-            mc_top3 = []
-            for i in range(4):
-                series = df_sub[f"第{i+1}数字"].tolist()
-                trans = defaultdict(Counter)
-                for k in range(len(series) - 1):
-                    trans[series[k]][series[k+1]] += 1
-                if len(series) > 0:
-                    last = series[0]
-                    mc_top3.append([n for n, _ in trans[last].most_common(3)])
-                else:
-                    mc_top3.append([])
-
-            wh_top3 = []
-            for i in range(4):
-                count = Counter()
-                wheel = wheels[i]
-                for val in df_sub[f"第{i+1}数字"]:
-                    if val in wheel:
-                        count[wheel.index(val)] += 1
-                top_pos = [p for p, _ in count.most_common(3)]
-                wh_top3.append([wheel[p] for p in top_pos if p < len(wheel)])
-
-            return {"RF": rf_top3, "NN": nn_top3, "MC": mc_top3, "WH": wh_top3}
-
-        text = "\n=== 次回予想：各モデルTOP3（桁別） ===\n"
-        text += "※ RF=ランダムフォレスト / NN=ニューラルネット / MC=マルコフ連鎖 / WH=風車盤\n\n"
-
-        all_results = {}
-        for label, (data, weight) in dfs_map.items():
-            if len(data) < 5:
-                continue
-            result = run_models_for_text(data)
-            if result is None:
-                continue
-            all_results[label] = (result, weight)
-
-            text += f"【{label}】\n"
-            for model_key, model_name in [
-                ("RF", "ランダムフォレスト"),
-                ("NN", "ニューラルネット"),
-                ("MC", "マルコフ連鎖"),
-                ("WH", "風車盤"),
-            ]:
-                tops = result[model_key]
-                row = " / ".join(
-                    f"第{i+1}:{','.join(map(str, tops[i])) if tops[i] else '-'}"
-                    for i in range(4)
-                )
-                text += f"  {model_name:<10} {row}\n"
-            text += "\n"
-
-        # 合算スコアTOP5（風車盤加重＋直近24回頻出加点・トリプル除外）
-        final_scores = [Counter() for _ in range(4)]
-        WH_WEIGHT = 2.0
-        RANK_SCORES = [2.0, 1.5, 1.0, 0.7, 0.5]
-        for label, (result, weight) in all_results.items():
-            for i in range(4):
-                for rank, n in enumerate(result["RF"][i]):
-                    final_scores[i][n] += (3 - rank) * weight
-                for rank, n in enumerate(result["NN"][i]):
-                    final_scores[i][n] += (3 - rank) * weight
-                for rank, n in enumerate(result["MC"][i]):
-                    final_scores[i][n] += (3 - rank) * weight
-                for rank, n in enumerate(result["WH"][i]):
-                    final_scores[i][n] += (3 - rank) * weight * WH_WEIGHT
-
-        df_recent24 = df.head(min(24, len(df)))
-        for i, col in enumerate(required_cols):
-            freq_list = df_recent24[col].value_counts().index.tolist()
-            for rank, num in enumerate(freq_list[:5]):
-                final_scores[i][num] += RANK_SCORES[rank]
-
-        ranked_candidates = []
-        for i in range(4):
-            ranked_candidates.append(
-                [n for n, _ in final_scores[i].most_common(15)] if final_scores[i] else list(range(10))
-            )
-
-        final_combinations = []
-        attempts = 0
-        while len(final_combinations) < 5 and attempts < 2000:
-            combo = []
-            for col_idx in range(4):
-                candidates = ranked_candidates[col_idx][:10]
-                weights = [10 - i for i in range(len(candidates))]
-                combo.append(random.choices(candidates, weights=weights, k=1)[0])
-            if max(Counter(combo).values()) <= 2 and combo not in final_combinations:
-                final_combinations.append(combo)
-            attempts += 1
-        while len(final_combinations) < 5:
-            combo = [random.randint(0, 9) for _ in range(4)]
-            if max(Counter(combo).values()) <= 2:
-                final_combinations.append(combo)
-
-        text += "=== 合算スコアTOP5（風車盤加重＋直近24回加点・トリプル除外） ===\n"
-        for rank, combo in enumerate(final_combinations, 1):
-            num_str = "".join(map(str, combo))
-            total = sum(combo)
-            pattern = "シングル" if len(set(combo)) == 4 else "ダブル"
-            text += f"{rank}位: {num_str}（合計:{total}, {pattern}）\n"
-
-        return text
-    except Exception as e:
-        return f"\n[予想モデルセクション生成エラー: {e}]\n"
+@st.cache_data(ttl=600, show_spinner=False)
+def load_data(csv_path: str) -> pd.DataFrame:
+    return nc.load_df(csv_path, DIGIT_COUNT)
 
 
-# ============================================
-# ★ 最上部：AIに渡すデータのワンクリックコピーボタン
-# ============================================
+df = load_data(CSV_PATH)
+df_recent = nc.recent(df, 24)
+cols = nc.digit_cols(DIGIT_COUNT)
 
-def build_ai_export_text(csv_path):
-    """直近の当選番号・直近24回データ・各桁ランキング・ABC統計・
-    RF/NN/マルコフ/風車盤の予測結果と合算TOP5を
-    AIに渡すためのテキストとして組み立てる"""
-    try:
-        df = pd.read_csv(csv_path)
-        df.columns = [c.replace('（', '(').replace('）', ')') for c in df.columns]
-        cols = ["第1数字", "第2数字", "第3数字", "第4数字"]
-        df = df.dropna(subset=cols)
-        df[cols] = df[cols].astype(int)
-        df["抽せん日"] = pd.to_datetime(df["抽せん日"], errors="coerce")
-        df = df.dropna(subset=["抽せん日"]).sort_values("抽せん日", ascending=False).reset_index(drop=True)
-
-        latest = df.iloc[0]
-        latest_round = int(latest["回号"])
-        next_round = latest_round + 1
-        prev_winning = "".join(str(int(latest[c])) for c in cols)
-        prev_sum = sum(int(latest[c]) for c in cols)
-
-        df24 = df.head(24).reset_index(drop=True)
-
-        text = "【ナンバーズ4 直近データ（AI貼り付け用）】\n"
-        text += f"取得日時: {datetime.now().strftime('%Y-%m-%d %H:%M')}\n"
-        text += f"最新回号: 第{latest_round}回 / 次回: 第{next_round}回\n"
-        text += f"最新当選番号: {prev_winning}（合計 {prev_sum}）\n\n"
-
-        # 直近24回の当選番号
-        text += "=== 直近24回の当選番号 ===\n"
-        text += "回号  抽せん日  第1 第2 第3 第4\n"
-        for _, row in df24.iterrows():
-            text += (f"{int(row['回号'])}  {row['抽せん日'].strftime('%Y-%m-%d')}  "
-                     f"{int(row['第1数字'])} {int(row['第2数字'])} "
-                     f"{int(row['第3数字'])} {int(row['第4数字'])}\n")
-
-        # 各桁出現ランキング（出現回数付き）
-        text += "\n=== 各桁出現ランキング（直近24回・回数）===\n"
-        text += "順位  第1数字  第2数字  第3数字  第4数字\n"
-        rankings = []
-        for i in range(1, 5):
-            vc = df24[f"第{i}数字"].value_counts().reindex(range(10), fill_value=0).sort_values(ascending=False)
-            rankings.append(vc)
-        for rank in range(10):
-            text += f"{rank+1}位 "
-            for i in range(4):
-                num = rankings[i].index[rank]
-                cnt = rankings[i].iloc[rank]
-                text += f"  {num}({cnt})"
-            text += "\n"
-
-        # ABC統計
-        abc_sets = []
-        for i in range(4):
-            order = rankings[i].index.tolist()
-            abc_sets.append({"A": set(order[0:3]), "B": set(order[3:6]), "C": set(order[6:10])})
-        abc_counts = {"A": 0, "B": 0, "C": 0}
-        for _, row in df24.iterrows():
-            for i in range(4):
-                v = int(row[f"第{i+1}数字"])
-                if v in abc_sets[i]["A"]:
-                    abc_counts["A"] += 1
-                elif v in abc_sets[i]["B"]:
-                    abc_counts["B"] += 1
-                else:
-                    abc_counts["C"] += 1
-        total = 96
-        text += "\n=== 直近24回 ABC出現統計 ===\n"
-        text += "A(1-3位):頻出 / B(4-6位):中位 / C(7-10位):低頻出\n"
-        for k in ["A", "B", "C"]:
-            text += f"{k}数字: {abc_counts[k]}回 ({abc_counts[k]/total*100:.1f}%)\n"
-
-        # シングル/ダブル/トリプル
-        s = d = t = 0
-        for _, row in df24.iterrows():
-            cnt = Counter([int(row[f"第{i}数字"]) for i in range(1, 5)])
-            vals = list(cnt.values())
-            if max(vals) >= 3:
-                t += 1
-            elif vals.count(2) >= 1:
-                d += 1
-            else:
-                s += 1
-        text += "\n=== 直近24回 タイプ別 ===\n"
-        text += f"シングル: {s}回 / ダブル: {d}回 / トリプル: {t}回\n"
-
-        # ★ ランダムフォレスト・ニューラルネット・マルコフ連鎖・風車盤の予測結果と合算TOP5を追加
-        text += "\n" + "=" * 50 + "\n"
-        text += build_prediction_section_text(df.copy())
-        text += "=" * 50 + "\n"
-
-        text += "\n（出典: https://naobillionaire.synergy.cfbx.jp/ ）\n"
-        return text
-    except Exception as e:
-        return f"データ取得エラー: {e}"
-
-
-def render_copy_button(text):
-    """ページ最上部にワンクリックコピーボタンを表示（navigator.clipboard）"""
-    safe = json.dumps(text)  # JS文字列として安全に埋め込む
-    components.html(f"""
-    <div style="font-family:sans-serif; margin-bottom:10px;">
-      <button id="copyBtn" style="
-          width:100%; padding:16px; font-size:18px; font-weight:bold;
-          color:#fff; background:#1a5490; border:none; border-radius:10px;
-          cursor:pointer; box-shadow:0 3px 8px rgba(0,0,0,0.2);">
-          📋 AIに渡すデータをコピー
-      </button>
-      <span id="copyMsg" style="display:block; margin-top:8px; color:#2e7d32; font-weight:bold;"></span>
-    </div>
-    <script>
-      const data = {safe};
-      const btn = document.getElementById("copyBtn");
-      const msg = document.getElementById("copyMsg");
-      btn.addEventListener("click", async () => {{
-        try {{
-          await navigator.clipboard.writeText(data);
-          msg.textContent = "✅ コピーしました！AI（Claude/ChatGPT/Gemini）に貼り付けてください";
-        }} catch (e) {{
-          // フォールバック
-          const ta = document.createElement("textarea");
-          ta.value = data;
-          document.body.appendChild(ta);
-          ta.select();
-          document.execCommand("copy");
-          document.body.removeChild(ta);
-          msg.textContent = "✅ コピーしました！";
-        }}
-      }});
-    </script>
-    """, height=110)
-
-
-# ★ 最上部に描画
-st.title("NAOKIのナンバーズ4 予想データ")
-_ai_export_text = build_ai_export_text(CSV_PATH)
-render_copy_button(_ai_export_text)
-with st.expander("コピーされる内容を確認する"):
-    st.code(_ai_export_text, language="text")
+st.title("ナンバーズ4 - 当選番号・統計データ")
+st.caption("このページは当選番号と統計データのみを掲載しています。AIによる予想レポートは別途noteで公開予定です。")
 st.markdown("---")
 
+# ============================================
+# ① 最新の当選番号
+# ============================================
+def show_latest_results(latest: pd.Series) -> None:
+    number_str = "".join(str(int(latest[c])) for c in cols)
+    st.header("① 最新の当選番号")
+    table_html = f"""
+    <table style="width: 80%; margin: 0 auto; border-collapse: collapse; text-align: right;">
+        <tr>
+            <td style="padding: 10px; font-weight: bold;text-align: left;">回号</td>
+            <td style="padding: 10px; font-size: 20px;">{html.escape(str(int(latest['回号'])))}回</td>
+            <td style="padding: 10px; font-weight: bold;">抽せん日</td>
+            <td style="padding: 10px; font-size: 20px;">{latest['抽せん日'].strftime('%Y-%m-%d')}</td>
+        </tr>
+        <tr>
+            <td style="padding: 10px; font-weight: bold; text-align: left;">当選番号</td>
+            <td colspan="3" style="padding: 10px; font-size: 24px; font-weight: bold; color: red; text-align: right;">
+                {number_str}
+            </td>
+        </tr>
+        <tr>
+            <td style="padding: 10px; font-weight: bold; text-align: left;">ストレート</td>
+            <td colspan="2">{format_number(latest['ストレート口数'])}口</td>
+            <td>{format_number(latest['ストレート当選金額'])}円</td>
+        </tr>
+        <tr>
+            <td style="padding: 10px; font-weight: bold; text-align: left;">ボックス</td>
+            <td colspan="2">{format_number(latest['ボックス口数'])}口</td>
+            <td>{format_number(latest['ボックス当選金額'])}円</td>
+        </tr>
+        <tr>
+            <td style="padding: 10px; font-weight: bold; text-align: left;">セット・ストレート</td>
+            <td colspan="2">{format_number(latest['セット(ストレート)口数'])}口</td>
+            <td>{format_number(latest['セット(ストレート)当選金額'])}円</td>
+        </tr>
+        <tr>
+            <td style="padding: 10px; font-weight: bold; text-align: left;">セット・ボックス</td>
+            <td colspan="2">{format_number(latest['セット(ボックス)口数'])}口</td>
+            <td>{format_number(latest['セット(ボックス)当選金額'])}円</td>
+        </tr>
+    </table>
+    """
+    st.markdown(table_html, unsafe_allow_html=True)
+
+
+try:
+    show_latest_results(df.iloc[0])
+except Exception as e:
+    st.error(f"最新結果の表示でエラーが発生しました: {e}")
 
 # ============================================
-# NAOKIの予想画像生成機能
+# ② 直近24回（SAB分類付き）
 # ============================================
-
-def get_system_font():
-    """OS別に最適な日本語フォントを自動選択"""
-    system = platform.system()
-    font_candidates = {
-        "Windows": [
-            "C:/Windows/Fonts/meiryo.ttc",
-            "C:/Windows/Fonts/msgothic.ttc",
-            "C:/Windows/Fonts/arial.ttf"
-        ],
-        "Darwin": [
-            "/System/Library/Fonts/ヒラギノ角ゴシック W6.ttc",
-            "/Library/Fonts/Arial Unicode.ttf",
-            "/System/Library/Fonts/Arial.ttf"
-        ],
-        "Linux": [
-            "/usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc",
-            "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
-            "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf"
-        ]
-    }
-    for font_path in font_candidates.get(system, []):
-        if os.path.exists(font_path):
-            return font_path
-    return None
-
-def run_ai_prediction_logic(df_data):
-    """統計分析による数字生成ロジック（トリプル除外版）"""
-    required_cols = ["第1数字", "第2数字", "第3数字", "第4数字"]
-
-    if len(df_data) < 10:
-        valid_rows = []
-        attempts = 0
-        while len(valid_rows) < 5 and attempts < 1000:
-            row = [random.randint(0, 9) for _ in range(4)]
-            counter = Counter(row)
-            if max(counter.values()) <= 2:
-                valid_rows.append(row)
-            attempts += 1
-        while len(valid_rows) < 5:
-            row = [random.randint(0, 9) for _ in range(4)]
-            counter = Counter(row)
-            if max(counter.values()) <= 2:
-                valid_rows.append(row)
-        return pd.DataFrame(valid_rows, columns=required_cols)
-
-    dfs = {
-        "全データ":   (df_data,                              0.1),
-        "直近100回": (df_data.head(min(100, len(df_data))),   0.3),
-        "直近24回":  (df_data.head(min(24,  len(df_data))),   0.6)
-    }
-
-    wheels = [
-        [0, 3, 6, 9, 2, 5, 8, 1, 4, 7],
-        [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
-        [0, 7, 4, 1, 8, 5, 2, 9, 6, 3],
-        [0, 9, 8, 7, 6, 5, 4, 3, 2, 1]
-    ]
-
-    final_scores = [Counter() for _ in range(4)]
-    WH_WEIGHT = 2.0
-    RANK_SCORES = [2.0, 1.5, 1.0, 0.7, 0.5]
-
-    for label, (data, weight) in dfs.items():
-        if len(data) < 5:
-            continue
-        X, ys = [], [[] for _ in range(4)]
-        for i in range(len(data) - 1):
-            prev = data.iloc[i + 1]
-            curr = data.iloc[i]
-            X.append([prev[c] for c in required_cols])
-            for j in range(4):
-                ys[j].append(curr[required_cols[j]])
-        if len(X) == 0:
-            continue
-        latest_input = [[data.iloc[0][col] for col in required_cols]]
-
-        try:
-            for i in range(4):
-                rf = RandomForestClassifier(n_estimators=50, random_state=42)
-                rf.fit(X, ys[i])
-                probs = rf.predict_proba(latest_input)[0]
-                classes = rf.classes_
-                pairs = sorted(zip(classes, probs), key=lambda x: x[1], reverse=True)[:3]
-                top3 = [int(c) for c, _ in pairs]
-                for rank, n in enumerate(top3):
-                    final_scores[i][n] += (3 - rank) * weight
-        except Exception:
-            pass
-
-        try:
-            for i in range(4):
-                nn = MLPClassifier(max_iter=300, random_state=42)
-                nn.fit(X, ys[i])
-                probs = nn.predict_proba(latest_input)[0]
-                classes = nn.classes_
-                pairs = sorted(zip(classes, probs), key=lambda x: x[1], reverse=True)[:3]
-                top3 = [int(c) for c, _ in pairs]
-                for rank, n in enumerate(top3):
-                    final_scores[i][n] += (3 - rank) * weight
-        except Exception:
-            pass
-
-        for i in range(4):
-            series = data[f"第{i+1}数字"].tolist()
-            trans = defaultdict(Counter)
-            for k in range(len(series)-1):
-                trans[series[k]][series[k+1]] += 1
-            if len(series) > 0:
-                last_num = series[0]
-                top3 = [n for n, _ in trans[last_num].most_common(3)]
-                for rank, n in enumerate(top3):
-                    final_scores[i][n] += (3 - rank) * weight
-
-        for i in range(4):
-            count = Counter()
-            wheel = wheels[i]
-            for val in data[f"第{i+1}数字"]:
-                if val in wheel:
-                    pos = wheel.index(val)
-                    count[pos] += 1
-            top_pos = [p for p, _ in count.most_common(3)]
-            top3 = [wheel[p] for p in top_pos if p < len(wheel)]
-            for rank, n in enumerate(top3):
-                final_scores[i][n] += (3 - rank) * weight * WH_WEIGHT
-
-    df_recent_local = df_data.head(min(24, len(df_data)))
-    for i, col in enumerate(required_cols):
-        freq_list = df_recent_local[col].value_counts().index.tolist()
-        for rank, num in enumerate(freq_list[:5]):
-            final_scores[i][num] += RANK_SCORES[rank]
-
-    ranked_candidates = []
-    for i in range(4):
-        if len(final_scores[i]) == 0:
-            ranked_candidates.append(list(range(10)))
-        else:
-            ranked_candidates.append([n for n, _ in final_scores[i].most_common(15)])
-
-    final_rows = []
-    attempts = 0
-    max_attempts = 1000
-    while len(final_rows) < 5 and attempts < max_attempts:
-        current_row = []
-        for col_idx in range(4):
-            candidates = ranked_candidates[col_idx]
-            weights = [len(candidates) - i for i in range(len(candidates))]
-            selected = random.choices(candidates, weights=weights, k=1)[0]
-            current_row.append(selected)
-        counter = Counter(current_row)
-        if max(counter.values()) <= 2:
-            if current_row not in final_rows:
-                final_rows.append(current_row)
-        attempts += 1
-
-    while len(final_rows) < 5:
-        combo = [random.randint(0, 9) for _ in range(4)]
-        if max(Counter(combo).values()) <= 2:
-            final_rows.append(combo)
-
-    return pd.DataFrame(final_rows, columns=required_cols)
-
-def create_naoki_prediction_image(
-    current_predictions_df,
-    current_round,
-    current_date,
-    previous_round=None,
-    previous_winning=None,
-    previous_predictions_df=None,
-    output_path="output/naoki_prediction.png"
-):
-    """NAOKIデザインの予想画像を生成"""
-    width, height = 1080, 1350
-    background = Image.new('RGB', (width, height), color='#ffffff')
-    draw = ImageDraw.Draw(background)
-
-    font_path = get_system_font()
-    try:
-        if font_path:
-            title_font = ImageFont.truetype(font_path, 55)
-            date_font = ImageFont.truetype(font_path, 35)
-            section_font = ImageFont.truetype(font_path, 42)
-            header_font = ImageFont.truetype(font_path, 32)
-            number_font = ImageFont.truetype(font_path, 50)
-            winning_font = ImageFont.truetype(font_path, 45)
-            footer_font = ImageFont.truetype(font_path, 28)
-        else:
-            title_font = date_font = section_font = header_font = number_font = winning_font = footer_font = ImageFont.load_default()
-    except:
-        title_font = date_font = section_font = header_font = number_font = winning_font = footer_font = ImageFont.load_default()
-
-    y_pos = 40
-
-    title_rect = [40, y_pos, width-40, y_pos+120]
-    draw.rounded_rectangle(title_rect, radius=10, fill='#1a5490')
-    draw.text((width//2, y_pos+35), "NAOKIのナンバーズ4 予想",
-              font=title_font, fill='white', anchor='mm')
-    draw.text((width//2, y_pos+85), datetime.now().strftime('%Y/%m/%d'),
-              font=date_font, fill='white', anchor='mm')
-    y_pos += 160
-
-    draw.line((60, y_pos), (width-60, y_pos), fill='#1a5490', width=4)
-    y_pos += 50
-
-    table_x = 80
-    col_width = (width - 160) // 4
-    row_height = 65
-
-    if previous_round and previous_winning and previous_predictions_df is not None:
-        verification_rect = [50, y_pos, width-50, y_pos+55]
-        draw.rounded_rectangle(verification_rect, radius=8, fill='#e8f5e8', outline='#4caf50', width=2)
-        draw.text((width//2, y_pos+27), f"📊 前回検証（第{previous_round}回）",
-                  font=section_font, fill='#2e7d32', anchor='mm')
-        y_pos += 80
-
-        winning_text = " - ".join(map(str, previous_winning))
-        draw.text((width//2, y_pos), f"当選番号: {winning_text}",
-                  font=winning_font, fill='#d32f2f', anchor='mm')
-        y_pos += 70
-
-        headers = ["第1数字", "第2数字", "第3数字", "第4数字"]
-        for i, header in enumerate(headers):
-            x = table_x + col_width * i + col_width // 2
-            draw.text((x, y_pos), header, font=header_font, fill='#333333', anchor='mm')
-        y_pos += 45
-
-        draw.line((table_x, y_pos), (width-table_x, y_pos), fill='#cccccc', width=3)
-        y_pos += 35
-
-        for idx in range(5):
-            for digit_idx in range(4):
-                x = table_x + col_width * digit_idx + col_width // 2
-                col_name = f"第{digit_idx + 1}数字"
-                predicted_num = previous_predictions_df.iloc[idx][col_name]
-                actual_num = previous_winning[digit_idx]
-                if predicted_num == actual_num:
-                    circle_rect = [x-30, y_pos-30, x+30, y_pos+30]
-                    draw.ellipse(circle_rect, fill='#ffcdd2', outline='#d32f2f', width=3)
-                    text_color = '#d32f2f'
-                else:
-                    text_color = '#333333'
-                draw.text((x, y_pos), str(predicted_num),
-                          font=number_font, fill=text_color, anchor='mm')
-            y_pos += row_height
-        y_pos += 30
-
-    draw.line((60, y_pos), (width-60, y_pos), fill='#1a5490', width=4)
-    y_pos += 50
-
-    prediction_rect = [50, y_pos, width-50, y_pos+55]
-    draw.rounded_rectangle(prediction_rect, radius=8, fill='#e3f2fd', outline='#2196f3', width=2)
-    weekdays = ['月', '火', '水', '木', '金', '土', '日']
-    weekday = weekdays[current_date.weekday()]
-    draw.text((width//2, y_pos+27), f"🎯 今回予想（第{current_round}回・{current_date.strftime('%m/%d')}({weekday})）",
-              font=section_font, fill='#1565c0', anchor='mm')
-    y_pos += 80
-
-    headers = ["第1数字", "第2数字", "第3数字", "第4数字"]
-    for i, header in enumerate(headers):
-        x = table_x + col_width * i + col_width // 2
-        draw.text((x, y_pos), header, font=header_font, fill='#333333', anchor='mm')
-    y_pos += 45
-
-    draw.line((table_x, y_pos), (width-table_x, y_pos), fill='#cccccc', width=3)
-    y_pos += 35
-
-    for idx in range(5):
-        for digit_idx in range(4):
-            x = table_x + col_width * digit_idx + col_width // 2
-            col_name = f"第{digit_idx + 1}数字"
-            number = str(current_predictions_df.iloc[idx][col_name])
-            draw.text((x, y_pos), number, font=number_font, fill='#333333', anchor='mm')
-        y_pos += row_height
-
-    y_pos += 50
-    draw.text((width//2, y_pos), "🤖 4種AI統合分析・風車盤パターン・直近24回重点解析",
-              font=footer_font, fill='#666666', anchor='mm')
-    y_pos += 45
-    draw.text((width//2, y_pos), "※統計分析による数字です。当選を保証するものではありません",
-              font=footer_font, fill='#999999', anchor='mm')
-
-    try:
-        os.makedirs(os.path.dirname(output_path), exist_ok=True)
-        background.save(output_path, quality=95, optimize=True)
-        return output_path
-    except Exception as e:
-        st.error(f"画像保存エラー: {e}")
-        return None
-
-def get_next_drawing_date():
-    """次回抽選日を自動計算（平日のみ）"""
-    today = datetime.now()
-    next_day = today + timedelta(days=1)
-    while next_day.weekday() >= 5:
-        next_day += timedelta(days=1)
-    return next_day
-
+st.header("② 直近24回の当選番号（SAB分類付き）")
+st.caption("SAB分類はロトのページと同じ定義：S=直近24回で5回以上出現 / A=3〜4回 / B=2回以下")
+maps = nc.sab_maps(df_recent, DIGIT_COUNT)
+sab_table = nc.sab_annotated_table(df_recent, DIGIT_COUNT, maps)
+st.write(sab_table.to_html(escape=False, index=False), unsafe_allow_html=True)
 
 # ============================================
-# 既存の機能
+# 各桁出現ランキング
 # ============================================
+st.header("③ 各桁の出現ランキング（直近24回）")
+st.dataframe(nc.ranking_table(df_recent, DIGIT_COUNT), use_container_width=True)
 
-def show_latest_results(csv_path):
-    try:
-        df = pd.read_csv(csv_path)
-        df.columns = [col.replace("(", "（").replace(")", "）") for col in df.columns]
-        df = df.loc[:, ~df.columns.str.contains('^Unnamed')]
-        df = df.fillna("未定義")
-        df["抽せん日"] = pd.to_datetime(df["抽せん日"], errors="coerce")
-        df = df.dropna(subset=["抽せん日"])
-        df = df.sort_values(by="抽せん日", ascending=False).reset_index(drop=True)
+# ============================================
+# NEW: 偶数・奇数の比率
+# ============================================
+st.header("④ 偶数・奇数の比率（直近24回）")
+st.caption("例：あるパターンが「偶4・奇0」なら4桁とも偶数、というように各回の内訳を出し、24回で集計します。")
+parity_df = nc.parity_per_draw(df_recent, DIGIT_COUNT)
+pattern_table, overall = nc.parity_summary(parity_df, DIGIT_COUNT)
+col1, col2 = st.columns(2)
+with col1:
+    st.write("回ごとの偶数・奇数パターン")
+    st.dataframe(parity_df[["回号", "抽せん日", "偶数", "奇数", "パターン"]], use_container_width=True)
+with col2:
+    st.write("パターン別の出現回数")
+    st.dataframe(pattern_table, use_container_width=True)
+    st.metric("偶数の割合", f"{overall['even_pct']:.1f}%", help=f"{overall['even']}/{overall['total_slots']}個")
+    st.metric("奇数の割合", f"{overall['odd_pct']:.1f}%", help=f"{overall['odd']}/{overall['total_slots']}個")
 
-        latest = df.iloc[0]
-        global df_recent
-        df_recent = df[["回号", "抽せん日", "第1数字", "第2数字", "第3数字", "第4数字"]].head(24)
+# ============================================
+# NEW: 合計値のレンジ分布
+# ============================================
+max_sum = 9 * DIGIT_COUNT
+st.header(f"⑤ 合計値のレンジ分布（0〜{max_sum}を3分割・直近24回）")
+st.caption(f"各桁0〜9なので、合計値は最小0（{'+'.join(['0'] * DIGIT_COUNT)}=0）〜最大{max_sum}（{'+'.join(['9'] * DIGIT_COUNT)}={max_sum}）の範囲に必ず入ります。")
+st.dataframe(nc.sum_range_distribution(df_recent, DIGIT_COUNT), use_container_width=True)
 
-        number_str = f"{latest['第1数字']}{latest['第2数字']}{latest['第3数字']}{latest['第4数字']}"
+st.markdown("---")
 
-        st.header("最新の当選番号")
-        table_html = f"""
-        <table style="width: 80%; margin: 0 auto; border-collapse: collapse; text-align: right;">
-            <tr>
-                <td style="padding: 10px; font-weight: bold;text-align: left;">回号</td>
-                <td style="padding: 10px; font-size: 20px;">{html.escape(str(latest['回号']))}回</td>
-                <td style="padding: 10px; font-weight: bold;">抽せん日</td>
-                <td style="padding: 10px; font-size: 20px;">{latest['抽せん日'].strftime('%Y-%m-%d')}</td>
-            </tr>
-            <tr>
-                <td style="padding: 10px; font-weight: bold; text-align: left;">当選番号</td>
-                <td colspan="3" style="padding: 10px; font-size: 24px; font-weight: bold; color: red; text-align: right;">
-                    {number_str}
-                </td>
-            </tr>
-            <tr>
-                <td style="padding: 10px; font-weight: bold; text-align: left;">ストレート</td>
-                <td colspan="2">{format_number(latest['ストレート口数'])}口</td>
-                <td>{format_number(latest['ストレート当選金額'])}円</td>
-            </tr>
-            <tr>
-                <td style="padding: 10px; font-weight: bold; text-align: left;">ボックス</td>
-                <td colspan="2">{format_number(latest['ボックス口数'])}口</td>
-                <td>{format_number(latest['ボックス当選金額'])}円</td>
-            </tr>
-            <tr>
-                <td style="padding: 10px; font-weight: bold; text-align: left;">セット・ストレート</td>
-                <td colspan="2">{format_number(latest['セット（ストレート）口数'])}口</td>
-                <td>{format_number(latest['セット（ストレート）当選金額'])}円</td>
-            </tr>
-            <tr>
-                <td style="padding: 10px; font-weight: bold; text-align: left;">セット・ボックス</td>
-                <td colspan="2">{format_number(latest['セット（ボックス）口数'])}口</td>
-                <td>{format_number(latest['セット（ボックス）当選金額'])}円</td>
-            </tr>
-        </table>
-        """
-        st.markdown(table_html, unsafe_allow_html=True)
-        return df
-    except Exception as e:
-        st.error(f"エラーが発生しました: {e}")
-        return None
+# ============================================
+# シングル・ダブル・トリプル分析
+# ============================================
+st.subheader("シングル・ダブル・トリプル分析（直近24回）")
+st.dataframe(pd.DataFrame(list(nc.type_counts(df_recent, DIGIT_COUNT).items()), columns=["タイプ", "回数"]))
 
+# ============================================
+# ひっぱり数字の回数
+# ============================================
+st.subheader("ひっぱり数字の回数（直近24回）")
+st.write(f"ひっぱり数字の回数：{nc.hoppari_count(df_recent, DIGIT_COUNT)} 回")
 
-df_main = show_latest_results(CSV_PATH)
+# ============================================
+# 数字の範囲ごとの分布
+# ============================================
+st.subheader("数字の範囲ごとの分布（直近24回）")
+range_dist = nc.range_distribution(df_recent, DIGIT_COUNT)
+st.dataframe(pd.DataFrame({"範囲": list(range_dist.keys()), "出現回数": list(range_dist.values())}))
 
-if df_main is not None:
-    st.header("直近24回の当選番号（ABC分類付き）")
+# ============================================
+# ペア（2つ組）出現回数
+# ============================================
+st.subheader("ペア（2つ組）出現回数（直近24回）")
+st.dataframe(nc.pair_counts(df_recent, DIGIT_COUNT))
 
-    def generate_recent_numbers4_table(csv_path):
-        try:
-            df = pd.read_csv(csv_path)
-            df = df.dropna(subset=["第1数字", "第2数字", "第3数字", "第4数字"])
-            df[["第1数字", "第2数字", "第3数字", "第4数字"]] = df[["第1数字", "第2数字", "第3数字", "第4数字"]].astype(int)
-            df["抽せん日"] = pd.to_datetime(df["抽せん日"], errors="coerce").dt.strftime("%Y-%m-%d")
-            df_recent_local = df.sort_values("回号", ascending=False).head(24).reset_index(drop=True)
+# ============================================
+# 合計値の出現回数
+# ============================================
+st.subheader("合計値の出現回数（直近24回）")
+st.dataframe(nc.sum_value_counts(df_recent, DIGIT_COUNT))
 
-            def get_abc_rank_map(series):
-                counts = series.value_counts().sort_values(ascending=False)
-                digits = counts.index.tolist()
-                abc_map = {}
-                for i, num in enumerate(digits[:10]):
-                    if i < 4:
-                        abc_map[num] = "A"
-                    elif i < 7:
-                        abc_map[num] = "B"
-                    else:
-                        abc_map[num] = "C"
-                return abc_map
+# ============================================
+# スキップ回数分析（数字ごとに直近何回前に出たか）
+# ============================================
+st.subheader("スキップ回数分析（数字ごとに直近3回の出現：◯回前）")
+try:
+    history_map = {i: [] for i in range(10)}
+    for idx in range(len(df_recent)):
+        row = df_recent.iloc[idx]
+        for c in cols:
+            num = int(row[c])
+            if idx not in history_map[num]:
+                history_map[num].append(idx)
 
-            abc_map_1 = get_abc_rank_map(df_recent_local["第1数字"])
-            abc_map_2 = get_abc_rank_map(df_recent_local["第2数字"])
-            abc_map_3 = get_abc_rank_map(df_recent_local["第3数字"])
-            abc_map_4 = get_abc_rank_map(df_recent_local["第4数字"])
+    def format_rank(n):
+        return f"{n}回前" if isinstance(n, int) else "出現なし"
 
-            def abc_with_color(d1, d2, d3, d4):
-                def colorize(x):
-                    return f'<span style="color:red;font-weight:bold">{x}</span>' if x == "A" else x
-                a1 = colorize(abc_map_1.get(d1, "-"))
-                a2 = colorize(abc_map_2.get(d2, "-"))
-                a3 = colorize(abc_map_3.get(d3, "-"))
-                a4 = colorize(abc_map_4.get(d4, "-"))
-                return f"{a1},{a2},{a3},{a4}"
-
-            df_recent_local["ABC分類"] = df_recent_local.apply(
-                lambda row: abc_with_color(row["第1数字"], row["第2数字"], row["第3数字"], row["第4数字"]),
-                axis=1
-            )
-            df_display = df_recent_local[["回号", "抽せん日", "第1数字", "第2数字", "第3数字", "第4数字", "ABC分類"]]
-            st.write(df_display.to_html(escape=False, index=False), unsafe_allow_html=True)
-        except Exception as e:
-            st.error(f"エラーが発生しました: {e}")
-
-    generate_recent_numbers4_table(CSV_PATH)
-
-    st.header("各桁の出現ランキング")
-    try:
-        ranking_df = pd.DataFrame({
-            "順位": [f"{i+1}位" for i in range(10)],
-            "第1数字": df_recent["第1数字"].value_counts().reindex(range(10), fill_value=0).sort_values(ascending=False).index[:10],
-            "第2数字": df_recent["第2数字"].value_counts().reindex(range(10), fill_value=0).sort_values(ascending=False).index[:10],
-            "第3数字": df_recent["第3数字"].value_counts().reindex(range(10), fill_value=0).sort_values(ascending=False).index[:10],
-            "第4数字": df_recent["第4数字"].value_counts().reindex(range(10), fill_value=0).sort_values(ascending=False).index[:10],
+    display_rows = []
+    for num in range(10):
+        h = history_map[num]
+        display_rows.append({
+            "数字": num,
+            "直近出現": format_rank(h[0]) if len(h) > 0 else "出現なし",
+            "2回前出現": format_rank(h[1]) if len(h) > 1 else "出現なし",
+            "3回前出現": format_rank(h[2]) if len(h) > 2 else "出現なし",
         })
-        st.dataframe(ranking_df, use_container_width=True)
-    except Exception as e:
-        st.error(f"ランキングの表示に失敗しました: {e}")
+    st.dataframe(pd.DataFrame(display_rows))
+except Exception as e:
+    st.error(f"スキップ分析の表示に失敗しました: {e}")
 
-    def show_ai_predictions(csv_path):
-        st.header("🎯 ナンバーズ4 AIによる次回数字予測")
-        try:
-            df = pd.read_csv(csv_path)
-            st.write("✅ CSV読み込み成功")
-            df["抽せん日"] = pd.to_datetime(df["抽せん日"], errors="coerce")
-            df = df.dropna(subset=["抽せん日"])
-            df = df.sort_values(by="抽せん日", ascending=False).reset_index(drop=True)
-            df.columns = [col.replace('（', '(').replace('）', ')') for col in df.columns]
-            required_cols = ["第1数字", "第2数字", "第3数字", "第4数字"]
-            if not all(col in df.columns for col in required_cols):
-                st.error("必要なカラムが見つかりません")
-                return None, None
-            df = df.dropna(subset=required_cols)
-            df[required_cols] = df[required_cols].astype(int)
-
-            dfs = {
-                "全データ":   (df,                        0.1),
-                "直近100回": (df.head(min(100, len(df))),  0.3),
-                "直近24回":  (df.head(min(24,  len(df))),  0.6)
-            }
-            wheels = [
-                [0, 3, 6, 9, 2, 5, 8, 1, 4, 7],
-                [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
-                [0, 7, 4, 1, 8, 5, 2, 9, 6, 3],
-                [0, 9, 8, 7, 6, 5, 4, 3, 2, 1]
-            ]
-
-            def run_models(df_sub):
-                X, ys = [], [[] for _ in range(4)]
-                for i in range(len(df_sub) - 1):
-                    prev = df_sub.iloc[i + 1]
-                    curr = df_sub.iloc[i]
-                    X.append([prev[c] for c in required_cols])
-                    for j in range(4):
-                        ys[j].append(curr[required_cols[j]])
-                rf_models = [RandomForestClassifier(random_state=42) for _ in range(4)]
-                nn_models = [MLPClassifier(max_iter=500, random_state=42) for _ in range(4)]
-                for i in range(4):
-                    rf_models[i].fit(X, ys[i])
-                    nn_models[i].fit(X, ys[i])
-                latest_input = [[df_sub.iloc[0][col] for col in required_cols]]
-
-                def get_top3(model):
-                    probs = model.predict_proba(latest_input)[0]
-                    classes = model.classes_
-                    pairs = sorted(zip(classes, probs), key=lambda x: x[1], reverse=True)[:3]
-                    return [int(c) for c, _ in pairs]
-
-                rf_top3 = [get_top3(m) for m in rf_models]
-                nn_top3 = [get_top3(m) for m in nn_models]
-
-                def markov_top3(series):
-                    trans = defaultdict(Counter)
-                    for i in range(len(series) - 1):
-                        trans[series[i]][series[i+1]] += 1
-                    last = series[0]
-                    return [n for n, _ in trans[last].most_common(3)]
-
-                mc_top3 = [markov_top3(df_sub[f"第{i+1}数字"].tolist()) for i in range(4)]
-
-                wheel_top3 = []
-                for i in range(4):
-                    count = Counter()
-                    wheel = wheels[i]
-                    for val in df_sub[f"第{i+1}数字"]:
-                        pos = wheel.index(val)
-                        count[pos] += 1
-                    top_pos = [p for p, _ in count.most_common(3)]
-                    wheel_top3.append([wheel[p] for p in top_pos])
-
-                return {"RF": rf_top3, "NN": nn_top3, "MC": mc_top3, "WH": wheel_top3}
-
-            results = {label: run_models(data) for label, (data, _) in dfs.items()}
-
-            def show_models(title, model_dict):
-                df_show = pd.DataFrame({
-                    "第1数字": [", ".join(map(str, model_dict["RF"][0])),
-                               ", ".join(map(str, model_dict["NN"][0])),
-                               ", ".join(map(str, model_dict["MC"][0])),
-                               ", ".join(map(str, model_dict["WH"][0]))],
-                    "第2数字": [", ".join(map(str, model_dict["RF"][1])),
-                               ", ".join(map(str, model_dict["NN"][1])),
-                               ", ".join(map(str, model_dict["MC"][1])),
-                               ", ".join(map(str, model_dict["WH"][1]))],
-                    "第3数字": [", ".join(map(str, model_dict["RF"][2])),
-                               ", ".join(map(str, model_dict["NN"][2])),
-                               ", ".join(map(str, model_dict["MC"][2])),
-                               ", ".join(map(str, model_dict["WH"][2]))],
-                    "第4数字": [", ".join(map(str, model_dict["RF"][3])),
-                               ", ".join(map(str, model_dict["NN"][3])),
-                               ", ".join(map(str, model_dict["MC"][3])),
-                               ", ".join(map(str, model_dict["WH"][3]))],
-                }, index=["ランダムフォレスト", "ニューラルネット", "マルコフ", "風車盤"])
-                st.subheader(f"📊 {title} 各予測TOP3")
-                st.dataframe(df_show, use_container_width=True)
-
-            for label in dfs:
-                show_models(label, results[label])
-
-            final_scores = [Counter() for _ in range(4)]
-            WH_WEIGHT = 2.0
-            RANK_SCORES = [2.0, 1.5, 1.0, 0.7, 0.5]
-            for label, (data, weight) in dfs.items():
-                model_set = results[label]
-                for i in range(4):
-                    for rank, n in enumerate(model_set["RF"][i]):
-                        final_scores[i][n] += (3 - rank) * weight
-                    for rank, n in enumerate(model_set["NN"][i]):
-                        final_scores[i][n] += (3 - rank) * weight
-                    for rank, n in enumerate(model_set["MC"][i]):
-                        final_scores[i][n] += (3 - rank) * weight
-                    for rank, n in enumerate(model_set["WH"][i]):
-                        final_scores[i][n] += (3 - rank) * weight * WH_WEIGHT
-
-            df_recent24 = df.head(24)
-            for i, col in enumerate(required_cols):
-                freq_list = df_recent24[col].value_counts().index.tolist()
-                for rank, num in enumerate(freq_list[:5]):
-                    final_scores[i][num] += RANK_SCORES[rank]
-
-            ranked_candidates = []
-            for i in range(4):
-                if len(final_scores[i]) == 0:
-                    ranked_candidates.append(list(range(10)))
-                else:
-                    ranked_candidates.append([n for n, _ in final_scores[i].most_common(15)])
-
-            final_combinations = []
-            attempts = 0
-            max_attempts = 2000
-            while len(final_combinations) < 5 and attempts < max_attempts:
-                combination = []
-                for col_idx in range(4):
-                    candidates = ranked_candidates[col_idx][:10]
-                    weights = [10 - i for i in range(len(candidates))]
-                    selected = random.choices(candidates, weights=weights, k=1)[0]
-                    combination.append(selected)
-                counter = Counter(combination)
-                if max(counter.values()) <= 2:
-                    if combination not in final_combinations:
-                        final_combinations.append(combination)
-                attempts += 1
-
-            while len(final_combinations) < 5:
-                combo = [random.randint(0, 9) for _ in range(4)]
-                if max(Counter(combo).values()) <= 2:
-                    final_combinations.append(combo)
-
-            df_final = pd.DataFrame({
-                "第1数字": [combo[0] for combo in final_combinations],
-                "第2数字": [combo[1] for combo in final_combinations],
-                "第3数字": [combo[2] for combo in final_combinations],
-                "第4数字": [combo[3] for combo in final_combinations],
-            }, index=["予想1", "予想2", "予想3", "予想4", "予想5"])
-
-            st.subheader("🏆 各モデル合算スコア TOP5（風車盤＋直近24回ランキング加点強化・トリプル除外）")
-            st.dataframe(df_final, use_container_width=True)
-
-            st.markdown("---")
-            st.subheader("🤖 AI分析用データエクスポート")
-            st.info("以下をコピー → AI（Claude/ChatGPT/Gemini）に貼り付け")
-
-            tab1, tab2, tab3 = st.tabs(["📋 簡単コピー", "📊 JSON形式", "📝 詳細分析用"])
-
-            with tab1:
-                try:
-                    simple_text = "【ナンバーズ4 集計データTOP5】\n\n"
-                    simple_text += f"生成日時: {datetime.now().strftime('%Y-%m-%d %H:%M')}\n"
-                    simple_text += f"次回: 第{int(df.iloc[0]['回号']) + 1}回\n\n"
-                    rank = 1
-                    for idx in range(5):
-                        nums = [int(df_final.iloc[idx][f'第{i}数字']) for i in range(1, 5)]
-                        counter = Counter(nums)
-                        if max(counter.values()) >= 3:
-                            continue
-                        num_str = ''.join(map(str, nums))
-                        total = sum(nums)
-                        pattern = "シングル" if len(set(nums)) == 4 else "ダブル"
-                        simple_text += f"{rank}位: {num_str} (合計:{total}, {pattern})\n"
-                        rank += 1
-                    simple_text += f"\n各桁TOP5詳細:\n{df_final.to_string()}"
-
-                    # ★ 予想モデルセクション（RF/NN/MC/WH＋合算TOP5）を追加
-                    simple_text += "\n\n" + "=" * 50 + "\n"
-                    simple_text += build_prediction_section_text(df.copy())
-                    simple_text += "=" * 50 + "\n"
-
-                    st.code(simple_text, language='text')
-                except Exception as e:
-                    st.error(f"簡単コピー生成エラー: {e}")
-
-            with tab2:
-                try:
-                    prediction_data = {
-                        "meta": {
-                            "generated_at": datetime.now().isoformat(),
-                            "current_round": int(df.iloc[0]["回号"]),
-                            "next_round": int(df.iloc[0]["回号"]) + 1,
-                            "previous_winning": [int(df.iloc[0][f"第{i}数字"]) for i in range(1, 5)]
-                        },
-                        "candidates": []
-                    }
-                    rank = 1
-                    for idx in range(5):
-                        nums = [int(df_final.iloc[idx][f'第{i}数字']) for i in range(1, 5)]
-                        counter = Counter(nums)
-                        if max(counter.values()) >= 3:
-                            continue
-                        prediction_data["candidates"].append({
-                            "rank": rank,
-                            "numbers": nums,
-                            "four_digit": ''.join(map(str, nums)),
-                            "sum": sum(nums),
-                            "pattern": "シングル" if len(set(nums)) == 4 else "ダブル",
-                            "odd_count": sum(1 for n in nums if n % 2 == 1),
-                            "even_count": sum(1 for n in nums if n % 2 == 0)
-                        })
-                        rank += 1
-                    json_str = json.dumps(prediction_data, ensure_ascii=False, indent=2)
-                    st.code(json_str, language='json')
-                    st.download_button(
-                        label="📥 JSONファイルダウンロード",
-                        data=json_str,
-                        file_name=f"numbers4_data_{datetime.now().strftime('%Y%m%d_%H%M')}.json",
-                        mime="application/json"
-                    )
-                except Exception as e:
-                    st.error(f"JSON生成エラー: {e}")
-
-            with tab3:
-                try:
-                    df_recent_calc = df.head(24)
-                    s_count = d_count = t_count = 0
-                    for _, row in df_recent_calc.iterrows():
-                        cnts = Counter([row[f"第{i}数字"] for i in range(1, 5)])
-                        vals = list(cnts.values())
-                        if 3 in vals or 4 in vals:
-                            t_count += 1
-                        elif vals.count(2) >= 1:
-                            d_count += 1
-                        else:
-                            s_count += 1
-                    prev_winning = '-'.join([str(int(df.iloc[0][f'第{i}数字'])) for i in range(1, 5)])
-                    prev_sum = sum([int(df.iloc[0][f'第{i}数字']) for i in range(1, 5)])
-
-                    ranking_text = "\n=== 各桁出現ランキング（直近24回）===\n"
-                    ranking_text += "順位  第1数字(回) 第2数字(回) 第3数字(回) 第4数字(回)\n"
-                    digit_rankings = []
-                    abc_sets = []
-                    for i in range(1, 5):
-                        col_name = f"第{i}数字"
-                        value_counts = df_recent_calc[col_name].value_counts().reindex(range(10), fill_value=0).sort_values(ascending=False)
-                        ranking = value_counts.index.tolist()
-                        digit_rankings.append(ranking)
-                        abc_sets.append({'A': set(ranking[0:3]), 'B': set(ranking[3:6]), 'C': set(ranking[6:10])})
-                    for rank in range(10):
-                        ranking_text += f"{rank+1}位   "
-                        for digit_idx in range(4):
-                            num = digit_rankings[digit_idx][rank]
-                            count = df_recent_calc[f"第{digit_idx+1}数字"].value_counts().get(num, 0)
-                            ranking_text += f"  {num}  ({count})    "
-                        ranking_text += "\n"
-
-                    abc_counts = {'A': 0, 'B': 0, 'C': 0}
-                    for _, row in df_recent_calc.iterrows():
-                        for i in range(4):
-                            val = int(row[f"第{i+1}数字"])
-                            if val in abc_sets[i]['A']:
-                                abc_counts['A'] += 1
-                            elif val in abc_sets[i]['B']:
-                                abc_counts['B'] += 1
-                            else:
-                                abc_counts['C'] += 1
-                    abc_text = "\n=== 直近24回 ABC出現統計 ===\n"
-                    abc_text += "【定義】A(1-3位):頻出 / B(4-6位):中位 / C(7-10位):低頻出\n\n"
-                    total_digits = 96
-                    for rank_char in ['A', 'B', 'C']:
-                        count = abc_counts[rank_char]
-                        percent = (count / total_digits) * 100
-                        abc_text += f"{rank_char}数字: {count:2}回 ({percent:5.1f}%) - 1回平均 {count/24:.1f}個\n"
-
-                    latest_abc = []
-                    prev_nums = [int(df.iloc[0][f'第{i}数字']) for i in range(1, 5)]
-                    for i in range(4):
-                        val = prev_nums[i]
-                        if val in abc_sets[i]['A']:
-                            latest_abc.append("A")
-                        elif val in abc_sets[i]['B']:
-                            latest_abc.append("B")
-                        else:
-                            latest_abc.append("C")
-                    abc_text += f"\n前回パターン: {','.join(latest_abc)} ({prev_winning})"
-
-                    detailed_text = f"""【ナンバーズ4 詳細集計データ】
-
-=== 基本情報 ===
-生成日時: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
-現在回号: 第{int(df.iloc[0]['回号'])}回
-次回: 第{int(df.iloc[0]['回号']) + 1}回
-
-=== 前回結果 ===
-当選番号: {prev_winning}
-合計値: {prev_sum}
-
-=== 集計候補TOP5 ==="""
-                    rank = 1
-                    for idx in range(5):
-                        nums = [int(df_final.iloc[idx][f'第{i}数字']) for i in range(1, 5)]
-                        counter = Counter(nums)
-                        if max(counter.values()) >= 3:
-                            continue
-                        num_str = ''.join(map(str, nums))
-                        total = sum(nums)
-                        pattern = "シングル" if len(set(nums)) == 4 else "ダブル"
-                        detailed_text += f"\n{rank}位: {num_str} (合計:{total}, {pattern})"
-                        rank += 1
-
-                    detailed_text += f"""
-
-=== 各桁詳細 ===
-{df_final.to_string()}
-{ranking_text}
-{abc_text}
-
-=== 直近24回統計 ===
-シングル: {s_count}回 ({s_count/24*100:.1f}%)
-ダブル: {d_count}回 ({d_count/24*100:.1f}%)
-トリプル: {t_count}回 ({t_count/24*100:.1f}%)
-"""
-                    # ★ 予想モデルセクション（RF/NN/MC/WH＋合算TOP5）を追加
-                    detailed_text += "\n" + "=" * 50 + "\n"
-                    detailed_text += build_prediction_section_text(df.copy())
-                    detailed_text += "=" * 50 + "\n"
-
-                    st.code(detailed_text, language='text')
-                except Exception as e:
-                    st.error(f"詳細分析生成エラー: {e}")
-
-            return df, df_final
-        except Exception as e:
-            st.error("AI予測の実行中にエラーが発生しました")
-            st.exception(e)
-            return None, None
-
-    df_main, df_final = show_ai_predictions(CSV_PATH)
-
-    if df_main is not None and df_final is not None:
-        st.markdown("---")
-        st.header("📸 NAOKIの予想画像生成")
-        if st.button("🎨 NAOKIの予想画像を生成", type="primary"):
-            with st.spinner("バックテスト実行中... 画像生成中..."):
-                try:
-                    latest_round = int(df_main.iloc[0]["回号"])
-                    next_round = latest_round + 1
-                    next_date = get_next_drawing_date()
-                    previous_winning = [
-                        int(df_main.iloc[0]["第1数字"]),
-                        int(df_main.iloc[0]["第2数字"]),
-                        int(df_main.iloc[0]["第3数字"]),
-                        int(df_main.iloc[0]["第4数字"])
-                    ]
-                    df_for_previous_prediction = df_main.iloc[1:].reset_index(drop=True)
-                    previous_predictions_df = run_ai_prediction_logic(df_for_previous_prediction)
-                    st.info(f"前回検証: 第{latest_round}回を{len(df_for_previous_prediction)}回分のデータで照合")
-                    image_path = create_naoki_prediction_image(
-                        current_predictions_df=df_final,
-                        current_round=next_round,
-                        current_date=next_date,
-                        previous_round=latest_round,
-                        previous_winning=previous_winning,
-                        previous_predictions_df=previous_predictions_df,
-                        output_path=f"output/naoki_prediction_{next_round}.png"
-                    )
-                    if image_path:
-                        st.success(f"✅ 画像生成完了: 第{next_round}回")
-                        st.image(image_path, caption=f"NAOKIのナンバーズ4予想（第{next_round}回）", use_column_width=True)
-                        hit_count = 0
-                        for i in range(4):
-                            for j in range(5):
-                                if previous_predictions_df.iloc[j][f"第{i+1}数字"] == previous_winning[i]:
-                                    hit_count += 1
-                        st.info(f"前回検証結果: {hit_count}/20個が一致")
-                        with open(image_path, "rb") as file:
-                            st.download_button(
-                                label="📥 画像をダウンロード",
-                                data=file,
-                                file_name=f"naoki_prediction_{next_round}.png",
-                                mime="image/png"
-                            )
-                    else:
-                        st.error("画像生成に失敗しました")
-                except Exception as e:
-                    st.error(f"画像生成エラー: {e}")
-                    st.exception(e)
-
-    st.subheader("シングル・ダブル・トリプル分析")
-    s = d = t = 0
-    for _, row in df_recent.iterrows():
-        cnts = Counter([row[f"第{i}数字"] for i in range(1, 5)])
-        vals = list(cnts.values())
-        if 3 in vals:
-            t += 1
-        elif vals.count(2) == 1:
-            d += 1
-        else:
-            s += 1
-    st.write(pd.DataFrame({"タイプ": ["シングル", "ダブル", "トリプル"], "回数": [s, d, t]}))
-
-    st.subheader("ひっぱり数字の回数")
-    hoppari = 0
-    for i in range(1, len(df_recent)):
-        prev = set(df_recent.iloc[i - 1][[f"第{n}数字" for n in range(1, 5)]])
-        curr = set(df_recent.iloc[i][[f"第{n}数字" for n in range(1, 5)]])
-        if prev & curr:
-            hoppari += 1
-    st.write(f"ひっぱり数字の回数：{hoppari} 回")
-
-    st.subheader("数字の範囲ごとの分布")
-    range_counts = {'0-2': 0, '3-5': 0, '6-9': 0}
-    for _, row in df_recent.iterrows():
-        for i in range(1, 5):
-            num = row[f"第{i}数字"]
-            if num <= 2:
-                range_counts['0-2'] += 1
-            elif num <= 5:
-                range_counts['3-5'] += 1
-            else:
-                range_counts['6-9'] += 1
-    st.write(pd.DataFrame({"範囲": list(range_counts.keys()), "出現回数": list(range_counts.values())}))
-
-    st.subheader("ペア（2つ組）出現回数")
-    pair_counts = Counter()
-    for _, row in df_recent.iterrows():
-        nums = [row[f"第{i}数字"] for i in range(1, 5)]
-        for i in range(4):
-            for j in range(i+1, 4):
-                pair = tuple(sorted([nums[i], nums[j]]))
-                pair_counts[pair] += 1
-    pair_df = pd.DataFrame(pair_counts.items(), columns=["ペア", "出現回数"]).sort_values(by="出現回数", ascending=False)
-    st.dataframe(pair_df)
-
-    st.subheader("合計値の出現回数")
-    sum_counts = Counter()
-    for _, row in df_recent.iterrows():
-        total = sum([row[f"第{i}数字"] for i in range(1, 5)])
-        sum_counts[total] += 1
-    sum_df = pd.DataFrame(sum_counts.items(), columns=["合計値", "出現回数"]).sort_values(by="出現回数", ascending=False)
-    st.dataframe(sum_df)
-
-    st.subheader("スキップ回数分析（数字ごとに直近3回の出現：◯回前）")
-    try:
-        history_map = {i: [] for i in range(10)}
-        for idx in range(len(df_recent)):
-            row = df_recent.iloc[idx]
-            for d in range(1, 5):
-                num = row[f"第{d}数字"]
-                if idx not in history_map[num]:
-                    history_map[num].append(idx)
-
-        def format_rank(n):
-            return f"{n}回前" if isinstance(n, int) else "出現なし"
-
-        display_rows = []
-        for num in range(10):
-            last_1 = format_rank(history_map[num][0]) if len(history_map[num]) > 0 else "出現なし"
-            last_2 = format_rank(history_map[num][1]) if len(history_map[num]) > 1 else "出現なし"
-            last_3 = format_rank(history_map[num][2]) if len(history_map[num]) > 2 else "出現なし"
-            display_rows.append({"数字": num, "直近出現": last_1, "2回前出現": last_2, "3回前出現": last_3})
-        skip_df = pd.DataFrame(display_rows)
-        st.dataframe(skip_df)
-    except Exception as e:
-        st.error(f"スキップ分析の表示に失敗しました: {e}")
-
-    st.header("ナンバーズ4予想（軸数字指定）")
-    axis = st.selectbox("軸数字を選んでください（0〜9）", list(range(10)))
-    if st.button("20通りを表示"):
-        preds = []
-        while len(preds) < 20:
-            others = random.sample([i for i in range(10) if i != axis], 3)
-            combo = sorted([axis] + others)
-            if combo not in preds:
-                preds.append(combo)
-        st.dataframe(pd.DataFrame(preds, columns=["予測1", "予測2", "予測3", "予測4"]))
-
-    st.header("ナンバーズ4予想（AI風ロジック）")
-    if st.button("AI風ロジックで20通り生成"):
-        total_sums = df_recent[[f"第{i}数字" for i in range(1, 5)]].sum(axis=1)
-        avg = total_sums.mean()
-        med = total_sums.median()
-        mode_vals = total_sums.mode().tolist()
-
-        skip_count = {i: None for i in range(10)}
-        for idx in range(len(df_recent)):
-            row = df_recent.iloc[idx]
-            for d in range(1, 5):
-                num = row[f"第{d}数字"]
-                if skip_count[num] is None:
-                    skip_count[num] = idx
-
-        def classify_abc(n):
-            if n <= 3:
-                return "A"
-            elif n <= 6:
-                return "B"
-            else:
-                return "C"
-
-        def is_valid_combo(combo):
-            total = sum(combo)
-            if not (med - 4 <= total <= med + 4):
-                return False
-            abc_counts = {"A": 0, "B": 0, "C": 0}
-            for n in combo:
-                abc_counts[classify_abc(n)] += 1
-            if max(abc_counts.values()) >= 3:
-                return False
-            if all(skip_count[n] is not None and skip_count[n] < 3 for n in combo):
-                return False
-            return True
-
-        predictions = []
-        tries = 0
-        while len(predictions) < 20 and tries < 1000:
-            cand = sorted(random.sample(range(10), 4))
-            if cand not in predictions and is_valid_combo(cand):
-                predictions.append(cand)
-            tries += 1
-
-        if predictions:
-            st.success("以下の条件で絞り込んだ候補を表示します：")
-            st.markdown("- 合計値：中央値 ±4")
-            st.markdown("- ABCバランス（偏りすぎNG）")
-            st.markdown("- 最近出ていない数字を優先")
-            st.dataframe(pd.DataFrame(predictions, columns=["予測1", "予測2", "予測3", "予測4"]))
-        else:
-            st.warning("条件に合致する候補が生成できませんでした。")
-
-    if st.button("🎨 画像生成テスト"):
-        test_predictions = pd.DataFrame({
-            "第1数字": [6, 3, 9, 2, 0],
-            "第2数字": [5, 1, 9, 4, 3],
-            "第3数字": [2, 7, 1, 0, 8],
-            "第4数字": [5, 6, 4, 7, 8]
-        })
-        image_path = create_naoki_prediction_image(
-            current_predictions_df=test_predictions,
-            current_round=6928,
-            current_date=datetime(2026, 2, 26),
-            output_path="test.png"
-        )
-        if image_path:
-            st.success("✅ 画像生成成功")
-            st.image(image_path)
-        else:
-            st.error("❌ 生成失敗")
+# ============================================
+# 軸数字を指定したランダム予測（簡易ツール／AIモデルは使用しない）
+# ============================================
+st.header("ナンバーズ4予想（軸数字指定・ランダム）")
+st.caption("これはAIモデルではなく、指定した軸数字に他3桁をランダムに組み合わせる簡易ツールです。")
+axis = st.selectbox("軸数字を選んでください（0〜9）", list(range(10)))
+if st.button("20通りを表示"):
+    preds = []
+    while len(preds) < 20:
+        others = random.sample([i for i in range(10) if i != axis], 3)
+        combo = sorted([axis] + others)
+        if combo not in preds:
+            preds.append(combo)
+    st.dataframe(pd.DataFrame(preds, columns=["予測1", "予測2", "予測3", "予測4"]))
