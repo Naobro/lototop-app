@@ -33,4 +33,9 @@ select.axis-select { padding:8px; font-size:16px; border-radius:6px; border:1px 
 .verify-miss { color:#999; }
 .number-pool { display:flex; flex-wrap:wrap; gap:6px; margin:10px 0; }
 .number-pool span { display:inline-block; width:34px; height:34px; line-height:34px; text-align:center; border-radius:50%; font-size:13px; font-weight:bold; }
+.stat-grid { display:flex; flex-wrap:wrap; gap:10px; margin:14px 0; }
+.stat-box { flex:1; min-width:140px; background:#fff; border-radius:8px; padding:14px; text-align:center; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+.stat-box .stat-value { font-size:20px; font-weight:bold; color:#1a5490; }
+.stat-box .stat-label { font-size:12px; color:#777; margin-top:4px; }
+button { padding:8px 16px; font-size:14px; border-radius:8px; border:none; background:#1a5490; color:#fff; cursor:pointer; }
 """
