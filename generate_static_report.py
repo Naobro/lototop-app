@@ -149,6 +149,9 @@ def build_report_html(game_key: str) -> tuple[str, str]:
     <h1>NAOKIの{label} 予想レポート</h1>
     <div class="date">第{next_round}回向け ／ 生成日時 {generated_at}</div>
   </div>
+  <div class="nav">
+    <a href="{game_key}_stats.html">統計ページへ戻る</a> | <a href="../index.html">TOPへ戻る</a>
+  </div>
 
   <h2>前回の当選番号（第{latest_round}回）</h2>
   <div class="winning">{number_str}</div>

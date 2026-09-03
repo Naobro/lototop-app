@@ -25,4 +25,12 @@ th { background:#1a5490; color:#fff; }
 pre { white-space: pre-wrap; background:#fafafa; border:1px solid #eee; padding:12px; border-radius:8px; font-size:13px; }
 button.axis-btn { padding:10px 20px; font-size:16px; border-radius:8px; border:none; background:#1a5490; color:#fff; cursor:pointer; }
 select.axis-select { padding:8px; font-size:16px; border-radius:6px; border:1px solid #ccc; margin-right:10px; }
+.tag { display:inline-block; padding:2px 8px; border-radius:10px; font-size:12px; font-weight:bold; margin-left:4px; }
+.tag-tier1 { background:#ffe0b2; color:#e65100; }
+.tag-tier2 { background:#e1f5fe; color:#0277bd; }
+.tag-cut { background:#eeeeee; color:#999; text-decoration: line-through; }
+.verify-hit { background:#e8f5e8; color:#2e7d32; font-weight:bold; }
+.verify-miss { color:#999; }
+.number-pool { display:flex; flex-wrap:wrap; gap:6px; margin:10px 0; }
+.number-pool span { display:inline-block; width:34px; height:34px; line-height:34px; text-align:center; border-radius:50%; font-size:13px; font-weight:bold; }
 """

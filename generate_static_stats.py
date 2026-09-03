@@ -146,7 +146,8 @@ def build_stats_html(game_key: str) -> tuple[str, str]:
   </div>
   <div class="nav">
     <a href="{other_key}_stats.html">{other_label}はこちら</a> |
-    <a href="{game_key}_report_{latest_round + 1}.html">AI予想レポート（有料note用）</a>
+    <a href="{game_key}_report_{latest_round + 1}.html">AI予想レポート（有料note用）</a> |
+    <a href="../index.html">TOPへ戻る</a>
   </div>
   <p class="note">このページは当選番号と統計データのみを掲載しています。AIによる予想は別途noteで公開しています。</p>
 

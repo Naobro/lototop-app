@@ -219,9 +219,22 @@ def top_joint_combinations(
     top_k_per_digit: int = 8,
     n_results: int = 20,
     max_dup: int = 2,
+    digit_usage_cap_ratio: float = 0.5,
 ) -> list[tuple[tuple[int, ...], float]]:
     """桁ごとのスコア上位候補から、重複しすぎない組み合わせを
     スコア合計が高い順に決定的に選ぶ（乱数を使わないので再現性がある）。
+
+    3つの絞り込みルールを適用する：
+    1. トリプル/ボックス(同じ数字3つ以上)は最初から除外する
+       （max_dup=2 ＝ 同じ数字は最大2つ「ダブル」まで許容。理論上は
+       トリプルも当然起こり得るが、「トリプルだったら仕方ない」と
+       割り切って予想対象からは外す、というユーザー方針を反映）。
+    2. ボックス表記が重複する組（例: 8998 と 9988 は数字の中身が同じ）は
+       スコアが高い方だけを残し、片方は除外する。
+    3. 特定の数字（例: 8・9ばかり）に予想全体が偏らないよう、各数字が
+       上位n_results件に登場できる回数に上限を設けて分散させる。
+       上限で埋まらない場合は上限を1件ずつ緩めて再選出する（無制限の
+       ノーガード補充はしない＝分散を最後まで保つ）。
     """
     candidates = []
     for j in range(digit_count):
@@ -229,23 +242,39 @@ def top_joint_combinations(
         candidates.append(top if top else list(range(10)))
 
     scored_combos = []
+    seen_positional = set()
+    seen_box = set()
     for combo in itertools.product(*candidates):
-        if max(Counter(combo).values()) > max_dup:
+        if max(Counter(combo).values()) > max_dup:  # ルール1: トリプル以上を除外
             continue
+        if combo in seen_positional:
+            continue
+        seen_positional.add(combo)
+        box_key = tuple(sorted(combo))
+        if box_key in seen_box:  # ルール2: ボックス重複を除外
+            continue
+        seen_box.add(box_key)
         total_score = sum(scores[j].get(combo[j], 0) for j in range(digit_count))
         scored_combos.append((combo, total_score))
     scored_combos.sort(key=lambda t: -t[1])
 
-    # 同スコアの重複を除きつつ上位n_resultsを取る
-    seen = set()
-    out = []
-    for combo, score in scored_combos:
-        if combo in seen:
-            continue
-        seen.add(combo)
-        out.append((combo, score))
-        if len(out) >= n_results:
+    # ルール3: 数字ごとの登場回数に上限を設けた貪欲選択（分散処理）
+    cap = max(2, int(n_results * digit_usage_cap_ratio))
+    out: list[tuple[tuple[int, ...], float]] = []
+    while cap <= n_results:
+        usage: Counter = Counter()
+        out = []
+        for combo, score in scored_combos:
+            if len(out) >= n_results:
+                break
+            if any(usage[d] >= cap for d in combo):
+                continue
+            out.append((combo, score))
+            for d in combo:
+                usage[d] += 1
+        if len(out) >= min(n_results, len(scored_combos)):
             break
+        cap += 1
     return out
 
 
