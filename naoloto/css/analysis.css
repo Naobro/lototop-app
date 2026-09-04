@@ -1,0 +1,326 @@
+/* ============================================================
+   分析ページ専用スタイル（共通デザイン common.css を前提に読み込む）
+   ============================================================ */
+
+/* ------------------------------------------------------------
+   ライトテーマ上書き
+   common.css の :root トークンを、このファイルを読み込むページに
+   限って明るい配色に上書きする。common.css 自体・TOPページ
+   （index.html、analysis.css を読み込まない）の見た目は変更しない。
+   ------------------------------------------------------------ */
+:root {
+  --bg-1: #ffffff;
+  --bg-2: #fbfaf6;
+  --bg-3: #f5f5f2;
+  --bg-4: #ffffff;
+
+  --gold-1: #a3760f;
+  --gold-2: #8a5a00;
+  --gold-3: #c9a227;
+  --gold-4: #9c7a12;
+
+  --text: #1a1a1a;
+  --text-sub: #555555;
+}
+
+body {
+  background:
+    radial-gradient(circle at 20% 10%, rgba(212, 175, 55, 0.06) 0%, transparent 40%),
+    radial-gradient(circle at 80% 90%, rgba(139, 0, 0, 0.05) 0%, transparent 45%),
+    linear-gradient(160deg, var(--bg-1) 0%, var(--bg-2) 35%, var(--bg-3) 70%, var(--bg-4) 100%);
+  background-attachment: fixed;
+}
+
+.container-wide {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.page-lead {
+  text-align: center;
+  color: var(--text-sub);
+  font-size: 0.95rem;
+  max-width: 700px;
+  margin: 0 auto 30px;
+}
+
+/* h2見出しに添える補足テキスト（例：データの収録範囲） */
+.h2-sub {
+  font-family: var(--font-sans);
+  font-size: 0.55em;
+  font-weight: normal;
+  color: var(--text-sub);
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+/* 最新の当選番号カード */
+.latest-card {
+  background: linear-gradient(135deg, #fffdf5, #f7f3e8);
+  border: 1px solid rgba(212, 175, 55, 0.5);
+  border-radius: 20px;
+  padding: 30px;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  text-align: center;
+}
+.latest-card .round {
+  font-family: var(--font-serif);
+  font-size: 1.2rem;
+  color: var(--gold-1);
+  margin-bottom: 4px;
+}
+.latest-card .date {
+  color: var(--text-sub);
+  font-size: 0.9rem;
+  margin-bottom: 20px;
+}
+.ball-label {
+  font-size: 0.8rem;
+  color: var(--text-sub);
+  margin-bottom: 8px;
+}
+.ball-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+.ball {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 1.05rem;
+  background: linear-gradient(145deg, var(--gold-1), var(--gold-3));
+  color: #2b1606;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
+}
+.ball.bonus {
+  background: linear-gradient(145deg, #ffd7d7, var(--wine));
+  color: #fff;
+}
+
+/* テーブル共通（横スクロール対応） */
+.table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: 12px;
+  border: 1px solid rgba(212, 175, 55, 0.3);
+}
+table.analysis-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  min-width: 640px;
+  background: #ffffff;
+}
+table.analysis-table th,
+table.analysis-table td {
+  padding: 8px 10px;
+  text-align: center;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  white-space: nowrap;
+}
+table.analysis-table thead th {
+  background: rgba(212, 175, 55, 0.22);
+  color: var(--gold-1);
+  position: sticky;
+  top: 0;
+}
+table.analysis-table tbody tr:hover {
+  background: rgba(212, 175, 55, 0.12);
+}
+table.analysis-table .num-cell {
+  color: var(--gold-2);
+  font-weight: bold;
+}
+
+/* 最新回の当選数字と一致することを示す強調（★マークの代わり） */
+.highlight-latest {
+  color: #c0392b;
+  font-weight: bold;
+}
+
+/* 厳選数字の1軍を示す強調（2軍は通常の文字色のまま） */
+.tier1-num {
+  color: #1a56c4;
+  font-weight: bold;
+}
+
+/* S数字・A数字の位別分類テーブル専用（他のテーブルには影響しない） */
+table.position-sab-table th,
+table.position-sab-table td {
+  border: 1px solid rgba(0, 0, 0, 0.15);
+}
+table.position-sab-table td {
+  text-align: left;
+}
+
+/* エリア分析（位置×数字のヒートマップ表）専用。他のテーブルには影響しない */
+table.position-heatmap-table {
+  min-width: 1500px;
+  font-size: 0.72rem;
+}
+table.position-heatmap-table th,
+table.position-heatmap-table td {
+  padding: 4px 6px;
+  white-space: nowrap;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+table.position-heatmap-table tbody th {
+  text-align: left;
+  font-weight: bold;
+}
+/* エリア内：行ごとの色（出現回数が0でも塗る。数値表示の有無はJS側でcount>0により決定） */
+.position-row-1 { background: #e53935; color: #ffffff; }
+.position-row-2 { background: #fb8c00; color: #ffffff; }
+.position-row-3 { background: #fdd835; color: #000000; }
+.position-row-4 { background: #43a047; color: #ffffff; }
+.position-row-5 { background: #1e88e5; color: #ffffff; }
+.position-row-6 { background: #7986cb; color: #ffffff; }
+.position-row-7 { background: #8e24aa; color: #ffffff; }
+/* エリア外：出現していない数字帯 */
+.area-out { background: #1a1a1a; }
+
+/* 出現状況グリッド（見やすい一覧表） */
+.number-grid {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 8px;
+}
+.number-cell {
+  aspect-ratio: 1;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(212, 175, 55, 0.25);
+  background: rgba(0, 0, 0, 0.02);
+}
+.number-cell .num {
+  font-weight: bold;
+  font-size: 0.95rem;
+}
+.number-cell .cnt {
+  font-size: 0.62rem;
+  color: var(--text-sub);
+}
+/* 出現回数ランキングに基づく配色（上位3／4〜10位／下位10／それ以外） */
+.number-cell.rank-top3 {
+  background: #ffd700;
+}
+.number-cell.rank-top10 {
+  background: #ffff66;
+}
+.number-cell.rank-worst10 {
+  background: #8b4513;
+}
+.number-cell.rank-worst10 .num,
+.number-cell.rank-worst10 .cnt {
+  color: #ffffff;
+}
+.number-cell.rank-normal {
+  background: #ffffff;
+}
+
+/* 参考情報カード（縦積み・独立したカードとして表示） */
+.info-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+/* S/A/B割合カードなど、横並びにしたいカード群（スマホでは自動的に縦積みに戻る） */
+.info-cards-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.info-cards-row .info-card {
+  flex: 1 1 200px;
+}
+.info-card {
+  background: linear-gradient(135deg, #fffaf0, #fdf6e8);
+  border: 1px solid rgba(212, 175, 55, 0.4);
+  border-radius: 14px;
+  padding: 18px 20px;
+}
+.info-card h4 {
+  color: var(--gold-2);
+  font-size: 0.9rem;
+  margin-bottom: 10px;
+}
+.info-card .nums {
+  font-size: 1rem;
+  font-weight: bold;
+  letter-spacing: 0.5px;
+  line-height: 1.6;
+}
+
+/* 免責事項ボックス */
+.disclaimer-box {
+  border: 1px solid rgba(212, 175, 55, 0.4);
+  border-radius: 14px;
+  padding: 18px 20px;
+  background: #f5f5f2;
+  font-size: 0.85rem;
+  color: var(--text-sub);
+  line-height: 1.8;
+}
+
+/* 状態表示 */
+.loading,
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-sub);
+}
+
+/* note投稿用コピーボタン */
+.copy-bar {
+  text-align: center;
+  margin-top: 20px;
+}
+.copy-btn {
+  background: linear-gradient(135deg, var(--gold-3), var(--gold-4));
+  color: #ffffff;
+  border: none;
+  padding: 10px 20px;
+  font-size: 0.9rem;
+  font-weight: bold;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: var(--font-sans);
+}
+.copy-btn:hover {
+  opacity: 0.85;
+}
+.copy-status {
+  margin-left: 10px;
+  font-size: 0.85rem;
+  color: var(--gold-2);
+  font-weight: bold;
+}
+
+@media (max-width: 600px) {
+  .ball {
+    width: 36px;
+    height: 36px;
+    font-size: 0.9rem;
+  }
+  .number-grid {
+    grid-template-columns: repeat(6, 1fr);
+  }
+  table.analysis-table {
+    font-size: 0.78rem;
+    min-width: 520px;
+  }
+}

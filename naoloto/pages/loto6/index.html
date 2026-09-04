@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ロト6 分析ページ | NAO LOTO</title>
+  <meta name="description" content="ロト6の過去当選番号・出現回数・出現率・出現間隔・直近の出現傾向を集計した無料分析ページ。">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&family=Shippori+Mincho:wght@700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../css/common.css">
+  <link rel="stylesheet" href="../../css/analysis.css">
+</head>
+<body>
+
+  <div class="site-title">
+    <h1 class="gold-text">ロト6 分析ページ</h1>
+    <p>過去データを集計して、数字選びの参考に</p>
+  </div>
+
+  <div class="container-wide">
+
+    <p class="page-lead">
+      直近の当選番号・出現回数・出現率・出現間隔などを集計しています。<br>
+      あくまで<span class="highlight">過去データに基づく参考情報</span>であり、次回の当選を予測・保証するものではありません。
+    </p>
+
+    <!-- ① 最新の当選番号 -->
+    <section>
+      <h2><span class="gold-text">🎯 最新の当選番号</span></h2>
+      <div id="latest-draw" class="loading">読み込み中...</div>
+    </section>
+
+    <!-- ⑧ 参考情報 -->
+    <section>
+      <h2><span class="gold-text">📌 数字選びの参考情報</span></h2>
+      <div id="reference-info" class="loading">読み込み中...</div>
+    </section>
+
+    <!-- S/A/B分類（直近24回） -->
+    <section>
+      <h2><span class="gold-text">🔤 S/A/B分類（直近24回）</span></h2>
+      <div id="abc-table" class="loading">読み込み中...</div>
+    </section>
+
+    <!-- S数字・A数字の位別分類 -->
+    <section>
+      <h2><span class="gold-text">🔠 S数字・A数字の位別分類</span></h2>
+      <div id="tier-position-groups" class="loading">読み込み中...</div>
+    </section>
+
+    <!-- 各位の出現回数TOP5 -->
+    <section>
+      <h2><span class="gold-text">🏅 各位の出現回数TOP5</span></h2>
+      <div id="position-top5" class="loading">読み込み中...</div>
+    </section>
+
+    <!-- 各数字の出現回数TOP5 -->
+    <section>
+      <h2><span class="gold-text">📈 各数字の出現回数TOP5</span></h2>
+      <div id="digit-position-top5" class="loading">読み込み中...</div>
+    </section>
+
+    <!-- エリア分析 -->
+    <section>
+      <h2><span class="gold-text">🌈 エリア分析（直近24回）</span></h2>
+      <div id="position-heatmap" class="loading">読み込み中...</div>
+    </section>
+
+    <!-- ひっぱり・連続数字の傾向 -->
+    <section>
+      <h2><span class="gold-text">🔁 ひっぱり・連続数字の傾向（直近24回）</span></h2>
+      <div id="pull-consecutive-summary" class="loading">読み込み中...</div>
+    </section>
+
+    <!-- 連続数字ペアの出現ランキング -->
+    <section>
+      <h2><span class="gold-text">🔗 連続数字ペアの出現ランキング（直近24回）</span></h2>
+      <div id="consecutive-pairs-table" class="loading">読み込み中...</div>
+    </section>
+
+    <!-- 直近24回のパターン分析 -->
+    <section>
+      <h2><span class="gold-text">🧩 直近24回のパターン分析</span></h2>
+      <div id="pattern-table" class="loading">読み込み中...</div>
+    </section>
+
+    <!-- 厳選数字（1軍・2軍）・削除数字 -->
+    <section id="selected-numbers-section">
+      <h2><span class="gold-text">🎖 厳選数字（1軍・2軍）・削除数字</span></h2>
+      <div id="selected-numbers" class="loading">読み込み中...</div>
+    </section>
+
+    <!-- 予想パターン -->
+    <section id="prediction-patterns-section">
+      <h2><span class="gold-text">🔮 予想パターン（上位10）</span></h2>
+      <div id="prediction-patterns" class="loading">読み込み中...</div>
+      <div class="copy-bar">
+        <button id="copy-prediction-btn" class="copy-btn" type="button">📋 予想をコピー（厳選数字＋予想パターン）</button>
+        <span id="copy-prediction-status" class="copy-status"></span>
+      </div>
+    </section>
+
+    <!-- 当選検証 -->
+    <section id="selection-verification-section">
+      <h2><span class="gold-text">✅ 当選検証</span></h2>
+      <div id="selection-verification" class="loading">読み込み中...</div>
+      <div class="copy-bar">
+        <button id="copy-verification-btn" class="copy-btn" type="button">📋 検証結果をコピー</button>
+        <span id="copy-verification-status" class="copy-status"></span>
+      </div>
+    </section>
+
+    <!-- ⑦ 出現状況グリッド -->
+    <section>
+      <h2><span class="gold-text">🔢 数字ごとの出現状況（直近24回）</span></h2>
+      <p class="page-lead" style="margin-bottom:16px;">
+        直近24回の出現回数をもとに、出現回数の多い順に金色（上位3）→蛍光イエロー（4〜10位）→白（それ以外）→茶色（少ない方から10位以内）の配色で表示しています。
+      </p>
+      <div id="number-grid" class="loading">読み込み中...</div>
+    </section>
+
+    <!-- ③④ 出現回数・出現率 -->
+    <section>
+      <h2><span class="gold-text">📊 各数字の出現回数・出現率（直近24回）</span></h2>
+      <div id="frequency-table" class="loading">読み込み中...</div>
+    </section>
+
+    <!-- ⑤ 出現間隔 -->
+    <section>
+      <h2><span class="gold-text">⏱ 各数字の現在の出現間隔</span></h2>
+      <p class="page-lead" style="margin-bottom:16px;">最新回から数えて、何回前に出現したかを表しています。</p>
+      <div id="interval-table" class="loading">読み込み中...</div>
+    </section>
+
+    <p style="text-align:center; margin-top:10px;">
+      <a href="../../index.html">← NAO LOTO TOPへ戻る</a>
+    </p>
+
+    <footer>
+      <div class="disclaimer">
+        本ページの情報は過去の当選番号データを集計したものであり、当選を予測・保証するものではありません。<br>
+        ロト6の抽せんは毎回独立しており、過去の出現データから当選確率を上げることはできません。<br>
+        宝くじの購入はすべて自己責任で、無理のない範囲でお願いします。
+      </div>
+    </footer>
+
+  </div>
+
+  <script src="../../js/analysis/stats.js"></script>
+  <script src="../../js/analysis/render.js"></script>
+  <script src="../../js/analysis/loto6.js"></script>
+</body>
+</html>
