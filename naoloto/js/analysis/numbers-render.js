@@ -76,13 +76,6 @@ const NumbersRender = (function () {
       cards.appendChild(card);
     });
     container.appendChild(cards);
-
-    const disclaimer = el(
-      'div',
-      'disclaimer-box',
-      'これらは過去データの集計に基づく参考情報であり、次回の当選数字を予測・保証するものではありません。ナンバーズの抽せんは毎回独立しており、過去の出現状況が次回の出やすさに影響することはありません。'
-    );
-    container.appendChild(disclaimer);
   }
 
   // 各桁の出現回数・出現率（直近n回）

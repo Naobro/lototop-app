@@ -100,7 +100,10 @@
     const verification = NumbersStats.calcVerification(draws, CONFIG, CONFIG.tierN, 5);
     NumbersRender.renderVerification(getEl('verification'), verification, CONFIG.digitCount);
 
-    LotoRender.setupCopyButton('copy-prediction-btn', 'copy-prediction-status', ['prediction-numbers-section']);
+    LotoRender.setupCopyButton('copy-prediction-btn', 'copy-prediction-status', [
+      'reference-info-section',
+      'prediction-numbers-section',
+    ]);
     LotoRender.setupCopyButton('copy-verification-btn', 'copy-verification-status', ['verification-section']);
   } catch (err) {
     console.error(err);
