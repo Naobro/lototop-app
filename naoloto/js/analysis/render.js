@@ -252,6 +252,7 @@ const LotoRender = (function () {
   // ② S数字・A数字の位別分類：位グループ×階層で数字を一覧表示する。
   // 最新回の当選数字と一致するものは赤い太文字で強調する。
   function renderTierPositionGroupsTable(container, { groups, tierLabels }, n) {
+    if (!container) return;
     container.innerHTML = '';
 
     const lead = el(
@@ -324,6 +325,7 @@ const LotoRender = (function () {
 
   // ④ 各数字（第1〜第n数字別）の出現回数TOP5
   function renderDigitPositionTop5Table(container, digitPositions, n) {
+    if (!container) return;
     container.innerHTML = '';
 
     const lead = el(
@@ -400,6 +402,7 @@ const LotoRender = (function () {
   // 厳選数字は「1軍・2軍」という独自の括りであり、S数字・A数字の分類とは表示上区別する。
   // 1軍は青文字、2軍は通常の文字色で、位グループごとに1つの並びとして表示する。
   function renderSelectedNumbers(container, selection, positionGroups, n) {
+    if (!container) return;
     container.innerHTML = '';
     const { cut, selectedCount, maxNumber, oddsBase, oddsSelected, oddsImprovement } = selection;
 
@@ -449,6 +452,7 @@ const LotoRender = (function () {
 
   // 予想パターン（直近n回の位パターンの出現回数、上位topN件）
   function renderPredictionPatterns(container, patterns, n, topN = 10) {
+    if (!container) return;
     container.innerHTML = '';
 
     const lead = el(
@@ -472,6 +476,7 @@ const LotoRender = (function () {
   // 当選検証：最新回を除いたデータで厳選数字を再計算し、
   // 実際の最新回の当選番号が含まれていたかを表示する。
   function renderSelectionVerification(container, verification) {
+    if (!container) return;
     container.innerHTML = '';
     if (!verification) {
       emptyState(container, 'データが不足しているため検証できません。');

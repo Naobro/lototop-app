@@ -55,6 +55,7 @@ const NumbersRender = (function () {
 
   // 数字選びの参考情報：桁ごとのよく出ている数字・しばらく出ていない数字
   function renderReferenceInfo(container, { digitTop5, digitIntervals, n }) {
+    if (!container) return;
     container.innerHTML = '';
     const cards = el('div', 'info-cards');
 
@@ -359,6 +360,7 @@ const NumbersRender = (function () {
 
   // 予想数字（note投稿用）：各桁のTOP5候補をそのまま「予想数字」として提示する
   function renderPredictionNumbers(container, digitTop5, n) {
+    if (!container) return;
     container.innerHTML = '';
     const lead = el(
       'p',
@@ -382,6 +384,7 @@ const NumbersRender = (function () {
   // 当選検証：前回までのデータで計算した予想数字（各桁TOP5）に対し、
   // 実際の当選番号がストレート・ボックス（・ミニ）で的中可能だったかを表示する
   function renderVerification(container, verification, digitCount) {
+    if (!container) return;
     container.innerHTML = '';
     if (!verification) {
       emptyState(container, 'データが不足しているため検証できません。');
