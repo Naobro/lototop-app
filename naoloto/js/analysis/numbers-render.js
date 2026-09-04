@@ -77,26 +77,34 @@ const NumbersRender = (function () {
   // 各桁の出現回数・出現率（直近n回）
   function renderDigitFrequencyTable(container, digitFrequency, n) {
     container.innerHTML = '';
-    const lead = el('p', 'page-lead', `直近${n}回について、各桁（位置）ごとに0〜9それぞれの出現回数・出現率を集計しています。`);
+    const lead = el(
+      'p',
+      'page-lead',
+      `直近${n}回について、各桁（位置）ごとに0〜9それぞれの出現回数・出現率を、出現回数の多い順（ランキング形式）で集計しています。`
+    );
     lead.style.marginBottom = '16px';
     container.appendChild(lead);
+
+    const rankedPositions = digitFrequency.positions.map((p) => ({
+      position: p.position,
+      ranked: [...p.frequency].sort((a, b) => b.count - a.count || a.digit - b.digit),
+    }));
 
     const wrap = el('div', 'table-scroll');
     const table = document.createElement('table');
     table.className = 'analysis-table';
-    const headCells = digitFrequency.positions.map((p) => `<th colspan="2">第${p.position}数字</th>`).join('');
-    const subCells = digitFrequency.positions.map(() => `<th>回数</th><th>率</th>`).join('');
-    table.innerHTML = `<thead><tr><th rowspan="2">数字</th>${headCells}</tr><tr>${subCells}</tr></thead>`;
+    const headCells = rankedPositions.map((p) => `<th>第${p.position}数字</th>`).join('');
+    table.innerHTML = `<thead><tr><th>順位</th>${headCells}</tr></thead>`;
     const tbody = document.createElement('tbody');
-    for (let digit = 0; digit <= 9; digit++) {
+    for (let rank = 0; rank < 10; rank++) {
       const tr = document.createElement('tr');
-      const cells = digitFrequency.positions
+      const cells = rankedPositions
         .map((p) => {
-          const f = p.frequency.find((x) => x.digit === digit);
-          return `<td>${f.count}回</td><td>${f.rate}%</td>`;
+          const f = p.ranked[rank];
+          return `<td>${f.digit}（${f.count}回, ${f.rate}%）</td>`;
         })
         .join('');
-      tr.innerHTML = `<td class="num-cell">${digit}</td>${cells}`;
+      tr.innerHTML = `<td>${rank + 1}位</td>${cells}`;
       tbody.appendChild(tr);
     }
     table.appendChild(tbody);
