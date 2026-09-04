@@ -102,14 +102,18 @@ const NumbersStats = (function () {
   // 候補を絞り込み、同階層内では出現間隔バランスの良い数字を優先する
   // （ロトの厳選数字選定と同じ考え方。単に直近の出現回数が多い数字を並べるだけだと、
   // 出現が直近に偏っている数字ばかりを選ぶことになり矛盾するため）。
+  // S数字はSCAP個までに制限し、S一色にならないようにする（S:A比率が3:2、2:3、
+  // あるいはB数字も混じって2:2:1・3:1:1などになるのが自然になるように）。
+  // 残りの枠はA数字・B数字を階層の壁で区切らず横断的に競わせる。
   // calcDigitTop5（純粋な出現回数ランキング、統計表示用）とは用途が異なる。
   function calcDigitPrediction(draws, config, n = 24, topN = 5) {
     const { tierRules } = config;
+    const SCAP = 3;
     const freq = calcDigitFrequency(draws, config, n);
     const tierMaps = calcDigitTierMap(draws, config, n, tierRules);
     const gapScores = calcDigitGapBalanceScore(draws, config, n);
-    const poolTiers = tierRules.slice(0, -1); // 例: S, A（最下位Bは優先度を下げる）
-    const baselineLabel = tierRules[tierRules.length - 1].label; // 例: B
+    const topLabel = tierRules[0].label; // 例: S
+    const secondaryLabels = tierRules.slice(1).map((t) => t.label); // 例: [A, B]
 
     return freq.positions.map((p, pos) => {
       const tierMap = tierMaps[pos];
@@ -127,39 +131,13 @@ const NumbersStats = (function () {
         pools[tierMap[f.digit]].push(f);
       });
 
-      const totalCandidates = poolTiers.reduce((sum, t) => sum + (pools[t.label] || []).length, 0);
+      const sPicked = sortCandidates(pools[topLabel] || []).slice(0, Math.min(SCAP, topN));
 
-      const picked = [];
-      const pickedSet = new Set();
-      let remaining = topN;
+      const remaining = topN - sPicked.length;
+      const secondaryPool = secondaryLabels.flatMap((label) => pools[label] || []);
+      const secondaryPicked = sortCandidates(secondaryPool).slice(0, remaining);
 
-      poolTiers.forEach((t, i) => {
-        const candidates = sortCandidates(pools[t.label] || []);
-        let slot;
-        if (i === poolTiers.length - 1) {
-          slot = remaining;
-        } else if (totalCandidates > 0) {
-          slot = Math.min(Math.round((topN * candidates.length) / totalCandidates), remaining);
-        } else {
-          slot = 0;
-        }
-        slot = Math.min(slot, candidates.length);
-        candidates.slice(0, slot).forEach((c) => {
-          picked.push(c);
-          pickedSet.add(c.digit);
-        });
-        remaining -= slot;
-      });
-
-      if (remaining > 0) {
-        const fillCandidates = sortCandidates(pools[baselineLabel] || []).filter((c) => !pickedSet.has(c.digit));
-        fillCandidates.slice(0, remaining).forEach((c) => {
-          picked.push(c);
-          pickedSet.add(c.digit);
-        });
-      }
-
-      return { position: p.position, top: picked.slice(0, topN) };
+      return { position: p.position, top: [...sPicked, ...secondaryPicked] };
     });
   }
 
