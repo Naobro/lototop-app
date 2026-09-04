@@ -406,7 +406,7 @@ const LotoRender = (function () {
     const lead = document.createElement('p');
     lead.className = 'page-lead';
     lead.style.marginBottom = '16px';
-    lead.innerHTML = `直近${n}回の出現傾向に応じて、${maxNumber}個の中から厳選数字${selectedCount}個を選んでいます。厳選数字の中でも優先度が高い数字を<strong class="tier1-num">1軍</strong>（青文字）、それに次ぐ数字を2軍（黒文字）としています。単に直近の出現回数が多い数字を選んでいるわけではなく、出現の間隔バランスや位別ランキングも考慮しています。`;
+    lead.innerHTML = `直近${n}回の出現傾向に応じて、${maxNumber}個の中から厳選数字${selectedCount}個を選んでいます。厳選数字の中でも優先度が高い数字を<strong class="tier1-num">1軍</strong>（太字）、それに次ぐ数字を2軍（通常の文字）としています。単に直近の出現回数が多い数字を選んでいるわけではなく、出現の間隔バランスや位別ランキングも考慮しています。`;
     container.appendChild(lead);
 
     if (oddsImprovement !== null) {
