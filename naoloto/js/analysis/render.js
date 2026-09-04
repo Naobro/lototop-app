@@ -263,33 +263,24 @@ const LotoRender = (function () {
     lead.style.marginBottom = '16px';
     container.appendChild(lead);
 
-    const wrap = el('div', 'table-scroll');
-    const table = document.createElement('table');
-    table.className = 'analysis-table position-sab-table';
-    const headCells = tierLabels.map((label) => `<th>${label}数字</th>`).join('');
-    table.innerHTML = `<thead><tr><th>位</th>${headCells}</tr></thead>`;
-    const tbody = document.createElement('tbody');
+    // note等へのコピー時にtable構造が崩れる（セルの区切りが失われ1行に連結される）
+    // ことがあるため、divベースの一覧で表示する。
+    const list = el('div', 'copy-list');
     groups.forEach((g) => {
-      const tr = document.createElement('tr');
-      const cells = tierLabels
-        .map((label) => {
-          const items = g.tiers[label] || [];
-          const text = items.length
-            ? items
-                .map((it) =>
-                  it.isLatest ? `<strong class="highlight-latest">${it.number}</strong>` : String(it.number)
-                )
-                .join(', ')
-            : '—';
-          return `<td>${text}</td>`;
-        })
-        .join('');
-      tr.innerHTML = `<td>${g.label}</td>${cells}`;
-      tbody.appendChild(tr);
+      const row = el('div', 'copy-list-row');
+      const parts = tierLabels.map((label) => {
+        const items = g.tiers[label] || [];
+        const text = items.length
+          ? items
+              .map((it) => (it.isLatest ? `<strong class="highlight-latest">${it.number}</strong>` : String(it.number)))
+              .join(', ')
+          : '—';
+        return `${label}数字：${text}`;
+      });
+      row.innerHTML = `<strong>${g.label}：</strong>${parts.join('　／　')}`;
+      list.appendChild(row);
     });
-    table.appendChild(tbody);
-    wrap.appendChild(table);
-    container.appendChild(wrap);
+    container.appendChild(list);
   }
 
   // ③ 各位の出現回数TOP5
@@ -336,27 +327,15 @@ const LotoRender = (function () {
     lead.style.marginBottom = '16px';
     container.appendChild(lead);
 
-    const maxRows = Math.max(...digitPositions.map((p) => p.top.length), 0);
-    const wrap = el('div', 'table-scroll');
-    const table = document.createElement('table');
-    table.className = 'analysis-table';
-    const headCells = digitPositions.map((p) => `<th>${p.label}</th>`).join('');
-    table.innerHTML = `<thead><tr><th>順位</th>${headCells}</tr></thead>`;
-    const tbody = document.createElement('tbody');
-    for (let rank = 0; rank < maxRows; rank++) {
-      const tr = document.createElement('tr');
-      const cells = digitPositions
-        .map((p) => {
-          const item = p.top[rank];
-          return `<td>${item ? `${item.number}（${item.count}回）` : ''}</td>`;
-        })
-        .join('');
-      tr.innerHTML = `<td>${rank + 1}位</td>${cells}`;
-      tbody.appendChild(tr);
-    }
-    table.appendChild(tbody);
-    wrap.appendChild(table);
-    container.appendChild(wrap);
+    // note等へのコピー時にtable構造が崩れることがあるため、divベースの一覧で表示する。
+    const list = el('div', 'copy-list');
+    digitPositions.forEach((p) => {
+      const row = el('div', 'copy-list-row');
+      const text = p.top.map((item) => `${item.number}（${item.count}回）`).join(', ') || '—';
+      row.innerHTML = `<strong>${p.label}：</strong>${text}`;
+      list.appendChild(row);
+    });
+    container.appendChild(list);
   }
 
   // エリア分析：位置（第1〜第n数字）× 数字(1〜maxNumber) のヒートマップ表。
