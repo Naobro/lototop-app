@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ナンバーズ4 分析ページ | NAO LOTO</title>
+  <meta name="description" content="ナンバーズ4の過去当選番号・各桁の出現回数・出現率・出現間隔を集計した無料分析ページ。">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&family=Shippori+Mincho:wght@700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../css/common.css">
+  <link rel="stylesheet" href="../../css/analysis.css">
+</head>
+<body>
+
+  <div class="site-title">
+    <h1 class="gold-text">ナンバーズ4 分析ページ</h1>
+    <p>過去データを集計して、数字選びの参考に</p>
+  </div>
+
+  <div class="container-wide">
+
+    <p class="page-lead">
+      直近の当選番号・各桁の出現回数・出現率・出現間隔などを集計しています。<br>
+      あくまで<span class="highlight">過去データに基づく参考情報</span>であり、次回の当選を予測・保証するものではありません。
+    </p>
+
+    <!-- 最新の当選番号 -->
+    <section>
+      <h2><span class="gold-text">🎯 最新の当選番号</span></h2>
+      <div id="latest-draw" class="loading">読み込み中...</div>
+    </section>
+
+    <!-- 直近24回の当選番号（SAB分類付き） -->
+    <section>
+      <h2><span class="gold-text">🗂 直近24回の当選番号（SAB分類付き）</span></h2>
+      <div id="tier-history-table" class="loading">読み込み中...</div>
+    </section>
+
+    <!-- 参考情報 -->
+    <section>
+      <h2><span class="gold-text">📌 数字選びの参考情報</span></h2>
+      <div id="reference-info" class="loading">読み込み中...</div>
+    </section>
+
+    <!-- 各桁の出現回数・出現率 -->
+    <section>
+      <h2><span class="gold-text">🔢 各桁の出現回数・出現率（直近24回）</span></h2>
+      <div id="digit-frequency-table" class="loading">読み込み中...</div>
+    </section>
+
+    <!-- 各桁の出現間隔 -->
+    <section>
+      <h2><span class="gold-text">⏱ 各桁の現在の出現間隔</span></h2>
+      <div id="digit-interval-table" class="loading">読み込み中...</div>
+    </section>
+
+    <!-- 各桁の出現回数TOP5 -->
+    <section>
+      <h2><span class="gold-text">📈 各桁の出現回数TOP5（直近24回）</span></h2>
+      <div id="digit-top5-table" class="loading">読み込み中...</div>
+    </section>
+
+    <!-- 奇数偶数分析 -->
+    <section>
+      <h2><span class="gold-text">🔤 奇数偶数分析（直近24回）</span></h2>
+      <div id="parity-summary" class="loading">読み込み中...</div>
+    </section>
+
+    <!-- 数字合計の分布 -->
+    <section>
+      <h2><span class="gold-text">🧮 数字合計の分布（直近24回）</span></h2>
+      <div id="sum-distribution" class="loading">読み込み中...</div>
+    </section>
+
+    <!-- 合計値の出現回数 -->
+    <section>
+      <h2><span class="gold-text">🔢 合計値の出現回数（直近24回）</span></h2>
+      <div id="sum-frequency-table" class="loading">読み込み中...</div>
+    </section>
+
+    <!-- シングル・ダブル・トリプル回数 -->
+    <section>
+      <h2><span class="gold-text">🔁 シングル・ダブル・トリプル回数（直近24回）</span></h2>
+      <div id="repeat-pattern-summary" class="loading">読み込み中...</div>
+    </section>
+
+    <!-- ひっぱり回数 -->
+    <section>
+      <h2><span class="gold-text">🔗 ひっぱり回数（直近24回）</span></h2>
+      <div id="pull-count" class="loading">読み込み中...</div>
+    </section>
+
+    <!-- 数字の範囲ごとの分布 -->
+    <section>
+      <h2><span class="gold-text">📊 数字の範囲ごとの分布（直近24回）</span></h2>
+      <div id="range-distribution" class="loading">読み込み中...</div>
+    </section>
+
+    <!-- ペア出現 -->
+    <section>
+      <h2><span class="gold-text">🔗 ペア出現（上位15・直近24回）</span></h2>
+      <div id="digit-pair-ranking" class="loading">読み込み中...</div>
+    </section>
+
+    <p style="text-align:center; margin-top:10px;">
+      <a href="../../index.html">← NAO LOTO TOPへ戻る</a>
+    </p>
+
+    <footer>
+      <div class="disclaimer">
+        本ページの情報は過去の当選番号データを集計したものであり、当選を予測・保証するものではありません。<br>
+        ナンバーズ4の抽せんは毎回独立しており、過去の出現データから当選確率を上げることはできません。<br>
+        宝くじの購入はすべて自己責任で、無理のない範囲でお願いします。
+      </div>
+    </footer>
+
+  </div>
+
+  <script src="../../js/analysis/stats.js"></script>
+  <script src="../../js/analysis/numbers-stats.js"></script>
+  <script src="../../js/analysis/numbers-render.js"></script>
+  <script src="../../js/analysis/numbers4.js"></script>
+</body>
+</html>
