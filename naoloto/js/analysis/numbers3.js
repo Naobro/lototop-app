@@ -101,8 +101,8 @@
     NumbersRender.renderVerification(getEl('verification'), verification, CONFIG.digitCount);
 
     LotoRender.setupCopyButton('copy-prediction-btn', 'copy-prediction-status', [
-      'reference-info-section',
       'prediction-numbers-section',
+      'reference-info-section',
     ]);
     LotoRender.setupCopyButton('copy-verification-btn', 'copy-verification-status', ['verification-section']);
   } catch (err) {

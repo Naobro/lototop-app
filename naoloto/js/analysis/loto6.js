@@ -122,6 +122,8 @@
 
     LotoRender.setupCopyButton('copy-prediction-btn', 'copy-prediction-status', [
       'selected-numbers-section',
+      'tier-position-groups-section',
+      'digit-position-top5-section',
       'prediction-patterns-section',
     ]);
     LotoRender.setupCopyButton('copy-verification-btn', 'copy-verification-status', ['selection-verification-section']);
