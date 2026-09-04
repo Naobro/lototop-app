@@ -71,7 +71,9 @@
     const digitTop5 = NumbersStats.calcDigitTop5(draws, CONFIG, CONFIG.tierN, 5);
     NumbersRender.renderDigitTop5Table(getEl('digit-top5-table'), digitTop5, CONFIG.tierN);
 
-    NumbersRender.renderReferenceInfo(getEl('reference-info'), { digitTop5, digitIntervals, n: CONFIG.tierN });
+    NumbersRender.renderReferenceInfo(getEl('reference-info'), { digitIntervals, n: CONFIG.tierN });
+
+    const digitPrediction = NumbersStats.calcDigitPrediction(draws, CONFIG, CONFIG.tierN, 5);
 
     const parity = NumbersStats.calcParitySummary(draws, CONFIG, CONFIG.tierN);
     NumbersRender.renderParitySummary(getEl('parity-summary'), parity);
@@ -94,7 +96,7 @@
     const digitPairRanking = NumbersStats.calcDigitPairRanking(draws, CONFIG, CONFIG.tierN, 15);
     NumbersRender.renderDigitPairRanking(getEl('digit-pair-ranking'), digitPairRanking, CONFIG.tierN);
 
-    NumbersRender.renderPredictionNumbers(getEl('prediction-numbers'), digitTop5, CONFIG.tierN);
+    NumbersRender.renderPredictionNumbers(getEl('prediction-numbers'), digitPrediction, CONFIG.tierN);
 
     const verification = NumbersStats.calcVerification(draws, CONFIG, CONFIG.tierN, 5);
     NumbersRender.renderVerification(getEl('verification'), verification, CONFIG.digitCount);

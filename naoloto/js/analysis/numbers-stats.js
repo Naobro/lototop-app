@@ -61,6 +61,108 @@ const NumbersStats = (function () {
     }));
   }
 
+  // 各桁・各数字の出現間隔バランススコア（ロトのcalcGapBalanceScoreと同じ考え方の曲線）。
+  // 桁は0〜9の10通りから1つ選ばれるため、期待間隔は10回とする。
+  // 戻り値: 位置ごとのスコアmap配列 [ {0:score,...,9:score}, ... ]
+  function calcDigitGapBalanceScore(draws, { mainKey, digitCount }, n = 24) {
+    const recent = draws.slice(-n);
+    const windowLen = recent.length;
+    const expectedGap = 10;
+
+    const positions = [];
+    for (let pos = 0; pos < digitCount; pos++) {
+      const lastSeenIndex = {};
+      for (let i = windowLen - 1; i >= 0; i--) {
+        const sinceLatest = windowLen - 1 - i;
+        const v = getDigits(recent[i], mainKey)[pos];
+        if (v !== undefined && lastSeenIndex[v] === undefined) lastSeenIndex[v] = sinceLatest;
+      }
+      const score = {};
+      for (let digit = 0; digit <= 9; digit++) {
+        const gap = lastSeenIndex[digit] !== undefined ? lastSeenIndex[digit] : windowLen;
+        const ratio = gap / expectedGap;
+        let s;
+        if (ratio < 0.5) {
+          s = (ratio / 0.5) * 0.4;
+        } else if (ratio <= 1.8) {
+          s = 0.4 + 0.6 * (1 - Math.abs(ratio - 1.15) / 0.65);
+        } else if (ratio <= 3.5) {
+          s = 1.0 - (0.3 * (ratio - 1.8)) / 1.7;
+        } else {
+          s = 0.55;
+        }
+        score[digit] = Math.max(0, Math.min(1, s));
+      }
+      positions.push(score);
+    }
+    return positions;
+  }
+
+  // 予想数字（各桁TOP5）：単純な出現回数順ではなく、SAB階層（出現回数ベース）を優先して
+  // 候補を絞り込み、同階層内では出現間隔バランスの良い数字を優先する
+  // （ロトの厳選数字選定と同じ考え方。単に直近の出現回数が多い数字を並べるだけだと、
+  // 出現が直近に偏っている数字ばかりを選ぶことになり矛盾するため）。
+  // calcDigitTop5（純粋な出現回数ランキング、統計表示用）とは用途が異なる。
+  function calcDigitPrediction(draws, config, n = 24, topN = 5) {
+    const { tierRules } = config;
+    const freq = calcDigitFrequency(draws, config, n);
+    const tierMaps = calcDigitTierMap(draws, config, n, tierRules);
+    const gapScores = calcDigitGapBalanceScore(draws, config, n);
+    const poolTiers = tierRules.slice(0, -1); // 例: S, A（最下位Bは優先度を下げる）
+    const baselineLabel = tierRules[tierRules.length - 1].label; // 例: B
+
+    return freq.positions.map((p, pos) => {
+      const tierMap = tierMaps[pos];
+      const gapScore = gapScores[pos];
+
+      function sortCandidates(list) {
+        return [...list].sort((a, b) => (gapScore[b.digit] || 0) - (gapScore[a.digit] || 0) || a.digit - b.digit);
+      }
+
+      const pools = {};
+      tierRules.forEach((t) => {
+        pools[t.label] = [];
+      });
+      p.frequency.forEach((f) => {
+        pools[tierMap[f.digit]].push(f);
+      });
+
+      const totalCandidates = poolTiers.reduce((sum, t) => sum + (pools[t.label] || []).length, 0);
+
+      const picked = [];
+      const pickedSet = new Set();
+      let remaining = topN;
+
+      poolTiers.forEach((t, i) => {
+        const candidates = sortCandidates(pools[t.label] || []);
+        let slot;
+        if (i === poolTiers.length - 1) {
+          slot = remaining;
+        } else if (totalCandidates > 0) {
+          slot = Math.min(Math.round((topN * candidates.length) / totalCandidates), remaining);
+        } else {
+          slot = 0;
+        }
+        slot = Math.min(slot, candidates.length);
+        candidates.slice(0, slot).forEach((c) => {
+          picked.push(c);
+          pickedSet.add(c.digit);
+        });
+        remaining -= slot;
+      });
+
+      if (remaining > 0) {
+        const fillCandidates = sortCandidates(pools[baselineLabel] || []).filter((c) => !pickedSet.has(c.digit));
+        fillCandidates.slice(0, remaining).forEach((c) => {
+          picked.push(c);
+          pickedSet.add(c.digit);
+        });
+      }
+
+      return { position: p.position, top: picked.slice(0, topN) };
+    });
+  }
+
   // 数字合計（各桁の合計値）の分布（直近n回、binCount等分レンジ）
   function calcSumDistribution(draws, { mainKey, digitCount }, n = 24, binCount = 4) {
     const recent = draws.slice(-n);
@@ -251,8 +353,8 @@ const NumbersStats = (function () {
     const priorDraws = draws.slice(0, -1);
     const latest = draws[draws.length - 1];
 
-    const digitTop5 = calcDigitTop5(priorDraws, config, n, topN);
-    const candidateSets = digitTop5.map((p) => new Set(p.top.map((x) => x.digit)));
+    const digitPrediction = calcDigitPrediction(priorDraws, config, n, topN);
+    const candidateSets = digitPrediction.map((p) => new Set(p.top.map((x) => x.digit)));
     const actualDigits = getDigits(latest, mainKey);
 
     const straightHit = actualDigits.every((v, i) => candidateSets[i].has(v));
@@ -286,6 +388,7 @@ const NumbersStats = (function () {
     calcDigitFrequency,
     calcDigitIntervals,
     calcDigitTop5,
+    calcDigitPrediction,
     calcSumDistribution,
     calcParitySummary,
     calcTierAnnotatedHistory,
