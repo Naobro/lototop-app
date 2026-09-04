@@ -479,6 +479,39 @@ const LotoStats = (function () {
     return score;
   }
 
+  // 3分割バランス度（0〜1）：直近n回を3等分（直近セグメント・中間セグメント・古いセグメント）
+  // し、出現が特定の1セグメントに偏っている数字（例：直近セグメントだけに集中＝頭打ちの
+  // 可能性）を相対的に低く評価する。3セグメントに均等に出現している数字ほど高スコア。
+  // calcGapBalanceScoreは「最後に出た1回」だけを見るのに対し、こちらは出現回数の
+  // 時系列での分布そのものを見るための指標。
+  function calcSegmentBalanceScore(draws, { mainKey, maxNumber }, n = 24) {
+    const recent = draws.slice(-n);
+    const segLen = Math.floor(recent.length / 3);
+    const segments =
+      segLen > 0
+        ? [
+            recent.slice(recent.length - segLen), // 直近セグメント
+            recent.slice(recent.length - segLen * 2, recent.length - segLen), // 中間セグメント
+            recent.slice(recent.length - segLen * 3, recent.length - segLen * 2), // 古いセグメント
+          ]
+        : [recent, [], []];
+
+    const score = {};
+    for (let num = 1; num <= maxNumber; num++) {
+      const segCounts = segments.map((seg) => seg.filter((d) => getMainNumbers(d, mainKey).includes(num)).length);
+      const total = segCounts.reduce((a, b) => a + b, 0);
+      if (total === 0) {
+        score[num] = 0.5; // 未出現はどちらとも言えないため中立
+        continue;
+      }
+      const idealShare = 1 / 3;
+      const maxShare = Math.max(...segCounts) / total;
+      const penalty = Math.max(0, (maxShare - idealShare) / (1 - idealShare));
+      score[num] = Math.max(0, Math.min(1, 1 - penalty));
+    }
+    return score;
+  }
+
   // nCr（組み合わせの数）。厳選数字による当選確率の改善度を示すために使用。
   function combinations(n, r) {
     if (r < 0 || r > n) return 0;
@@ -490,65 +523,88 @@ const LotoStats = (function () {
   }
 
   // 厳選数字（1軍・2軍）・削除数字の選定。
-  // S数字・A数字（tierRulesの最下位＝Bを除いた階層）を、実際の候補数の比率で
-  // selectedCountに按分する。候補が枠より多い場合のタイブレークは「出現回数」を
-  // 使わず、「間隔バランス度」→「位別ランキングスコア」→「数字が小さい方」の順。
-  // （出現回数は既にS/A分類そのものに使っているため、タイブレークにも使うと
-  // 「直近よく出ている数字を選ぶ」だけになってしまい、抽せんが毎回独立している
-  // という前提と矛盾するため採用しない）
-  // 候補合計がselectedCountに満たない場合は、最下位階層（B等）から補充する。
+  // 引っ張り数字（直近1回の当せん番号）は、ひっぱり率が直近n回で7割前後と高く、
+  // 「直近すぎるから除外」は統計的に不合理なため、階層やスコアに関わらず必ず
+  // 厳選数字に含める（実際に買うかどうかは読者の判断に委ねる）。
+  // 残りの枠はS数字とA・B数字を、実際の候補数の比率でselectedCountに按分する
+  // （SだけでもA・BだけでもなくSAの割合で按分、という考え方）。A数字とB数字は
+  // 階層の壁で区切らず横断的に競わせ、出現回数が少なくても間隔的に「そろそろ
+  // 来そう」なB数字が割って入る余地を持たせる。
+  // 候補が枠より多い場合のタイブレークは「出現回数」を使わず、「間隔バランス度
+  // （最後に出てから何回目か）」＋「3分割バランス度（直近8回・中8回・古8回の
+  // 出現の偏り。特定セグメントに偏っている＝頭打ちの可能性を減点）」の合算スコア
+  // →「位別ランキングスコア」→「数字が小さい方」の順。出現回数は既にS/A/B分類
+  // そのものに使っているため、タイブレークにも使うと「直近よく出ている数字を
+  // 選ぶ」だけになってしまい、抽せんが毎回独立しているという前提と矛盾するため
+  // 採用しない。
   function calcSelectedNumbers(draws, config, n = 24) {
     const { mainKey, maxNumber, selectedCount, tierRules = DEFAULT_TIER_RULES } = config;
     const pools = calcTierPools(draws, { mainKey, tierRules }, n);
-    const poolTiers = tierRules.slice(0, -1); // 例: S, A（最下位Bは候補から除外）
-    const baselineLabel = tierRules[tierRules.length - 1].label; // 例: B
+    const topLabel = tierRules[0].label; // 例: S
+    const secondaryLabels = tierRules.slice(1).map((t) => t.label); // 例: [A, B]
+    const secondaryLabel = secondaryLabels[0] || topLabel; // tierPicksのキー・表示上の「2軍」ラベル
 
     const digitTop5 = calcDigitPositionTop5(draws, config, n, 5);
     const positionScore = calcPositionScore(digitTop5);
     const gapBalance = calcGapBalanceScore(draws, config, n);
+    const segmentBalance = calcSegmentBalanceScore(draws, config, n);
+
+    function combinedScore(num) {
+      return (gapBalance[num] || 0) + (segmentBalance[num] || 0);
+    }
 
     function sortCandidates(list) {
       return [...list].sort(
         (a, b) =>
-          (gapBalance[b.number] || 0) - (gapBalance[a.number] || 0) ||
+          combinedScore(b.number) - combinedScore(a.number) ||
           (positionScore[b.number] || 0) - (positionScore[a.number] || 0) ||
           a.number - b.number
       );
     }
 
-    const totalCandidates = poolTiers.reduce((sum, t) => sum + (pools[t.label] || []).length, 0);
-
-    const tierPicks = {};
-    const selectedSet = new Set();
-    let remaining = selectedCount;
-
-    poolTiers.forEach((t, i) => {
-      const candidates = sortCandidates(pools[t.label] || []);
-      let slot;
-      if (i === poolTiers.length - 1) {
-        slot = remaining; // 端数はこの階層で吸収
-      } else if (totalCandidates > 0) {
-        slot = Math.min(Math.round((selectedCount * candidates.length) / totalCandidates), remaining);
-      } else {
-        slot = 0;
-      }
-      slot = Math.min(slot, candidates.length);
-      const picked = candidates.slice(0, slot).map((c) => c.number);
-      tierPicks[t.label] = picked;
-      picked.forEach((num) => selectedSet.add(num));
-      remaining -= picked.length;
+    const numberToTier = {};
+    Object.entries(pools).forEach(([label, list]) => {
+      list.forEach((c) => {
+        numberToTier[c.number] = label;
+      });
     });
 
-    // 候補合計が枠に満たない場合、最下位階層(B等)から補充する
-    if (remaining > 0) {
-      const fillCandidates = sortCandidates(pools[baselineLabel] || []).filter((c) => !selectedSet.has(c.number));
-      const filled = fillCandidates.slice(0, remaining).map((c) => c.number);
-      const lastTierLabel = poolTiers[poolTiers.length - 1]?.label;
-      if (lastTierLabel) {
-        tierPicks[lastTierLabel] = [...(tierPicks[lastTierLabel] || []), ...filled];
-      }
-      filled.forEach((num) => selectedSet.add(num));
+    const selectedSet = new Set();
+
+    // 引っ張り数字を無条件で確保する
+    const latestDraw = draws[draws.length - 1];
+    if (latestDraw) {
+      getMainNumbers(latestDraw, mainKey).forEach((num) => {
+        if (selectedSet.size < selectedCount) selectedSet.add(num);
+      });
     }
+
+    const sPoolRemaining = (pools[topLabel] || []).filter((c) => !selectedSet.has(c.number));
+    const secondaryPoolRemaining = secondaryLabels
+      .flatMap((label) => pools[label] || [])
+      .filter((c) => !selectedSet.has(c.number));
+
+    const totalRemainingCandidates = sPoolRemaining.length + secondaryPoolRemaining.length;
+    let remaining = Math.max(selectedCount - selectedSet.size, 0);
+
+    const sSlot =
+      totalRemainingCandidates > 0
+        ? Math.min(Math.round((selectedCount * sPoolRemaining.length) / totalRemainingCandidates), remaining)
+        : 0;
+    sortCandidates(sPoolRemaining)
+      .slice(0, sSlot)
+      .forEach((c) => selectedSet.add(c.number));
+    remaining = Math.max(selectedCount - selectedSet.size, 0);
+
+    sortCandidates(secondaryPoolRemaining)
+      .slice(0, remaining)
+      .forEach((c) => selectedSet.add(c.number));
+
+    const tierPicks = { [topLabel]: [], [secondaryLabel]: [] };
+    selectedSet.forEach((num) => {
+      const bucket = numberToTier[num] === topLabel ? topLabel : secondaryLabel;
+      tierPicks[bucket].push(num);
+    });
 
     const cut = [];
     for (let num = 1; num <= maxNumber; num++) {
@@ -560,7 +616,7 @@ const LotoStats = (function () {
     const oddsImprovement = oddsSelected > 0 ? Math.round((oddsBase / oddsSelected) * 10) / 10 : null;
 
     return {
-      tierLabels: poolTiers.map((t) => t.label), // ['S','A'] -> 1軍/2軍の順
+      tierLabels: [topLabel, secondaryLabel], // ['S','A'] -> 1軍/2軍の順
       tierPicks, // { S:[...], A:[...] }
       selected: [...selectedSet].sort((a, b) => a - b),
       cut,
