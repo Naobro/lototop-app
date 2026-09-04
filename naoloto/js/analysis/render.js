@@ -420,13 +420,11 @@ const LotoRender = (function () {
       container.appendChild(oddsRow);
     }
 
-    const wrap = el('div', 'table-scroll');
-    const table = document.createElement('table');
-    table.className = 'analysis-table position-sab-table';
-    table.innerHTML = `<thead><tr><th>位</th><th>厳選数字（1軍・2軍）</th></tr></thead>`;
-    const tbody = document.createElement('tbody');
+    // note等へのコピー時にtable構造が崩れる（セルの区切りが失われ1行に連結される）
+    // ことがあるため、position-sab-tableではなくdivベースの一覧で表示する。
+    const list = el('div', 'copy-list');
     positionGroups.forEach((g) => {
-      const tr = document.createElement('tr');
+      const row = el('div', 'copy-list-row');
       const text = g.items.length
         ? g.items
             .map((it) =>
@@ -436,12 +434,10 @@ const LotoRender = (function () {
             )
             .join(', ')
         : '—';
-      tr.innerHTML = `<td>${g.label}</td><td>${text}</td>`;
-      tbody.appendChild(tr);
+      row.innerHTML = `<strong>${g.label}：</strong>${text}`;
+      list.appendChild(row);
     });
-    table.appendChild(tbody);
-    wrap.appendChild(table);
-    container.appendChild(wrap);
+    container.appendChild(list);
 
     const tierCards = el('div', 'info-cards');
     const cutCard = el('div', 'info-card');
@@ -470,20 +466,14 @@ const LotoRender = (function () {
     lead.style.marginBottom = '16px';
     container.appendChild(lead);
 
+    // note等へのコピー時にtable構造が崩れることがあるため、divベースの一覧で表示する。
     const top = patterns.slice(0, topN);
-    const wrap = el('div', 'table-scroll');
-    const table = document.createElement('table');
-    table.className = 'analysis-table';
-    table.innerHTML = `<thead><tr><th>順位</th><th>パターン</th><th>出現回数</th></tr></thead>`;
-    const tbody = document.createElement('tbody');
+    const list = el('div', 'copy-list');
     top.forEach((p, idx) => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${idx + 1}位</td><td>${p.pattern}</td><td>${p.count}回</td>`;
-      tbody.appendChild(tr);
+      const row = el('div', 'copy-list-row', `${idx + 1}位　${p.pattern}　${p.count}回`);
+      list.appendChild(row);
     });
-    table.appendChild(tbody);
-    wrap.appendChild(table);
-    container.appendChild(wrap);
+    container.appendChild(list);
   }
 
   // 当選検証：最新回を除いたデータで厳選数字を再計算し、

@@ -421,25 +421,23 @@ const NumbersRender = (function () {
     lead.style.marginBottom = '16px';
     container.appendChild(lead);
 
-    const wrap = el('div', 'table-scroll');
-    const table = document.createElement('table');
-    table.className = 'analysis-table position-sab-table';
-    const headCells = verification.candidateSets.map((_, i) => `<th>第${i + 1}数字</th>`).join('');
-    table.innerHTML = `<thead><tr><th></th>${headCells}</tr></thead>`;
-    const tbody = document.createElement('tbody');
-    const rowActual = document.createElement('tr');
-    rowActual.innerHTML = `<td>当選番号</td>${verification.actualDigits.map((v) => `<td class="num-cell">${v}</td>`).join('')}`;
-    tbody.appendChild(rowActual);
-    const rowCandidates = document.createElement('tr');
-    rowCandidates.innerHTML = `<td>予想数字（TOP5）</td>${verification.candidateSets
-      .map(
-        (set, i) =>
-          `<td>${set.map((d) => (d === verification.actualDigits[i] ? `<strong class="highlight-latest">${d}</strong>` : d)).join(', ')}</td>`
-      )
-      .join('')}`;
-    tbody.appendChild(rowCandidates);
-    table.appendChild(tbody);
-    wrap.appendChild(table);
+    // note等へのコピー時にtable構造が崩れることがあるため、divベースの一覧で表示する。
+    const wrap = el('div', 'copy-list');
+    const rowActual = el(
+      'div',
+      'copy-list-row',
+      null
+    );
+    rowActual.innerHTML = `<strong>当選番号：</strong>${verification.actualDigits.join(', ')}`;
+    wrap.appendChild(rowActual);
+    verification.candidateSets.forEach((set, i) => {
+      const row = el('div', 'copy-list-row');
+      const numsHtml = set
+        .map((d) => (d === verification.actualDigits[i] ? `<strong class="highlight-latest">${d}</strong>` : d))
+        .join(', ');
+      row.innerHTML = `<strong>第${i + 1}数字の予想候補：</strong>${numsHtml}`;
+      wrap.appendChild(row);
+    });
     container.appendChild(wrap);
 
     const cards = el('div', 'info-cards-row');

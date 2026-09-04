@@ -162,6 +162,26 @@ table.position-sab-table td {
   text-align: left;
 }
 
+/* note等へのコピー用一覧（tableの代わり。コピー時に構造が崩れないようdiv構成にする） */
+.copy-list {
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+.copy-list-row {
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  background: #ffffff;
+  font-size: 0.9rem;
+}
+.copy-list-row:last-child {
+  border-bottom: none;
+}
+.copy-list-row:nth-child(even) {
+  background: #fafaf7;
+}
+
 /* エリア分析（位置×数字のヒートマップ表）専用。他のテーブルには影響しない */
 table.position-heatmap-table {
   min-width: 1500px;
