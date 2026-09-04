@@ -442,13 +442,6 @@ const NumbersRender = (function () {
       cards.appendChild(cardMini);
     }
     container.appendChild(cards);
-
-    const disclaimer = el(
-      'div',
-      'disclaimer-box',
-      'ここでの「的中可能だった」は、予想数字（TOP5候補）の中から正しい組み合わせを選んでいた場合に的中し得たという意味であり、実際に的中したことを意味しません。抽せんは毎回独立しており、この検証結果が次回の的中を保証するものではありません。'
-    );
-    container.appendChild(disclaimer);
   }
 
   return {

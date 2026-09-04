@@ -445,13 +445,6 @@ const LotoRender = (function () {
     cutCard.appendChild(el('div', 'nums', [...cut].sort((a, b) => a - b).join(', ') || 'なし'));
     tierCards.appendChild(cutCard);
     container.appendChild(tierCards);
-
-    const disclaimer = el(
-      'div',
-      'disclaimer-box',
-      'これらは過去データの傾向をもとに数字を絞り込んだ参考情報であり、当選を予測・保証するものではありません。厳選数字に次回の当選番号が含まれることを保証するものでもありません。'
-    );
-    container.appendChild(disclaimer);
   }
 
   // 予想パターン（直近n回の位パターンの出現回数、上位topN件）
