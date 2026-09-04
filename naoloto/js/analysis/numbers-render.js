@@ -178,25 +178,9 @@ const NumbersRender = (function () {
   // 奇数偶数分析
   function renderParitySummary(container, parity) {
     container.innerHTML = '';
-    const lead = el(
-      'p',
-      'page-lead',
-      `直近${parity.n}回について、当選番号の合計値（各桁の和）が偶数か奇数か、および桁ごとの偶数率を集計しています。`
-    );
+    const lead = el('p', 'page-lead', `直近${parity.n}回について、桁ごとの偶数率を集計しています。`);
     lead.style.marginBottom = '16px';
     container.appendChild(lead);
-
-    const cards = el('div', 'info-cards-row');
-    const cardEven = el('div', 'info-card');
-    cardEven.appendChild(el('h4', null, '合計値が偶数の割合'));
-    cardEven.appendChild(el('div', 'nums', `${parity.evenSumRate}%`));
-    cards.appendChild(cardEven);
-
-    const cardOdd = el('div', 'info-card');
-    cardOdd.appendChild(el('h4', null, '合計値が奇数の割合'));
-    cardOdd.appendChild(el('div', 'nums', `${parity.oddSumRate}%`));
-    cards.appendChild(cardOdd);
-    container.appendChild(cards);
 
     const wrap = el('div', 'table-scroll');
     const table = document.createElement('table');

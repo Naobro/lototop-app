@@ -81,22 +81,14 @@ const NumbersStats = (function () {
   // 偶数・奇数分析：数字合計の偶奇比率、および桁ごとの偶数率（直近n回）
   function calcParitySummary(draws, { mainKey, digitCount }, n = 24) {
     const recent = draws.slice(-n);
-    let evenSumCount = 0;
-    let oddSumCount = 0;
     const perDigitEven = new Array(digitCount).fill(0);
     recent.forEach((d) => {
-      const digits = getDigits(d, mainKey);
-      const sum = digits.reduce((a, b) => a + b, 0);
-      if (sum % 2 === 0) evenSumCount += 1;
-      else oddSumCount += 1;
-      digits.forEach((v, i) => {
+      getDigits(d, mainKey).forEach((v, i) => {
         if (v % 2 === 0) perDigitEven[i] += 1;
       });
     });
     return {
       n: recent.length,
-      evenSumRate: pct(evenSumCount, recent.length),
-      oddSumRate: pct(oddSumCount, recent.length),
       perDigitEvenRate: perDigitEven.map((c, i) => ({ position: i + 1, evenRate: pct(c, recent.length) })),
     };
   }
