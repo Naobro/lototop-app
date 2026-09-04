@@ -240,6 +240,56 @@ const NumbersStats = (function () {
     return result.sort((a, b) => b.count - a.count || a.sum - b.sum);
   }
 
+  // 配列のすべての順列を返す（桁数が3〜4程度なので全探索で十分）
+  function permutations(arr) {
+    if (arr.length <= 1) return [arr];
+    const result = [];
+    arr.forEach((item, i) => {
+      const rest = arr.slice(0, i).concat(arr.slice(i + 1));
+      permutations(rest).forEach((p) => result.push([item, ...p]));
+    });
+    return result;
+  }
+
+  // 当選検証：最新回を除いたデータで各桁の予想数字（TOP5）を計算し、
+  // 実際の最新回の当選番号がストレート・ボックス（・ミニ）で的中可能だったかを検証する。
+  function calcVerification(draws, config, n = 24, topN = 5) {
+    if (draws.length < 2) return null;
+    const { mainKey, digitCount } = config;
+    const priorDraws = draws.slice(0, -1);
+    const latest = draws[draws.length - 1];
+
+    const digitTop5 = calcDigitTop5(priorDraws, config, n, topN);
+    const candidateSets = digitTop5.map((p) => new Set(p.top.map((x) => x.digit)));
+    const actualDigits = getDigits(latest, mainKey);
+
+    const straightHit = actualDigits.every((v, i) => candidateSets[i].has(v));
+
+    let boxHit = false;
+    for (const perm of permutations(actualDigits)) {
+      if (perm.every((v, i) => candidateSets[i].has(v))) {
+        boxHit = true;
+        break;
+      }
+    }
+
+    let miniHit = null;
+    if (digitCount === 3) {
+      // ミニ＝下2桁（第2数字・第3数字）がストレートで一致
+      miniHit = candidateSets[1].has(actualDigits[1]) && candidateSets[2].has(actualDigits[2]);
+    }
+
+    return {
+      round: latest.回号,
+      date: latest.日付,
+      actualDigits,
+      candidateSets: candidateSets.map((s) => [...s].sort((a, b) => a - b)),
+      straightHit,
+      boxHit,
+      miniHit,
+    };
+  }
+
   return {
     calcDigitFrequency,
     calcDigitIntervals,
@@ -252,5 +302,6 @@ const NumbersStats = (function () {
     calcRangeDistribution,
     calcDigitPairRanking,
     calcSumFrequency,
+    calcVerification,
   };
 })();

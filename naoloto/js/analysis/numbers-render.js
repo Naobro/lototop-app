@@ -380,6 +380,95 @@ const NumbersRender = (function () {
     container.appendChild(wrap);
   }
 
+  // 予想数字（note投稿用）：各桁のTOP5候補をそのまま「予想数字」として提示する
+  function renderPredictionNumbers(container, digitTop5, n) {
+    container.innerHTML = '';
+    const lead = el(
+      'p',
+      'page-lead',
+      `直近${n}回で各桁ごとに出現回数の多い上位5つの数字を、桁ごとの予想数字候補としています。「当たる」ことを保証するものではなく、過去データに基づく参考情報です。`
+    );
+    lead.style.marginBottom = '16px';
+    container.appendChild(lead);
+
+    const cards = el('div', 'info-cards');
+    digitTop5.forEach((p) => {
+      const nums = p.top.map((x) => x.digit).sort((a, b) => a - b);
+      const card = el('div', 'info-card');
+      card.appendChild(el('h4', null, `第${p.position}数字（${nums.length}個）`));
+      card.appendChild(el('div', 'nums', nums.join(', ')));
+      cards.appendChild(card);
+    });
+    container.appendChild(cards);
+  }
+
+  // 当選検証：前回までのデータで計算した予想数字（各桁TOP5）に対し、
+  // 実際の当選番号がストレート・ボックス（・ミニ）で的中可能だったかを表示する
+  function renderVerification(container, verification, digitCount) {
+    container.innerHTML = '';
+    if (!verification) {
+      emptyState(container, 'データが不足しているため検証できません。');
+      return;
+    }
+
+    const lead = el(
+      'p',
+      'page-lead',
+      `第${verification.round}回（${verification.date}）の抽せんについて、その回を除いたデータで計算した予想数字（各桁TOP5）をもとに、ストレート・ボックス${
+        digitCount === 3 ? '・ミニ' : ''
+      }で的中可能だったかを検証しています。`
+    );
+    lead.style.marginBottom = '16px';
+    container.appendChild(lead);
+
+    const wrap = el('div', 'table-scroll');
+    const table = document.createElement('table');
+    table.className = 'analysis-table position-sab-table';
+    const headCells = verification.candidateSets.map((_, i) => `<th>第${i + 1}数字</th>`).join('');
+    table.innerHTML = `<thead><tr><th></th>${headCells}</tr></thead>`;
+    const tbody = document.createElement('tbody');
+    const rowActual = document.createElement('tr');
+    rowActual.innerHTML = `<td>当選番号</td>${verification.actualDigits.map((v) => `<td class="num-cell">${v}</td>`).join('')}`;
+    tbody.appendChild(rowActual);
+    const rowCandidates = document.createElement('tr');
+    rowCandidates.innerHTML = `<td>予想数字（TOP5）</td>${verification.candidateSets
+      .map(
+        (set, i) =>
+          `<td>${set.map((d) => (d === verification.actualDigits[i] ? `<strong class="highlight-latest">${d}</strong>` : d)).join(', ')}</td>`
+      )
+      .join('')}`;
+    tbody.appendChild(rowCandidates);
+    table.appendChild(tbody);
+    wrap.appendChild(table);
+    container.appendChild(wrap);
+
+    const cards = el('div', 'info-cards-row');
+    const cardStraight = el('div', 'info-card');
+    cardStraight.appendChild(el('h4', null, 'ストレート'));
+    cardStraight.appendChild(el('div', 'nums', verification.straightHit ? '的中可能だった' : '的中不可だった'));
+    cards.appendChild(cardStraight);
+
+    const cardBox = el('div', 'info-card');
+    cardBox.appendChild(el('h4', null, 'ボックス'));
+    cardBox.appendChild(el('div', 'nums', verification.boxHit ? '的中可能だった' : '的中不可だった'));
+    cards.appendChild(cardBox);
+
+    if (verification.miniHit !== null) {
+      const cardMini = el('div', 'info-card');
+      cardMini.appendChild(el('h4', null, 'ミニ'));
+      cardMini.appendChild(el('div', 'nums', verification.miniHit ? '的中可能だった' : '的中不可だった'));
+      cards.appendChild(cardMini);
+    }
+    container.appendChild(cards);
+
+    const disclaimer = el(
+      'div',
+      'disclaimer-box',
+      'ここでの「的中可能だった」は、予想数字（TOP5候補）の中から正しい組み合わせを選んでいた場合に的中し得たという意味であり、実際に的中したことを意味しません。抽せんは毎回独立しており、この検証結果が次回の的中を保証するものではありません。'
+    );
+    container.appendChild(disclaimer);
+  }
+
   return {
     emptyState,
     renderLatestDraw,
@@ -396,5 +485,7 @@ const NumbersRender = (function () {
     renderRangeDistribution,
     renderDigitPairRanking,
     renderSumFrequency,
+    renderPredictionNumbers,
+    renderVerification,
   };
 })();

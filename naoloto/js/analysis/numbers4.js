@@ -27,6 +27,8 @@
     'pull-count',
     'range-distribution',
     'digit-pair-ranking',
+    'prediction-numbers',
+    'verification',
   ];
 
   function getEl(id) {
@@ -92,6 +94,14 @@
 
     const digitPairRanking = NumbersStats.calcDigitPairRanking(draws, CONFIG, CONFIG.tierN, 15);
     NumbersRender.renderDigitPairRanking(getEl('digit-pair-ranking'), digitPairRanking, CONFIG.tierN);
+
+    NumbersRender.renderPredictionNumbers(getEl('prediction-numbers'), digitTop5, CONFIG.tierN);
+
+    const verification = NumbersStats.calcVerification(draws, CONFIG, CONFIG.tierN, 5);
+    NumbersRender.renderVerification(getEl('verification'), verification, CONFIG.digitCount);
+
+    LotoRender.setupCopyButton('copy-prediction-btn', 'copy-prediction-status', ['prediction-numbers-section']);
+    LotoRender.setupCopyButton('copy-verification-btn', 'copy-verification-status', ['verification-section']);
   } catch (err) {
     console.error(err);
     showEmptyEverywhere(`読み込みエラー: ${err.message}`);
