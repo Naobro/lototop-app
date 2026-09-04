@@ -54,17 +54,12 @@ const NumbersRender = (function () {
   }
 
   // 数字選びの参考情報：桁ごとのよく出ている数字・しばらく出ていない数字
-  function renderReferenceInfo(container, { digitTop5, digitIntervals, n }) {
+  // digitTop5（よく出ている数字TOP5）は予想数字セクションと同じ集計内容で重複するため、
+  // ここでは「しばらく出ていない数字」（予想数字セクションにはない情報）のみ表示する。
+  function renderReferenceInfo(container, { digitIntervals, n }) {
     if (!container) return;
     container.innerHTML = '';
     const cards = el('div', 'info-cards');
-
-    digitTop5.forEach((pos) => {
-      const card = el('div', 'info-card');
-      card.appendChild(el('h4', null, `第${pos.position}数字でよく出ている数字（直近${n}回 TOP5）`));
-      card.appendChild(el('div', 'nums', pos.top.map((x) => `${x.digit}（${x.count}回）`).join(' ／ ')));
-      cards.appendChild(card);
-    });
 
     digitIntervals.forEach((pos) => {
       const longWaiting = [...pos.intervals]
