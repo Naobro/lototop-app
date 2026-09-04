@@ -13,6 +13,55 @@ const LotoStats = (function () {
     return [...draws].sort((a, b) => (a.回号 ?? 0) - (b.回号 ?? 0));
   }
 
+  // 汎用CSVパーサー（tousen.pyが出力するCSVはフィールド内にカンマ・引用符を含まないため、
+  // 単純なsplitで十分。1行目をヘッダーとして、各行を { 列名: 値 } のオブジェクトにする）。
+  function parseCsv(text) {
+    const lines = text.replace(/\r\n/g, '\n').split('\n').filter((line) => line.trim() !== '');
+    if (lines.length === 0) return [];
+    const headers = lines[0].split(',').map((h) => h.trim());
+    const rows = [];
+    for (let i = 1; i < lines.length; i++) {
+      const cells = lines[i].split(',');
+      const row = {};
+      headers.forEach((h, idx) => {
+        row[h] = cells[idx] !== undefined ? cells[idx].trim() : '';
+      });
+      rows.push(row);
+    }
+    return rows;
+  }
+
+  // parseCsv()の結果を、このプロジェクト共通のdraws形式
+  // { 回号, 日付, 本数字:[...], (ボーナス数字:[...]) } に変換する。
+  // roundCol/dateColは列名、mainColsは本数字の列名配列（順序が桁の並びになる）、
+  // bonusColsはボーナス数字の列名配列（ナンバーズ系は空配列でよい）。
+  function csvRowsToDraws(rows, { roundCol = '回号', dateCol = '抽せん日', mainCols, bonusCols = [] }) {
+    return rows
+      .map((row) => {
+        const round = parseInt(row[roundCol], 10);
+        const mainNumbers = mainCols.map((c) => parseInt(row[c], 10));
+        if (!Number.isFinite(round) || mainNumbers.some((n) => !Number.isFinite(n))) return null;
+        const draw = { 回号: round, 日付: row[dateCol] || '', 本数字: mainNumbers };
+        if (bonusCols.length) {
+          draw.ボーナス数字 = bonusCols.map((c) => parseInt(row[c], 10)).filter((n) => Number.isFinite(n));
+        }
+        return draw;
+      })
+      .filter((d) => d !== null);
+  }
+
+  // GitHub上のCSV（tousen.pyが更新するもの）を直接取得し、draws形式で返す。
+  // これにより、tousen.pyでの保存・GitHub反映が、サイト側の再読み込みだけで
+  // 自動的に反映される（別途JSONへの同期作業が不要になる）。
+  async function loadDrawsFromCsv(url, csvOptions) {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`CSVの読み込みに失敗しました（HTTP ${res.status}）`);
+    const text = await res.text();
+    const rows = parseCsv(text);
+    const draws = csvRowsToDraws(rows, csvOptions);
+    return sortByRound(draws);
+  }
+
   // 数字ごとの出現回数・出現率（1〜maxNumber全て）
   function calcFrequency(draws, { maxNumber, mainKey }) {
     const counts = new Array(maxNumber + 1).fill(0);
@@ -578,6 +627,9 @@ const LotoStats = (function () {
     DEFAULT_TIER_RULES,
     DEFAULT_POSITION_BOUNDARIES,
     sortByRound,
+    parseCsv,
+    csvRowsToDraws,
+    loadDrawsFromCsv,
     calcFrequency,
     calcCurrentIntervals,
     calcRecentTrend,

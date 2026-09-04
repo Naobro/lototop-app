@@ -1,6 +1,9 @@
 /* ============================================================
    ロト7 分析ページ 初期化処理
-   data/loto7.json を読み込み、LotoStats で集計し、LotoRender で描画する。
+   GitHub上のCSV（tousen.pyが更新するdata/loto7_50.csv）を直接読み込み、
+   LotoStats で集計し、LotoRender で描画する。
+   tousen.pyで当選番号を保存・GitHub反映すると、このページの次回読み込み時に
+   自動的に反映される（別途の同期作業は不要）。
    ============================================================ */
 (async function () {
   const CONFIG = {
@@ -10,8 +13,12 @@
     bonusKey: 'ボーナス数字',
     mainCount: 7,
     positionBoundaries: [1, 10, 20, 30],
-    dataUrl: '../../data/loto7.json',
-    dataFileName: 'data/loto7.json',
+    dataUrl: 'https://raw.githubusercontent.com/Naobro/lototop-app/main/data/loto7_50.csv',
+    dataFileName: 'tousen.py（ロト7）',
+    csvOptions: {
+      mainCols: ['第1数字', '第2数字', '第3数字', '第4数字', '第5数字', '第6数字', '第7数字'],
+      bonusCols: ['BONUS数字1', 'BONUS数字2'],
+    },
     tierN: 24,
     tierRules: LotoStats.DEFAULT_TIER_RULES,
     selectedCount: 27,
@@ -40,13 +47,6 @@
     return document.getElementById(id);
   }
 
-  async function loadDraws(url) {
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`データの読み込みに失敗しました（HTTP ${res.status}）`);
-    const raw = await res.json();
-    return LotoStats.sortByRound(raw);
-  }
-
   function showEmptyEverywhere(message) {
     ids.forEach((id) => {
       const c = getEl(id);
@@ -55,13 +55,13 @@
   }
 
   try {
-    const draws = await loadDraws(CONFIG.dataUrl);
+    const draws = await LotoStats.loadDrawsFromCsv(CONFIG.dataUrl, CONFIG.csvOptions);
     const latest = draws.length ? draws[draws.length - 1] : null;
 
     LotoRender.renderLatestDraw(getEl('latest-draw'), latest, CONFIG);
 
     if (draws.length === 0) {
-      showEmptyEverywhere('データがありません。data/loto7.json に当選番号を追加してください。');
+      showEmptyEverywhere(`データがありません。${CONFIG.dataFileName} で当選番号を追加してください。`);
       return;
     }
 

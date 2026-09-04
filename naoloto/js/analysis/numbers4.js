@@ -1,14 +1,20 @@
 /* ============================================================
    ナンバーズ4 分析ページ 初期化処理
-   data/numbers4.json を読み込み、NumbersStats で集計し、NumbersRender で描画する。
+   GitHub上のCSV（tousen.pyが更新するdata/numbers4_24.csv）を直接読み込み、
+   NumbersStats で集計し、NumbersRender で描画する。
+   tousen.pyで保存・GitHub反映すると、次回読み込み時に自動的に反映される。
    ============================================================ */
 (async function () {
   const CONFIG = {
     gameName: 'ナンバーズ4',
     mainKey: '本数字',
     digitCount: 4,
-    dataUrl: '../../data/numbers4.json',
-    dataFileName: 'data/numbers4.json',
+    dataUrl: 'https://raw.githubusercontent.com/Naobro/lototop-app/main/data/numbers4_24.csv',
+    dataFileName: 'tousen.py（ナンバーズ4）',
+    csvOptions: {
+      mainCols: ['第1数字', '第2数字', '第3数字', '第4数字'],
+      bonusCols: [],
+    },
     tierN: 24,
     tierRules: LotoStats.DEFAULT_TIER_RULES,
   };
@@ -35,13 +41,6 @@
     return document.getElementById(id);
   }
 
-  async function loadDraws(url) {
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`データの読み込みに失敗しました（HTTP ${res.status}）`);
-    const raw = await res.json();
-    return LotoStats.sortByRound(raw);
-  }
-
   function showEmptyEverywhere(message) {
     ids.forEach((id) => {
       const c = getEl(id);
@@ -50,13 +49,13 @@
   }
 
   try {
-    const draws = await loadDraws(CONFIG.dataUrl);
+    const draws = await LotoStats.loadDrawsFromCsv(CONFIG.dataUrl, CONFIG.csvOptions);
     const latest = draws.length ? draws[draws.length - 1] : null;
 
     NumbersRender.renderLatestDraw(getEl('latest-draw'), latest, CONFIG);
 
     if (draws.length === 0) {
-      showEmptyEverywhere(`データがありません。${CONFIG.dataFileName} に当選番号を追加してください。`);
+      showEmptyEverywhere(`データがありません。${CONFIG.dataFileName} で当選番号を追加してください。`);
       return;
     }
 
