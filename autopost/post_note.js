@@ -9,7 +9,7 @@ const crypto = require('crypto');
 const API = 'https://note.com/api';
 const PLAN_KEY = 'b62c08521a39'; // メンバーシップ「予想 見放題」
 const PRICE = 500;
-const EYECATCH = 'https://naobillionaire.synergy.cfbx.jp/_auto/digest/imeges/note.webp';
+const EYECATCH = path.join(__dirname, 'eyecatch.jpg'); // 元: naobillionaire.synergy.cfbx.jp/_auto/digest/imeges/note.webp
 const STATE = path.join(__dirname, 'state', 'posted.json');
 const mode = process.argv[2] || 'draft';
 
@@ -76,10 +76,11 @@ function toHtml(paragraphs) {
     console.log('本文を保存');
 
     try {
-      const img = await (await fetch(EYECATCH)).arrayBuffer();
+      // noteはwebp不可のため、同じ画像をJPEGにしたものを使う（元画像を差し替えたら eyecatch.jpg も更新する）
+      const img = fs.readFileSync(EYECATCH);
       const fd = new FormData();
       fd.append('note_id', String(id));
-      fd.append('file', new Blob([img], { type: 'image/webp' }), 'note.webp');
+      fd.append('file', new Blob([img], { type: 'image/jpeg' }), 'eyecatch.jpg');
       fd.append('width', '1920');
       fd.append('height', '1005');
       await api('POST', '/v1/image_upload/note_eyecatch', fd);
