@@ -1,0 +1,75 @@
+name: NAO LOTO note自動投稿
+
+on:
+  schedule:
+    - cron: '10 12 * * 1-5'   # 平日 21:10 JST
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'draft=動作テスト（下書きを作って消す） / publish=本番公開'
+        required: true
+        default: draft
+        type: choice
+        options: [draft, publish]
+      date:
+        description: '基準日 YYYY-MM-DD（空なら今日）'
+        required: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: naoloto-note-autopost
+  cancel-in-progress: false
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    timeout-minutes: 100
+    env:
+      TZ: Asia/Tokyo
+      DATE: ${{ inputs.date }}
+      MODE: ${{ inputs.mode || 'publish' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install --prefix autopost --no-audit --no-fund
+
+      - name: 今日の当せん番号をCSVへ反映（未掲載なら5分おきに最大75分待つ）
+        run: |
+          for i in $(seq 1 16); do
+            set +e; node autopost/update_results.js $DATE; code=$?; set -e
+            if [ $code -eq 0 ]; then exit 0; fi
+            if [ $code -ne 2 ]; then exit $code; fi
+            sleep 300
+          done
+          echo "当せん番号が掲載されませんでした"; exit 1
+
+      - name: CSVをコミット
+        run: |
+          git config user.name "naoloto-bot"
+          git config user.email "naoloto-bot@users.noreply.github.com"
+          git add data
+          git diff --cached --quiet || (git commit -m "自動反映: $(date +%F)" && git push)
+
+      - name: 記事本文を作成
+        run: node autopost/build_article.js $DATE
+
+      - name: noteに投稿
+        env:
+          NOTE_COOKIE: ${{ secrets.NOTE_COOKIE }}
+        run: node autopost/post_note.js $MODE
+
+      - name: 投稿記録をコミット
+        if: env.MODE == 'publish'
+        run: |
+          git add autopost/state
+          git diff --cached --quiet || (git commit -m "note投稿記録: $(date +%F)" && git pull --rebase && git push)
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: article
+          path: autopost/out/
