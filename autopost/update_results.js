@@ -5,6 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const { JSDOM } = require('jsdom');
 const { jstToday, gamesToVerify } = require('./schedule');
+const { targetDate } = require('./engine');
 
 const DATA = path.join(__dirname, '..', 'data');
 const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130 Safari/537.36';
@@ -15,11 +16,14 @@ const num = (s) => {
   return /^\d+$/.test(t) ? Number(t) : 0; // 「該当なし」は0
 };
 
-async function latestTable(game) {
+async function latestTable(game, wantedDate) {
   const res = await fetch(`https://takarakuji.rakuten.co.jp/backnumber/${PAGES[game]}/`, { headers: { 'User-Agent': UA } });
   if (!res.ok) throw new Error(`${game}: HTTP ${res.status}`);
   const doc = new JSDOM(await res.text()).window.document;
-  const table = doc.querySelector('table.tblNumberGuid');
+  const tables = [...doc.querySelectorAll('table.tblNumberGuid')];
+  const table = tables.find(t => [...t.querySelectorAll('tr')].some(tr =>
+    tr.querySelector('th')?.textContent.replace(/\s+/g,'') === '抽せん日' &&
+    tr.querySelector('td')?.textContent.trim().replace(/\//g,'-') === wantedDate)) || tables[0];
   if (!table) throw new Error(`${game}: 結果テーブルが見つかりません`);
   const rows = {};
   for (const tr of table.querySelectorAll('tr')) {
@@ -35,12 +39,17 @@ async function latestTable(game) {
 
 function toRow(game, t) {
   const r = t.rows;
+  const requirePrizes = keys => {
+    for(const k of keys) if(!r[k] || r[k].length<2) throw new Error(`${game}: ${k}の口数・当選金額が不足`);
+  };
   const kuchi = (k) => num((r[k] || [])[0]);
   const kin = (k) => num((r[k] || [])[1]);
   if (game === 'numbers3' || game === 'numbers4') {
     const digits = r['当せん番号'][0].split('').map(Number);
     const kinds = ['ストレート', 'ボックス', 'セット（ストレート）', 'セット（ボックス）'];
     if (game === 'numbers3') kinds.push('ミニ');
+    requirePrizes(kinds);
+    if(digits.length!==(game==='numbers3'?3:4)||digits.some(n=>!Number.isInteger(n)||n<0||n>9)) throw new Error(`${game}: 当選番号の形式が不正`);
     return {
       main: [t.round, t.date, ...digits, ...kinds.map(kuchi), ...kinds.map(kin)],
       short: [t.round, ...digits],
@@ -50,6 +59,8 @@ function toRow(game, t) {
   let bonus = (r['本数字'].filter((x) => x.startsWith('('))).concat(r['ボーナス数字'] || []).map(num);
   const tiers = { loto6: 5, loto7: 6, miniloto: 4 }[game];
   const ranks = Array.from({ length: tiers }, (_, i) => `${i + 1}等`);
+  requirePrizes(ranks);
+  if((game==='loto6'||game==='loto7')&&!r['キャリーオーバー']?.length) throw new Error(`${game}: キャリーオーバーが不足`);
   const row = [t.round, t.date, ...nums, ...bonus, ...ranks.map(kuchi), ...ranks.map(kin)];
   if (game === 'loto6') row.push(num((r['キャリーオーバー'] || [])[0]), ''); // 既存形式は末尾カンマあり
   if (game === 'loto7') row.push(num((r['キャリーオーバー'] || [])[0]));
@@ -67,11 +78,11 @@ function append(file, row) {
 }
 
 (async () => {
-  const today = process.argv[2] || jstToday();
+  const today = process.argv[2] || targetDate();
   const games = gamesToVerify(today);
   let missing = [];
   for (const game of games) {
-    const t = await latestTable(game);
+    const t = await latestTable(game, today);
     if (t.date !== today) { missing.push(`${game}(最新${t.date})`); continue; }
     const { main, short } = toRow(game, t);
     const file = { loto6: 'loto6_50.csv', loto7: 'loto7_50.csv', miniloto: 'miniloto_50.csv', numbers3: 'numbers3_24.csv', numbers4: 'numbers4_24.csv' }[game];

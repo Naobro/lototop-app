@@ -12,6 +12,7 @@ const PRICE = 500;
 const EYECATCH = path.join(__dirname, 'eyecatch.jpg'); // 元: naobillionaire.synergy.cfbx.jp/_auto/digest/imeges/note.webp
 const STATE = path.join(__dirname, 'state', 'posted.json');
 const mode = process.argv[2] || 'draft';
+if (!['draft','publish'].includes(mode)) throw new Error('mode は draft または publish');
 
 const raw = (process.env.NOTE_COOKIE || '').trim();
 // 値だけ登録された場合（"名前=" なし）はセッションCookieとして扱う
@@ -53,6 +54,13 @@ function toHtml(paragraphs) {
   const a = JSON.parse(fs.readFileSync(path.join(__dirname, 'out', 'article.json'), 'utf8'));
   const state = fs.existsSync(STATE) ? JSON.parse(fs.readFileSync(STATE, 'utf8')) : {};
   if (mode === 'publish' && state[a.date]) { console.log(`${a.date} は投稿済み: ${state[a.date].url}`); return; }
+  if(mode === 'publish') {
+    const res=await fetch('https://note.com/api/v2/creators/naobillion/contents?kind=note&page=1');
+    if(!res.ok) throw new Error('公開済み記事の確認に失敗');
+    const list=await res.json();
+    if(!Array.isArray(list.data?.contents)) throw new Error('公開済み記事一覧の形式が不明');
+    if(list.data.contents.some(n=>n.name===a.title&&n.status==='published')) { console.log('同じタイトルの記事が公開済みです'); return; }
+  }
 
   const me = await api('GET', '/v2/current_user');
   console.log(`ログイン確認: ${me.urlname}`);
@@ -68,6 +76,13 @@ function toHtml(paragraphs) {
   const created = await api('POST', '/v1/text_notes', { template_key: null });
   const { id, key } = created;
   console.log(`下書き作成: id=${id} key=${key}`);
+  if(mode==='publish') {
+    const forecastPath=path.join(__dirname,'state/forecasts.json');
+    const forecasts=JSON.parse(fs.readFileSync(forecastPath,'utf8'));
+    if(!forecasts[a.predictionDate]) throw new Error('保存済み予想がありません');
+    forecasts[a.predictionDate].noteKey=key;
+    fs.writeFileSync(forecastPath,JSON.stringify(forecasts,null,2));
+  }
 
   try {
     await api('POST', `/v1/text_notes/draft_save?id=${id}&is_temp_saved=true`, {
@@ -104,6 +119,17 @@ function toHtml(paragraphs) {
       lead_form: null, line_add_friend: null, pro_coupon_keys: [],
     });
     console.log('公開しました');
+    // Persist immediately: an X/verification failure must not create a second article.
+    fs.mkdirSync(path.dirname(STATE), { recursive: true });
+    state[a.date] = {key,url:`https://note.com/naobillion/n/${key}`,title:a.title};
+    fs.writeFileSync(STATE, JSON.stringify(state, null, 2));
+    const forecastPath=path.join(__dirname,'state/forecasts.json');
+    const forecasts=JSON.parse(fs.readFileSync(forecastPath,'utf8'));
+    if(forecasts[a.predictionDate]) {
+      forecasts[a.predictionDate].published=true;
+      forecasts[a.predictionDate].source=state[a.date].url;
+      fs.writeFileSync(forecastPath,JSON.stringify(forecasts,null,2));
+    }
 
     try {
       await api('POST', '/v3/discount_campaigns/twitter/post_status', { note_key: key });
