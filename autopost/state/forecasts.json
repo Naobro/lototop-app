@@ -212,7 +212,7 @@
     "date": "2026-10-05",
     "basisDate": "2026-10-02",
     "version": "24-transition-v1",
-    "published": false,
+    "published": true,
     "games": {
       "loto6": {
         "selection": {
@@ -1474,6 +1474,8 @@
           ]
         ]
       }
-    }
+    },
+    "noteKey": "nc33e6567fa0f",
+    "source": "https://note.com/naobillion/n/nc33e6567fa0f"
   }
 }
