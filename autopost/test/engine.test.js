@@ -1,6 +1,33 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { transitions, facts, validLoto, settlement, targetDate, numbersPicks } = require('../engine');
+function selectPool(draws,config){
+  const fs=require('fs'),path=require('path'),vm=require('vm'),c=vm.createContext({});
+  vm.runInContext(fs.readFileSync(path.join(__dirname,'../lib/stats.js'),'utf8')+'\nthis.L=LotoStats;',c);
+  return c.L.calcSelectedNumbers(draws.map(d=>({'回号':d.round,'本数字':d.numbers})),{...config,mainKey:'本数字',tierRules:c.L.DEFAULT_TIER_RULES},24);
+}
+test('pre-draw position leader 06 is retained despite recent appearance and uneven timing',()=>{
+  const e=require('../engine'),d=e.loadDraws('loto7','2026-09-25');
+  const pool=selectPool(d,{mainCount:7,maxNumber:37,selectedCount:27});
+  assert.ok(pool.selected.includes(6),'06 is S and position-2 leader, not a gap-based deletion');
+  assert.equal(pool.selected.length,27);
+});
+test('rare last-draw numbers are not unconditionally reserved ahead of SA and positional candidates',()=>{
+  const draws=Array.from({length:24},(_,i)=>({round:i+1,numbers:i===23?[4,5]:[1,2]}));
+  const pool=selectPool(draws,{mainCount:2,maxNumber:5,selectedCount:2});
+  assert.deepEqual(Array.from(pool.selected),[1,2]);
+});
+test('candidate review distinguishes N3 first-digit omission from a winning mini',()=>{
+  const e=require('../engine');
+  const saved={top:[{top:[{digit:2}]},{top:[{digit:6}]},{top:[{digit:9}]}],tickets:[[6,9]],ranking:[{top:[{digit:2,score:3,count:5,signals:['S']},{digit:8,score:1,count:2,signals:[]}]},{top:[{digit:6,score:2,count:3,signals:['A']}]},{top:[{digit:9,score:2,count:3,signals:['A']}]}]};
+  const text=e.candidateReview('numbers3',saved,{numbers:[8,6,9]}).join('\n');
+  assert.match(text,/第1数字.*8.*候補外/);assert.match(text,/ミニ.*候補内/);
+});
+test('missing historical diagnostics do not invent an exclusion reason',()=>{
+  const e=require('../engine');
+  const text=e.candidateReview('loto7',{tickets:[]},{numbers:[6],bonus:[]}).join('\n');
+  assert.match(text,/記録.*不足/);
+});
 test('all three loto games produce ten compliant tickets from their dated candidates',()=>{
   const e=require('../engine');
   for(const game of ['loto6','loto7','miniloto']){

@@ -78,7 +78,15 @@ function lotoForecast(game,draws){
     const chosen=list.shift().numbers;chosen.forEach(n=>usage[n]=(usage[n]||0)+1);
     tickets.push({numbers:chosen,sab:chosen.map(sab).join(''),...facts(chosen,draws)});
   }}
-  return {selection,transitions:ts,patterns:selectedPatterns,tickets};
+  const positional=L.calcDigitPositionTop5(converted,cfg,24,cfg.maxNumber);
+  const top5=L.calcDigitPositionTop5(converted,cfg,24,5);
+  const diagnostics=Array.from({length:cfg.maxNumber},(_,i)=>i+1).map(number=>{
+    const positions=positional.flatMap((p,j)=>{const item=p.top.find(x=>x.number===number);return item?[{position:j+1,count:item.count,rank:1+p.top.filter(x=>x.count>item.count).length}]:[];});
+    const gap=facts([number],draws).gaps[number];
+    const positionScore=top5.reduce((s,p)=>{const i=p.top.findIndex(x=>x.number===number);return s+(i<0?0:5-i);},0);
+    return {number,tier:sab(number),count:freq[number]||0,gap,positions,positionScore,selected:selection.selected.includes(number),previous:draws.at(-1).numbers.includes(number)};
+  });
+  return {selection,transitions:ts,patterns:selectedPatterns,tickets,diagnostics,selectionVersion:'sa-position-v2'};
 }
 function product(arrays,visit,p=[]){if(p.length===arrays.length){visit(p);return;}for(const n of arrays[p.length])product(arrays,visit,[...p,n]);}
 function numbersPicks(game,top,draws){
@@ -99,8 +107,56 @@ function numbersPicks(game,top,draws){
   }return out;
 }
 function numbersForecast(game,draws){const {LotoStats:L,NumbersStats:N}=libraries();const n=game==='numbers3'?3:4;
-  const top=N.calcDigitPrediction(draws.map(d=>({'本数字':d.numbers})),{mainKey:'本数字',digitCount:n,tierRules:L.DEFAULT_TIER_RULES},24,5);
-  return {top,tickets:numbersPicks(game,top,draws)};
+  const input=draws.map(d=>({'本数字':d.numbers})),cfg={mainKey:'本数字',digitCount:n,tierRules:L.DEFAULT_TIER_RULES};
+  const ranking=N.calcDigitPrediction(input,cfg,24,10);
+  const top=ranking.map(p=>({position:p.position,top:p.top.slice(0,5)}));
+  const gaps=Array.from({length:n},(_,j)=>Object.fromEntries(Array.from({length:10},(_,digit)=>{const g=draws.slice().reverse().findIndex(d=>d.numbers[j]===digit);return [digit,g<0?draws.length:g];})));
+  return {top,ranking,gaps,tickets:numbersPicks(game,top,draws)};
+}
+function candidateReview(game,saved,draw){
+  if(CONFIG[game]){
+    if(!saved.selection)return ['前回の厳選数字の記録が不足しています。削除理由は断定できません。'];
+    const selected=saved.selection.selected,inside=draw.numbers.filter(n=>selected.includes(n)),outside=draw.numbers.filter(n=>!selected.includes(n));
+    const out=[`厳選数字${selected.length}個：本数字${draw.numbers.length}個中${inside.length}個が候補内。候補外：${outside.join(', ')||'なし'}`,
+      `ボーナス数字：${(draw.bonus||[]).filter(n=>selected.includes(n)).join(', ')||'候補内なし'}（候補外：${(draw.bonus||[]).filter(n=>!selected.includes(n)).join(', ')||'なし'}）`];
+    for(const n of outside){
+      if(saved.legacyReasons?.[n]){out.push(`${n}の削除理由：${saved.legacyReasons[n]}`);continue;}
+      const d=saved.diagnostics?.find(x=>x.number===n);
+      if(!d){out.push(`${n}：当時の評価記録が不足しているため、削除理由は断定できません。`);continue;}
+      const positions=d.positions.map(x=>`第${x.position}数字${x.rank}位・${x.count}回`).join('／')||'各位置で未出現';
+      const peers=saved.diagnostics.filter(x=>x.selected&&x.tier===d.tier).sort((a,b)=>a.positionScore-b.positionScore||a.count-b.count);
+      const peer=peers[0];
+      out.push(`${n}：${d.tier}分類・24回中${d.count}回、${positions}。位置評価${d.positionScore}点、${d.gap}回未出現。引っ張り${d.previous?'あり':'なし'}。`);
+      out.push(`${n}は${selected.length}個の候補枠に入らず。選定方式はS/Aと位置別TOP5が主軸で、間隔・出現時期の偏りは減点していません。${peer?`採用された同分類の${peer.number}は位置評価${peer.positionScore}点・${peer.count}回。`:''}`);
+    }
+    if(outside.length)out.push('次回への確認点：候補外数字と採用境界の順位を比較し、位置別上位を落としていないか確認します。今回出た数字という理由だけで追加はしません。');
+    const actual=sorted(draw.numbers).map(band),pats=(saved.patterns||[]).map(p=>p.pattern||p);
+    const match=pats.findIndex(p=>p.join('-')===actual.join('-'));
+    out.push(`実際のパターン：${actual.join('-')}。${pats.length?match>=0?`前回予想${match+1}番と完全一致。`:'前回5案に一致なし。':'前回パターン記録が不足。'}`);
+    return out;
+  }
+  if(!saved.top)return ['前回TOP5の記録が不足しているため、候補外の理由は断定できません。'];
+  const out=[];if(saved.analysisSource)out.push(saved.analysisSource);
+  draw.numbers.forEach((digit,j)=>{
+    const included=saved.top[j].top.some(x=>x.digit===digit),r=saved.ranking?.[j]?.top;
+    if(included){out.push(`第${j+1}数字 ${digit}：前回TOP5候補内。`);return;}
+    if(!r){out.push(`第${j+1}数字 ${digit}：候補外。当時の全数字評価記録が不足しているため、順位・削除理由は未確認。`);return;}
+    const index=r.findIndex(x=>x.digit===digit),x=r[index],cut=r[4];
+    out.push(`第${j+1}数字 ${digit}：候補外。24回中${x.count}回、${index+1}位・${x.score.toFixed(3)}点。評価要素：${x.signals.join('・')||'S/A・引っ張り・風車盤の加点なし'}。${saved.gaps?`同桁で${saved.gaps[j][digit]}回未出現。`:''}`);
+    if(cut)out.push(`第${j+1}数字の採用境界は${cut.digit}（5位・${cut.score.toFixed(3)}点、${cut.count}回）。${x.score<cut.score?'加点合計が採用境界より低かったため候補外。':'同点で、出現回数または数字順の順位により候補外。'}出現間隔で除外したわけではありません。`);
+  });
+  const tickets=saved.tickets.map(p=>Array.isArray(p)?p:p.numbers);
+  if(game==='numbers3'){
+    const inside=draw.numbers.slice(-2).every((n,j)=>saved.top[j+1].top.some(x=>x.digit===n));
+    const hit=tickets.some(p=>p.join('')===draw.numbers.slice(-2).join(''));
+    out.push(`ミニ下2桁：${inside?'両桁とも候補内':'候補外の桁あり'}。${hit?'公開10口に的中あり。':inside?'候補には入ったが10口への組合せ選抜で拾えませんでした。':'まず下2桁の候補選定が検証対象です。'}`);
+  }else{
+    const positionInside=draw.numbers.every((n,j)=>saved.top[j].top.some(x=>x.digit===n));
+    let boxInside=false;product(saved.top.map(p=>p.top.map(x=>x.digit)),p=>{if(box(p)===box(draw.numbers))boxInside=true;});
+    const hit=tickets.some(p=>box(p)===box(draw.numbers));
+    out.push(`セット：ストレート候補${positionInside?'内':'外'}／BOXを構成${boxInside?'可能':'不可'}。${hit?'公開10口に的中あり。':boxInside?'候補では構成可能でしたが、除外条件・10口選抜の段階で拾えませんでした。':'TOP5候補から当選BOXを作れず、候補選定が検証対象です。'}`);
+  }
+  return out;
 }
 function settlement(game,tickets,draw){
   const details=tickets.map(a=>{
@@ -122,4 +178,4 @@ function targetDate(now=new Date()){
   while([0,6].includes(jst.getUTCDay()))jst.setUTCDate(jst.getUTCDate()-1);
   return jst.toISOString().slice(0,10);
 }
-module.exports={band,loadDraws,transitions,facts,validLoto,patterns,lotoForecast,numbersForecast,numbersPicks,settlement,targetDate,CONFIG};
+module.exports={band,loadDraws,transitions,facts,validLoto,patterns,lotoForecast,numbersForecast,numbersPicks,candidateReview,settlement,targetDate,CONFIG};

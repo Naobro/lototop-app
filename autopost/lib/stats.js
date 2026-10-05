@@ -622,21 +622,9 @@ const LotoStats = (function () {
     return Math.round(result);
   }
 
-  // 厳選数字（1軍・2軍）・削除数字の選定。
-  // 引っ張り数字（直近1回の当せん番号）は、ひっぱり率が直近n回で7割前後と高く、
-  // 「直近すぎるから除外」は統計的に不合理なため、階層やスコアに関わらず必ず
-  // 厳選数字に含める（実際に買うかどうかは読者の判断に委ねる）。
-  // 残りの枠はS数字とA・B数字を、実際の候補数の比率でselectedCountに按分する
-  // （SだけでもA・BだけでもなくSAの割合で按分、という考え方）。A数字とB数字は
-  // 階層の壁で区切らず横断的に競わせ、出現回数が少なくても間隔的に「そろそろ
-  // 来そう」なB数字が割って入る余地を持たせる。
-  // 候補が枠より多い場合のタイブレークは「出現回数」を使わず、「間隔バランス度
-  // （最後に出てから何回目か）」＋「3分割バランス度（直近8回・中8回・古8回の
-  // 出現の偏り。特定セグメントに偏っている＝頭打ちの可能性を減点）」の合算スコア
-  // →「位別ランキングスコア」→「数字が小さい方」の順。出現回数は既にS/A/B分類
-  // そのものに使っているため、タイブレークにも使うと「直近よく出ている数字を
-  // 選ぶ」だけになってしまい、抽せんが毎回独立しているという前提と矛盾するため
-  // 採用しない。
+  // 候補選定はS/A分類と位置別TOP5を中心にする。
+  // 出現間隔・8回ずつの出現偏りは削除順位に使わない。
+  // 10回以上未出現は買い目の0〜2個制限で扱い、候補の主評価にしない。
   function calcSelectedNumbers(draws, config, n = 24) {
     const { mainKey, maxNumber, selectedCount, tierRules = DEFAULT_TIER_RULES } = config;
     const pools = calcTierPools(draws, { mainKey, tierRules }, n);
@@ -646,59 +634,39 @@ const LotoStats = (function () {
 
     const digitTop5 = calcDigitPositionTop5(draws, config, n, 5);
     const positionScore = calcPositionScore(digitTop5);
-    const gapBalance = calcGapBalanceScore(draws, config, n);
-    const segmentBalance = calcSegmentBalanceScore(draws, config, n);
-
-    function combinedScore(num) {
-      return (gapBalance[num] || 0) + (segmentBalance[num] || 0);
-    }
-
-    function sortCandidates(list) {
-      return [...list].sort(
-        (a, b) =>
-          combinedScore(b.number) - combinedScore(a.number) ||
-          (positionScore[b.number] || 0) - (positionScore[a.number] || 0) ||
-          a.number - b.number
-      );
-    }
-
     const numberToTier = {};
+    const numberToCount = {};
     Object.entries(pools).forEach(([label, list]) => {
       list.forEach((c) => {
         numberToTier[c.number] = label;
+        numberToCount[c.number] = c.count;
       });
     });
-
+    const saLabels = new Set(tierRules.slice(0, 2).map(t => t.label));
+    const latestNumbers = new Set(getMainNumbers(draws[draws.length - 1] || {}, mainKey));
+    const compare = (a, b) =>
+      (positionScore[b] || 0) - (positionScore[a] || 0) ||
+      (numberToCount[b] || 0) - (numberToCount[a] || 0) ||
+      Number(latestNumbers.has(a)) - Number(latestNumbers.has(b)) ||
+      a - b;
+    // 各位置の1位を確保する。同率1位も同じ扱い。
+    const leaders = new Set();
+    calcDigitPositionTop5(draws, config, n, maxNumber).forEach(p => {
+      const firstCount = p.top[0]?.count;
+      p.top.filter(x => x.count === firstCount).forEach(x => leaders.add(x.number));
+    });
+    const all = Array.from({ length: maxNumber }, (_, i) => i + 1);
     const selectedSet = new Set();
-
-    // 引っ張り数字を無条件で確保する
-    const latestDraw = draws[draws.length - 1];
-    if (latestDraw) {
-      getMainNumbers(latestDraw, mainKey).forEach((num) => {
+    const reserve = list => {
+      list.sort(compare).forEach(num => {
         if (selectedSet.size < selectedCount) selectedSet.add(num);
       });
-    }
-
-    const sPoolRemaining = (pools[topLabel] || []).filter((c) => !selectedSet.has(c.number));
-    const secondaryPoolRemaining = secondaryLabels
-      .flatMap((label) => pools[label] || [])
-      .filter((c) => !selectedSet.has(c.number));
-
-    const totalRemainingCandidates = sPoolRemaining.length + secondaryPoolRemaining.length;
-    let remaining = Math.max(selectedCount - selectedSet.size, 0);
-
-    const sSlot =
-      totalRemainingCandidates > 0
-        ? Math.min(Math.round((selectedCount * sPoolRemaining.length) / totalRemainingCandidates), remaining)
-        : 0;
-    sortCandidates(sPoolRemaining)
-      .slice(0, sSlot)
-      .forEach((c) => selectedSet.add(c.number));
-    remaining = Math.max(selectedCount - selectedSet.size, 0);
-
-    sortCandidates(secondaryPoolRemaining)
-      .slice(0, remaining)
-      .forEach((c) => selectedSet.add(c.number));
+    };
+    reserve([...leaders]);
+    reserve(all.filter(n => !selectedSet.has(n) && saLabels.has(numberToTier[n])));
+    reserve(all.filter(n => !selectedSet.has(n)));
+    // 引っ張りは候補全員を自動採用・自動除外しない。
+    // 同じ位置評価・回数で枠を超える場合だけ非引っ張りを優先する。
 
     const tierPicks = { [topLabel]: [], [secondaryLabel]: [] };
     selectedSet.forEach((num) => {

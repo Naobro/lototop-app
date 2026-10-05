@@ -45,8 +45,9 @@ function toHtml(paragraphs) {
   return paragraphs.map((p) => {
     const id = crypto.randomUUID();
     p.id = id;
-    const inner = p.lines.map(linkify).join('<br>');
-    return `<p name="${id}" id="${id}">${p.heading ? `<strong>${inner}</strong>` : inner}</p>`;
+    const inner = p.lines.map(line => linkify(line).replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')).join('<br>');
+    const tag = p.heading ? "h2" : "p";
+    return `<${tag} name="${id}" id="${id}">${inner}</${tag}>`;
   });
 }
 

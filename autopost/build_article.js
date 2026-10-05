@@ -5,6 +5,7 @@ const NAMES={loto6:'ロト6',loto7:'ロト7',miniloto:'ミニロト',numbers3:'�
 const money=n=>n.toLocaleString('ja-JP')+'円',pct=n=>n.toFixed(1)+'%',pad=n=>String(n).padStart(2,'0');
 const read=(f,v)=>fs.existsSync(path.join(DIR,f))?JSON.parse(fs.readFileSync(path.join(DIR,f),'utf8')):v;
 const write=(f,d)=>{fs.mkdirSync(DIR,{recursive:true});fs.writeFileSync(path.join(DIR,f),JSON.stringify(d,null,2)+'\n');};
+const circ=i=>'①②③④⑤⑥⑦⑧⑨⑩'[i];
 const date=process.argv[2]||E.targetDate();
 if(!/^\d{4}-\d{2}-\d{2}$/.test(date))throw Error('日付はYYYY-MM-DDで指定してください');
 const target=S.nextDrawDate(date),forecasts=read('forecasts.json',{}),ledger=read('ledger.json',{}),paragraphs=[];
@@ -24,10 +25,22 @@ for(const game of S.gamesToVerify(date)){
  const saved=forecasts[date]?.games[game];
  if(!saved||!forecasts[date].published){add('公開済み10口の記録がないため、購入成績は未集計です。');complete=false;continue;}
  const tickets=saved.tickets.map(x=>Array.isArray(x)?x:x.numbers),result=E.settlement(game,tickets,draw);
- const hits=result.details.map((x,i)=>x.rank?`${i+1}口目 ${x.numbers.map(n=>E.CONFIG[game]?pad(n):n).join(E.CONFIG[game]?'-':'')}：${x.rank} ${money(x.pay)}`:null).filter(Boolean);
- add(hits.length?hits:['的中なし']);
+ const hits=result.details.flatMap((x,i)=>x.rank?[`🎉 ${circ(i)} ${NAMES[game]}・${x.rank}当選！${money(x.pay)}`]:[]);
+ if(hits.length){const winning=paragraphs.pop();hits.forEach(x=>add(x,true));paragraphs.push(winning);}else add('的中なし');
+ if(E.CONFIG[game]){
+  const actual=draw.numbers.slice().sort((a,b)=>a-b).map(E.band),patterns=(saved.patterns||[]).map(p=>p.pattern||p),matched=patterns.findIndex(p=>p.join('-')===actual.join('-'));
+  if(matched>=0)add(`🎯 パターン${circ(matched)}も完全一致！`,true);
+  if(saved.selection)add([`厳選数字：${saved.selection.selected.map(n=>draw.numbers.includes(n)?`**${n}**`:draw.bonus.includes(n)?`${n}（B）`:n).join(', ')}`,`削除数字：${saved.selection.cut.join(', ')}`]);
+  add(E.candidateReview(game,saved,draw).filter(x=>!x.startsWith('実際のパターン：')));
+  if(patterns.length){add('パターン検証',true);add(`パターン結果：${actual.join('-')}`);if(matched>=0)add(`**${circ(matched)}のパターンが完全一致！**`);add(patterns.map((p,i)=>`${circ(i)} ${p.join('-')}`));}
+ }else{
+  if(saved.top)add(saved.top.map((p,j)=>`第${j+1}数字TOP5：${p.top.map(x=>x.digit===draw.numbers[j]?`**${x.digit}**`:x.digit).join(', ')}`));
+  add(E.candidateReview(game,saved,draw).filter(x=>x!==saved.analysisSource).map(x=>x.replaceAll('前回TOP5','TOP5')));
+ }
+ add(game==='numbers3'?'厳選ミニ予想検証':game==='numbers4'?'厳選セット予想検証':'厳選予想検証',true);
+ add(tickets.map((p,i)=>`${circ(i)} ${p.map((n,j)=>{const hit=E.CONFIG[game]?draw.numbers.includes(n):n===draw.numbers[game==='numbers3'?j+1:j];const label=E.CONFIG[game]?pad(n):n;return hit?`**${label}**`:label;}).join(E.CONFIG[game]?'-':'').replaceAll('****','')}${E.CONFIG[game]&&p.some(n=>draw.bonus.includes(n))?' （ボーナス一致：'+p.filter(n=>draw.bonus.includes(n)).map(pad).join(', ')+'）':''}`));
  if(game==='numbers4'){
-  const near=result.details.flatMap((x,i)=>x.near?.straight||x.near?.box?[`${i+1}口目：${x.near.straight?'ストレート1桁違い':''}${x.near.straight&&x.near.box?'／':''}${x.near.box?'BOX1個違い':''}`]:[]);
+  const near=result.details.flatMap((x,i)=>x.near?.straight||x.near?.box?[`${circ(i)}：${x.near.straight?'ストレート1桁違い':''}${x.near.straight&&x.near.box?'／':''}${x.near.box?'BOX1個違い':''}`]:[]);
   add(near.length?near:['ニア（1個はずし）：なし']);
  }
  add([`購入：${tickets.length}口 ${money(result.purchase)}${game==='numbers3'?'（ミニ）':game==='numbers4'?'（セット）':''}`,`当選金額：${money(result.return)}`,`回収率：${pct(result.rate)}`]);
@@ -43,20 +56,20 @@ add(mp?[`購入金額：${money(mp)}`,`当選金額：${money(mr)}`,`回収率�
 const separatorIndex=paragraphs.length-1;add('ここからメンバーシップ限定',true);
 const existing=forecasts[target];
 if(existing?.published)throw Error(`${target}抽選分は公開記録済みです。予想は上書きしません。`);
-const generated=existing||{date:target,basisDate:date,version:'24-transition-v1',published:false,games:{}};
+const generated=existing||{date:target,basisDate:date,version:'24-transition-sa-position-v2',published:false,games:{}};
 if(generated.basisDate!==date)throw Error('保存済み予想の基準日が異なります');
 for(const game of S.gamesToVerify(target)){
  const draws=E.loadDraws(game,date);
  const pred=generated.games[game]||(E.CONFIG[game]?E.lotoForecast(game,draws):E.numbersForecast(game,draws));generated.games[game]=pred;
  if(E.CONFIG[game]){
-  add(`🎖 ${NAMES[game]} 厳選数字（1軍・2軍）・削除数字`,true);
-  add([`厳選数字：${pred.selection.selected.length}個`,`1軍：${[...pred.selection.tierPicks.S].sort((a,b)=>a-b).join(', ')}`,...[1,10,20,30].map(b=>`${b}の位：${pred.selection.selected.filter(n=>E.band(n)===b).join(', ')}`),`削除数字：${pred.selection.cut.join(', ')}`]);
-  add(`🔮 ${NAMES[game]} パターン予想`,true);add(pred.patterns.map((p,i)=>`${i+1}：${p.pattern.join('-')}`));
+  add(`🎖 ${NAMES[game]} 厳選数字・削除数字`,true);
+  add([`厳選数字：${pred.selection.selected.length}個`,...[1,10,20,30].map(b=>`${b}の位：${pred.selection.selected.filter(n=>E.band(n)===b).join(', ')}`),`削除数字：${pred.selection.cut.join(', ')}`]);
+  add(`🔮 ${NAMES[game]} パターン予想`,true);add(pred.patterns.map((p,i)=>`${circ(i)} ${p.pattern.join('-')}`));
   add(`🎯 ${NAMES[game]} 厳選予想10口`,true);
-  add(pred.tickets.map((p,i)=>`${i+1}：${p.numbers.map(pad).join('-')} ｜ ${p.pattern.join('-')} ｜ ${p.sab} ｜ ZONE ${p.zones.join('-')} ｜ 引っ張り ${p.pull.map(pad).join(',')||'なし'} ｜ 連続 ${p.consecutive.map(x=>x.map(pad).join('-')).join(',')||'なし'} ｜ 末尾 ${p.tails.map(x=>x.map(pad).join('-')).join(',')||'なし'} ｜ 10回以上 ${p.cold.map(n=>`${pad(n)}(${p.gaps[n]}回未出現)`).join(',')||'なし'} ｜ 合計 ${p.sum}`));
+  pred.tickets.forEach((p,i)=>add([`${circ(i)} ${p.numbers.map(pad).join('-')}`,`${p.pattern.join('-')} ｜ ${p.sab} ｜ ZONE ${p.zones.join('-')} ｜ 引っ張り ${p.pull.map(pad).join(',')||'なし'} ｜ 連続 ${p.consecutive.map(x=>x.map(pad).join('-')).join(',')||'なし'} ｜ 末尾 ${p.tails.map(x=>x.map(pad).join('-')).join(',')||'なし'} ｜ 10回以上 ${p.cold.map(n=>`${pad(n)}(${p.gaps[n]}回未出現)`).join(',')||'なし'} ｜ 合計 ${p.sum}`]));
  }else{
   add(`🔮 ${NAMES[game]} 予想数字（各桁TOP5）`,true);add(pred.top.map((p,i)=>`第${i+1}数字：${p.top.map(x=>x.digit).join(', ')}`));
-  add(game==='numbers3'?'🎯 厳選ミニ予想10口':'🎯 厳選セット予想10口',true);add(pred.tickets.map((p,i)=>`${i+1}：${p.join('')}`));
+  add(game==='numbers3'?'🎯 厳選ミニ予想10口':'🎯 厳選セット予想10口',true);add(pred.tickets.map((p,i)=>`${circ(i)} ${p.join('')}`));
   add(`購入方式：${game==='numbers3'?'ミニ':'セット'}／10口・2,000円`);
  }
 }
