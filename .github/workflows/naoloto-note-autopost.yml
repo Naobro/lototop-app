@@ -1,18 +1,12 @@
-name: NAO LOTO note自動投稿
+name: NAO LOTO note記事修正
 on:
-  schedule:
-    - cron: '0 12 * * 1-5' # 平日21時 JST
-    - cron: '20 17,21 * * *' # 翌朝までの再試行（JST 02:20 / 06:20）
   workflow_dispatch:
     inputs:
       mode:
-        description: 'draft=下書きテスト（作成後削除） / publish=本番公開'
-        required: true
         default: draft
         type: choice
         options: [draft, publish]
       date:
-        description: '結果を検証する抽選日 YYYY-MM-DD（空なら直近の21時を過ぎた平日）'
         required: false
 permissions:
   contents: write
@@ -20,69 +14,35 @@ concurrency:
   group: naoloto-note-autopost
   cancel-in-progress: false
 jobs:
-  post:
+  revise:
     runs-on: ubuntu-latest
-    timeout-minutes: 100
-    env:
-      TZ: Asia/Tokyo
-      REQUESTED_DATE: ${{ inputs.date }}
-      MODE: ${{ inputs.mode || 'publish' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm ci --prefix autopost --no-audit --no-fund
-      - name: 計算処理のテスト
-        run: node --test autopost/test/*.test.js
-      - name: 対象抽選日を固定
-        run: |
-          node - <<'JS'
-          const fs=require('fs'),{targetDate}=require('./autopost/engine');
-          const date=process.env.REQUESTED_DATE||targetDate();
-          if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||!require('./autopost/schedule').gamesToVerify(date).length)throw Error('対象日には抽選のある平日を指定してください');
-          fs.appendFileSync(process.env.GITHUB_ENV,`DATE=${date}\n`);
-          JS
-      - name: 当選情報をCSVへ反映（未掲載なら再試行）
-        run: |
-          for i in $(seq 1 16); do
-            set +e; node autopost/update_results.js "$DATE"; code=$?; set -e
-            if [ "$code" -eq 0 ]; then exit 0; fi
-            if [ "$code" -ne 2 ]; then exit "$code"; fi
-            if [ "$i" -lt 16 ]; then sleep 300; fi
-          done
-          echo "対象日の当選情報が掲載されていません"; exit 1
-      - name: CSVを保存
-        run: |
-          git config user.name "naoloto-bot"
-          git config user.email "naoloto-bot@users.noreply.github.com"
-          git add data
-          git diff --cached --quiet || (git commit -m "当選結果: $DATE" && git pull --rebase && git push)
-      - name: 公開済み記事の確認
-        id: published
-        run: node autopost/check_posted.js "$DATE"
-      - name: 保存済み予想の検証・収支・次回10口を生成
-        if: steps.published.outputs.posted != 'true'
-        run: node autopost/build_article.js "$DATE"
-      - name: 予想・収支を公開前に保存
-        if: steps.published.outputs.posted != 'true'
-        run: |
-          git add autopost/state
-          git diff --cached --quiet || (git commit -m "予想・収支保存: $DATE" && git pull --rebase && git push)
-      - name: noteに投稿
-        if: steps.published.outputs.posted != 'true'
+      - name: 承認済み記事を更新
         env:
           NOTE_COOKIE: ${{ secrets.NOTE_COOKIE }}
-        run: node autopost/post_note.js "$MODE"
-      - name: 投稿記録を保存
-        if: always() && env.MODE == 'publish'
+        run: node autopost/revise_note.js
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          path: recorded
+      - name: 改訂公開予想を保存
         run: |
-          git config user.name "naoloto-bot"
-          git config user.email "naoloto-bot@users.noreply.github.com"
-          git add autopost/state
-          git diff --cached --quiet || (git commit -m "note投稿記録: $DATE" && git pull --rebase && git push)
+          node - <<'JS'
+          const fs=require('fs'),p='recorded/autopost/state/forecasts.json',s=JSON.parse(fs.readFileSync(p)),f=JSON.parse(fs.readFileSync('autopost/revision-forecast.json')),old=s['2026-10-05'];
+          f.published=true;f.noteKey=old.noteKey;f.source=old.source;f.revisedAt=new Date().toISOString();f.previousVersions=[...(old.previousVersions||[]),{...old,previousVersions:undefined}];s['2026-10-05']=f;fs.writeFileSync(p,JSON.stringify(s,null,2)+'\n');
+          JS
+          git -C recorded config user.name naoloto-bot
+          git -C recorded config user.email naoloto-bot@users.noreply.github.com
+          git -C recorded add autopost/state/forecasts.json
+          git -C recorded commit -m "note改訂済み予想保存: 2026-10-05"
+          git -C recorded pull --rebase
+          git -C recorded push
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: article
+          name: note-revision
           path: autopost/out/
