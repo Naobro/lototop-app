@@ -11572,7 +11572,7 @@
     "date": "2026-10-06",
     "basisDate": "2026-10-05",
     "version": "24-transition-sa-position-v2",
-    "published": false,
+    "published": true,
     "games": {
       "miniloto": {
         "selection": {
@@ -14147,6 +14147,8 @@
           ]
         ]
       }
-    }
+    },
+    "noteKey": "n8f731911ad09",
+    "source": "https://note.com/naobillion/n/n8f731911ad09"
   }
 }
