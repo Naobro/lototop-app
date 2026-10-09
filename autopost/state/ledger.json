@@ -1836,5 +1836,411 @@
         }
       }
     ]
+  },
+  "2026-10-09:loto7": {
+    "date": "2026-10-09",
+    "game": "loto7",
+    "round": 698,
+    "source": "https://note.com/naobillion/n/nd6dd092097b4",
+    "purchase": 3000,
+    "return": 0,
+    "rate": 0,
+    "profit": -3000,
+    "details": [
+      {
+        "numbers": [
+          5,
+          9,
+          18,
+          19,
+          22,
+          24,
+          36
+        ],
+        "rank": null,
+        "pay": 0,
+        "near": null
+      },
+      {
+        "numbers": [
+          6,
+          9,
+          15,
+          19,
+          22,
+          23,
+          34
+        ],
+        "rank": null,
+        "pay": 0,
+        "near": null
+      },
+      {
+        "numbers": [
+          6,
+          7,
+          12,
+          18,
+          22,
+          34,
+          35
+        ],
+        "rank": null,
+        "pay": 0,
+        "near": null
+      },
+      {
+        "numbers": [
+          8,
+          9,
+          17,
+          19,
+          24,
+          31,
+          33
+        ],
+        "rank": null,
+        "pay": 0,
+        "near": null
+      },
+      {
+        "numbers": [
+          5,
+          7,
+          12,
+          20,
+          22,
+          24,
+          36
+        ],
+        "rank": null,
+        "pay": 0,
+        "near": null
+      },
+      {
+        "numbers": [
+          8,
+          9,
+          19,
+          21,
+          23,
+          25,
+          36
+        ],
+        "rank": null,
+        "pay": 0,
+        "near": null
+      },
+      {
+        "numbers": [
+          3,
+          5,
+          12,
+          22,
+          24,
+          31,
+          36
+        ],
+        "rank": null,
+        "pay": 0,
+        "near": null
+      },
+      {
+        "numbers": [
+          5,
+          6,
+          18,
+          22,
+          24,
+          33,
+          34
+        ],
+        "rank": null,
+        "pay": 0,
+        "near": null
+      },
+      {
+        "numbers": [
+          9,
+          16,
+          17,
+          19,
+          21,
+          28,
+          35
+        ],
+        "rank": null,
+        "pay": 0,
+        "near": null
+      },
+      {
+        "numbers": [
+          6,
+          14,
+          15,
+          19,
+          22,
+          23,
+          34
+        ],
+        "rank": null,
+        "pay": 0,
+        "near": null
+      }
+    ]
+  },
+  "2026-10-09:numbers3": {
+    "date": "2026-10-09",
+    "game": "numbers3",
+    "round": 7089,
+    "source": "https://note.com/naobillion/n/nd6dd092097b4",
+    "purchase": 2000,
+    "return": 0,
+    "rate": 0,
+    "profit": -2000,
+    "details": [
+      {
+        "numbers": [
+          8,
+          8
+        ],
+        "rank": null,
+        "pay": 0,
+        "near": null
+      },
+      {
+        "numbers": [
+          0,
+          9
+        ],
+        "rank": null,
+        "pay": 0,
+        "near": null
+      },
+      {
+        "numbers": [
+          2,
+          0
+        ],
+        "rank": null,
+        "pay": 0,
+        "near": null
+      },
+      {
+        "numbers": [
+          5,
+          2
+        ],
+        "rank": null,
+        "pay": 0,
+        "near": null
+      },
+      {
+        "numbers": [
+          1,
+          5
+        ],
+        "rank": null,
+        "pay": 0,
+        "near": null
+      },
+      {
+        "numbers": [
+          8,
+          9
+        ],
+        "rank": null,
+        "pay": 0,
+        "near": null
+      },
+      {
+        "numbers": [
+          0,
+          8
+        ],
+        "rank": null,
+        "pay": 0,
+        "near": null
+      },
+      {
+        "numbers": [
+          2,
+          2
+        ],
+        "rank": null,
+        "pay": 0,
+        "near": null
+      },
+      {
+        "numbers": [
+          5,
+          0
+        ],
+        "rank": null,
+        "pay": 0,
+        "near": null
+      },
+      {
+        "numbers": [
+          8,
+          5
+        ],
+        "rank": null,
+        "pay": 0,
+        "near": null
+      }
+    ]
+  },
+  "2026-10-09:numbers4": {
+    "date": "2026-10-09",
+    "game": "numbers4",
+    "round": 7089,
+    "source": "https://note.com/naobillion/n/nd6dd092097b4",
+    "purchase": 2000,
+    "return": 0,
+    "rate": 0,
+    "profit": -2000,
+    "details": [
+      {
+        "numbers": [
+          6,
+          5,
+          0,
+          0
+        ],
+        "rank": null,
+        "pay": 0,
+        "near": {
+          "straight": false,
+          "box": false
+        }
+      },
+      {
+        "numbers": [
+          8,
+          5,
+          2,
+          0
+        ],
+        "rank": null,
+        "pay": 0,
+        "near": {
+          "straight": false,
+          "box": false
+        }
+      },
+      {
+        "numbers": [
+          0,
+          2,
+          9,
+          0
+        ],
+        "rank": null,
+        "pay": 0,
+        "near": {
+          "straight": false,
+          "box": false
+        }
+      },
+      {
+        "numbers": [
+          5,
+          9,
+          0,
+          3
+        ],
+        "rank": null,
+        "pay": 0,
+        "near": {
+          "straight": false,
+          "box": false
+        }
+      },
+      {
+        "numbers": [
+          7,
+          5,
+          2,
+          7
+        ],
+        "rank": null,
+        "pay": 0,
+        "near": {
+          "straight": false,
+          "box": false
+        }
+      },
+      {
+        "numbers": [
+          6,
+          7,
+          9,
+          0
+        ],
+        "rank": null,
+        "pay": 0,
+        "near": {
+          "straight": false,
+          "box": false
+        }
+      },
+      {
+        "numbers": [
+          8,
+          3,
+          0,
+          3
+        ],
+        "rank": null,
+        "pay": 0,
+        "near": {
+          "straight": false,
+          "box": false
+        }
+      },
+      {
+        "numbers": [
+          0,
+          2,
+          2,
+          7
+        ],
+        "rank": null,
+        "pay": 0,
+        "near": {
+          "straight": false,
+          "box": false
+        }
+      },
+      {
+        "numbers": [
+          5,
+          9,
+          9,
+          0
+        ],
+        "rank": null,
+        "pay": 0,
+        "near": {
+          "straight": false,
+          "box": false
+        }
+      },
+      {
+        "numbers": [
+          7,
+          5,
+          4,
+          4
+        ],
+        "rank": null,
+        "pay": 0,
+        "near": {
+          "straight": false,
+          "box": false
+        }
+      }
+    ]
   }
 }
