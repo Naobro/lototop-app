@@ -26907,7 +26907,7 @@
     "date": "2026-10-14",
     "basisDate": "2026-10-13",
     "version": "24-transition-sa-position-v2",
-    "published": false,
+    "published": true,
     "games": {
       "numbers3": {
         "top": [
@@ -28142,6 +28142,8 @@
           ]
         ]
       }
-    }
+    },
+    "noteKey": "n0e963b805b43",
+    "source": "https://note.com/naobillion/n/n0e963b805b43"
   }
 }
