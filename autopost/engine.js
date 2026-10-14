@@ -28,8 +28,9 @@ function transitions(draws,n){
     for(let i=0;i<23;i++)if(band(sorted(recent[i].numbers)[position])===current){
       const next=band(sorted(recent[i+1].numbers)[position]);hits[next]=(hits[next]||0)+1;total++;
     }
-    // A missing conditional sample has no measured rate; never replace it with frequency.
-    return {position:position+1,current,total,rates:Object.fromEntries([1,10,20,30].map(b=>[b,total?(hits[b]||0)/total:0]))};
+    // User-approved fallback: if the final position has no conditional sample, select band 30.
+    const fallback=total===0&&position===n-1&&n===6;
+    return {position:position+1,current,total,...(fallback?{fallback:'user-approved-band-30'}:{}),rates:Object.fromEntries([1,10,20,30].map(b=>[b,total?(hits[b]||0)/total:fallback&&b===30?1:0]))};
   });
 }
 function facts(pick,draws){

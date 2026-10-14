@@ -73,3 +73,9 @@ test('N4 excludes past boxes, triples and double doubles, retains ten unique box
   assert.equal(new Set(p.map(x=>x.slice().sort().join(''))).size,10);
   for(const x of p){const counts={};x.forEach(n=>counts[n]=(counts[n]||0)+1);assert.ok(Math.max(...Object.values(counts))<=2);assert.ok(Object.values(counts).filter(n=>n===2).length<=1);assert.notEqual(x.slice().sort().join(''),'0123');}
 });
+
+test('loto6 final position without transitions uses approved band 30',()=>{
+ const E=require('../engine'),draws=E.loadDraws('loto6','2026-10-14'),t=E.transitions(draws,6);
+ assert.equal(t[5].total,0);assert.equal(t[5].rates[30],1);assert.equal(t[5].fallback,'user-approved-band-30');
+ const forecast=E.lotoForecast('loto6',draws);assert.equal(forecast.patterns.length,5);assert.equal(forecast.tickets.length,10);assert(forecast.tickets.every(p=>E.validLoto(p.numbers,draws)&&p.pattern[5]===30));
+});
