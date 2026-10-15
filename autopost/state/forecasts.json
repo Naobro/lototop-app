@@ -31101,5 +31101,2960 @@
     },
     "noteKey": "n00c9d52f0f86",
     "source": "https://note.com/naobillion/n/n00c9d52f0f86"
+  },
+  "2026-10-16": {
+    "date": "2026-10-16",
+    "basisDate": "2026-10-15",
+    "version": "24-transition-sa-position-v2",
+    "published": false,
+    "games": {
+      "loto7": {
+        "selection": {
+          "tierLabels": [
+            "S",
+            "A"
+          ],
+          "tierPicks": {
+            "S": [
+              24,
+              22,
+              28,
+              36,
+              6,
+              16,
+              18,
+              15,
+              23,
+              20,
+              35,
+              10,
+              8,
+              34,
+              31,
+              17,
+              25
+            ],
+            "A": [
+              1,
+              12,
+              29,
+              33,
+              5,
+              3,
+              13,
+              19,
+              14,
+              11
+            ]
+          },
+          "selected": [
+            1,
+            3,
+            5,
+            6,
+            8,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            22,
+            23,
+            24,
+            25,
+            28,
+            29,
+            31,
+            33,
+            34,
+            35,
+            36
+          ],
+          "cut": [
+            2,
+            4,
+            7,
+            9,
+            21,
+            26,
+            27,
+            30,
+            32,
+            37
+          ],
+          "selectedCount": 27,
+          "maxNumber": 37,
+          "mainCount": 7,
+          "oddsBase": 10295472,
+          "oddsSelected": 888030,
+          "oddsImprovement": 11.6
+        },
+        "transitions": [
+          {
+            "position": 1,
+            "current": 10,
+            "total": 5,
+            "rates": {
+              "1": 0.8,
+              "10": 0.2,
+              "20": 0,
+              "30": 0
+            }
+          },
+          {
+            "position": 2,
+            "current": 10,
+            "total": 10,
+            "rates": {
+              "1": 0.4,
+              "10": 0.5,
+              "20": 0.1,
+              "30": 0
+            }
+          },
+          {
+            "position": 3,
+            "current": 20,
+            "total": 8,
+            "rates": {
+              "1": 0,
+              "10": 0.625,
+              "20": 0.375,
+              "30": 0
+            }
+          },
+          {
+            "position": 4,
+            "current": 20,
+            "total": 11,
+            "rates": {
+              "1": 0,
+              "10": 0.5454545454545454,
+              "20": 0.45454545454545453,
+              "30": 0
+            }
+          },
+          {
+            "position": 5,
+            "current": 20,
+            "total": 16,
+            "rates": {
+              "1": 0,
+              "10": 0.125,
+              "20": 0.6875,
+              "30": 0.1875
+            }
+          },
+          {
+            "position": 6,
+            "current": 20,
+            "total": 12,
+            "rates": {
+              "1": 0,
+              "10": 0.08333333333333333,
+              "20": 0.4166666666666667,
+              "30": 0.5
+            }
+          },
+          {
+            "position": 7,
+            "current": 30,
+            "total": 20,
+            "rates": {
+              "1": 0,
+              "10": 0,
+              "20": 0.1,
+              "30": 0.9
+            }
+          }
+        ],
+        "patterns": [
+          {
+            "pattern": [
+              1,
+              10,
+              10,
+              10,
+              20,
+              30,
+              30
+            ],
+            "score": 0.0421875
+          },
+          {
+            "pattern": [
+              1,
+              10,
+              10,
+              10,
+              20,
+              20,
+              30
+            ],
+            "score": 0.03515625
+          },
+          {
+            "pattern": [
+              1,
+              10,
+              10,
+              20,
+              20,
+              30,
+              30
+            ],
+            "score": 0.03515625
+          },
+          {
+            "pattern": [
+              1,
+              1,
+              10,
+              10,
+              20,
+              30,
+              30
+            ],
+            "score": 0.03375000000000001
+          },
+          {
+            "pattern": [
+              1,
+              10,
+              10,
+              20,
+              20,
+              20,
+              30
+            ],
+            "score": 0.029296875000000003
+          }
+        ],
+        "tickets": [
+          {
+            "numbers": [
+              1,
+              10,
+              11,
+              19,
+              22,
+              35,
+              36
+            ],
+            "sab": "ASAASSS",
+            "pull": [
+              10
+            ],
+            "consecutive": [
+              [
+                10,
+                11
+              ],
+              [
+                35,
+                36
+              ]
+            ],
+            "triple": false,
+            "tails": [
+              [
+                1,
+                11
+              ]
+            ],
+            "cold": [
+              19
+            ],
+            "gaps": {
+              "1": 1,
+              "10": 0,
+              "11": 2,
+              "19": 14,
+              "22": 3,
+              "35": 5,
+              "36": 1
+            },
+            "pattern": [
+              1,
+              10,
+              10,
+              10,
+              20,
+              30,
+              30
+            ],
+            "sum": 134,
+            "zones": [
+              3,
+              2,
+              2
+            ],
+            "tailCounts": [
+              1,
+              2,
+              1,
+              1,
+              1,
+              1
+            ]
+          },
+          {
+            "numbers": [
+              5,
+              10,
+              11,
+              15,
+              24,
+              33,
+              36
+            ],
+            "sab": "ASASSAS",
+            "pull": [
+              10,
+              24
+            ],
+            "consecutive": [
+              [
+                10,
+                11
+              ]
+            ],
+            "triple": false,
+            "tails": [
+              [
+                5,
+                15
+              ]
+            ],
+            "cold": [],
+            "gaps": {
+              "5": 3,
+              "10": 0,
+              "11": 2,
+              "15": 2,
+              "24": 0,
+              "33": 5,
+              "36": 1
+            },
+            "pattern": [
+              1,
+              10,
+              10,
+              10,
+              20,
+              30,
+              30
+            ],
+            "sum": 134,
+            "zones": [
+              3,
+              2,
+              2
+            ],
+            "tailCounts": [
+              1,
+              1,
+              1,
+              1,
+              2,
+              1
+            ]
+          },
+          {
+            "numbers": [
+              1,
+              13,
+              18,
+              19,
+              22,
+              24,
+              36
+            ],
+            "sab": "AASASSS",
+            "pull": [
+              13,
+              24
+            ],
+            "consecutive": [
+              [
+                18,
+                19
+              ]
+            ],
+            "triple": false,
+            "tails": [],
+            "cold": [
+              19
+            ],
+            "gaps": {
+              "1": 1,
+              "13": 0,
+              "18": 6,
+              "19": 14,
+              "22": 3,
+              "24": 0,
+              "36": 1
+            },
+            "pattern": [
+              1,
+              10,
+              10,
+              10,
+              20,
+              20,
+              30
+            ],
+            "sum": 133,
+            "zones": [
+              2,
+              4,
+              1
+            ],
+            "tailCounts": [
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1
+            ]
+          },
+          {
+            "numbers": [
+              8,
+              16,
+              17,
+              19,
+              20,
+              29,
+              33
+            ],
+            "sab": "SSSASAA",
+            "pull": [
+              29
+            ],
+            "consecutive": [
+              [
+                16,
+                17
+              ],
+              [
+                19,
+                20
+              ]
+            ],
+            "triple": false,
+            "tails": [
+              [
+                19,
+                29
+              ]
+            ],
+            "cold": [
+              19
+            ],
+            "gaps": {
+              "8": 7,
+              "16": 2,
+              "17": 5,
+              "19": 14,
+              "20": 6,
+              "29": 0,
+              "33": 5
+            },
+            "pattern": [
+              1,
+              10,
+              10,
+              10,
+              20,
+              20,
+              30
+            ],
+            "sum": 142,
+            "zones": [
+              1,
+              4,
+              2
+            ],
+            "tailCounts": [
+              1,
+              1,
+              1,
+              1,
+              1,
+              2
+            ]
+          },
+          {
+            "numbers": [
+              3,
+              11,
+              12,
+              22,
+              24,
+              35,
+              36
+            ],
+            "sab": "AAASSSS",
+            "pull": [
+              24
+            ],
+            "consecutive": [
+              [
+                11,
+                12
+              ],
+              [
+                35,
+                36
+              ]
+            ],
+            "triple": false,
+            "tails": [
+              [
+                12,
+                22
+              ]
+            ],
+            "cold": [],
+            "gaps": {
+              "3": 4,
+              "11": 2,
+              "12": 1,
+              "22": 3,
+              "24": 0,
+              "35": 5,
+              "36": 1
+            },
+            "pattern": [
+              1,
+              10,
+              10,
+              20,
+              20,
+              30,
+              30
+            ],
+            "sum": 143,
+            "zones": [
+              3,
+              2,
+              2
+            ],
+            "tailCounts": [
+              1,
+              2,
+              1,
+              1,
+              1,
+              1
+            ]
+          },
+          {
+            "numbers": [
+              8,
+              16,
+              19,
+              25,
+              29,
+              31,
+              33
+            ],
+            "sab": "SSASASA",
+            "pull": [
+              29
+            ],
+            "consecutive": [],
+            "triple": false,
+            "tails": [
+              [
+                19,
+                29
+              ]
+            ],
+            "cold": [
+              19
+            ],
+            "gaps": {
+              "8": 7,
+              "16": 2,
+              "19": 14,
+              "25": 5,
+              "29": 0,
+              "31": 4,
+              "33": 5
+            },
+            "pattern": [
+              1,
+              10,
+              10,
+              20,
+              20,
+              30,
+              30
+            ],
+            "sum": 161,
+            "zones": [
+              1,
+              3,
+              3
+            ],
+            "tailCounts": [
+              1,
+              1,
+              1,
+              1,
+              1,
+              2
+            ]
+          },
+          {
+            "numbers": [
+              1,
+              5,
+              14,
+              18,
+              22,
+              35,
+              36
+            ],
+            "sab": "AAASSSS",
+            "pull": [],
+            "consecutive": [
+              [
+                35,
+                36
+              ]
+            ],
+            "triple": false,
+            "tails": [
+              [
+                5,
+                35
+              ]
+            ],
+            "cold": [],
+            "gaps": {
+              "1": 1,
+              "5": 3,
+              "14": 8,
+              "18": 6,
+              "22": 3,
+              "35": 5,
+              "36": 1
+            },
+            "pattern": [
+              1,
+              1,
+              10,
+              10,
+              20,
+              30,
+              30
+            ],
+            "sum": 131,
+            "zones": [
+              2,
+              3,
+              2
+            ],
+            "tailCounts": [
+              1,
+              1,
+              1,
+              2,
+              1,
+              1
+            ]
+          },
+          {
+            "numbers": [
+              6,
+              8,
+              17,
+              19,
+              29,
+              33,
+              34
+            ],
+            "sab": "SSSAAAS",
+            "pull": [
+              29,
+              34
+            ],
+            "consecutive": [
+              [
+                33,
+                34
+              ]
+            ],
+            "triple": false,
+            "tails": [
+              [
+                19,
+                29
+              ]
+            ],
+            "cold": [
+              19
+            ],
+            "gaps": {
+              "6": 1,
+              "8": 7,
+              "17": 5,
+              "19": 14,
+              "29": 0,
+              "33": 5,
+              "34": 0
+            },
+            "pattern": [
+              1,
+              1,
+              10,
+              10,
+              20,
+              30,
+              30
+            ],
+            "sum": 146,
+            "zones": [
+              2,
+              2,
+              3
+            ],
+            "tailCounts": [
+              1,
+              1,
+              1,
+              1,
+              1,
+              2
+            ]
+          },
+          {
+            "numbers": [
+              3,
+              11,
+              12,
+              22,
+              24,
+              28,
+              36
+            ],
+            "sab": "AAASSSS",
+            "pull": [
+              24,
+              28
+            ],
+            "consecutive": [
+              [
+                11,
+                12
+              ]
+            ],
+            "triple": false,
+            "tails": [
+              [
+                12,
+                22
+              ]
+            ],
+            "cold": [],
+            "gaps": {
+              "3": 4,
+              "11": 2,
+              "12": 1,
+              "22": 3,
+              "24": 0,
+              "28": 0,
+              "36": 1
+            },
+            "pattern": [
+              1,
+              10,
+              10,
+              20,
+              20,
+              20,
+              30
+            ],
+            "sum": 136,
+            "zones": [
+              3,
+              3,
+              1
+            ],
+            "tailCounts": [
+              1,
+              2,
+              1,
+              1,
+              1,
+              1
+            ]
+          },
+          {
+            "numbers": [
+              8,
+              14,
+              19,
+              23,
+              25,
+              29,
+              31
+            ],
+            "sab": "SAASSAS",
+            "pull": [
+              29
+            ],
+            "consecutive": [],
+            "triple": false,
+            "tails": [
+              [
+                19,
+                29
+              ]
+            ],
+            "cold": [
+              19
+            ],
+            "gaps": {
+              "8": 7,
+              "14": 8,
+              "19": 14,
+              "23": 1,
+              "25": 5,
+              "29": 0,
+              "31": 4
+            },
+            "pattern": [
+              1,
+              10,
+              10,
+              20,
+              20,
+              20,
+              30
+            ],
+            "sum": 149,
+            "zones": [
+              1,
+              4,
+              2
+            ],
+            "tailCounts": [
+              1,
+              1,
+              1,
+              1,
+              1,
+              2
+            ]
+          }
+        ],
+        "diagnostics": [
+          {
+            "number": 1,
+            "tier": "A",
+            "count": 4,
+            "gap": 1,
+            "positions": [
+              {
+                "position": 1,
+                "count": 4,
+                "rank": 1
+              }
+            ],
+            "positionScore": 5,
+            "selected": true,
+            "previous": false
+          },
+          {
+            "number": 2,
+            "tier": "B",
+            "count": 2,
+            "gap": 20,
+            "positions": [
+              {
+                "position": 1,
+                "count": 2,
+                "rank": 3
+              }
+            ],
+            "positionScore": 3,
+            "selected": false,
+            "previous": false
+          },
+          {
+            "number": 3,
+            "tier": "A",
+            "count": 3,
+            "gap": 4,
+            "positions": [
+              {
+                "position": 1,
+                "count": 2,
+                "rank": 3
+              },
+              {
+                "position": 2,
+                "count": 1,
+                "rank": 7
+              }
+            ],
+            "positionScore": 2,
+            "selected": true,
+            "previous": false
+          },
+          {
+            "number": 4,
+            "tier": "B",
+            "count": 2,
+            "gap": 9,
+            "positions": [
+              {
+                "position": 1,
+                "count": 2,
+                "rank": 3
+              }
+            ],
+            "positionScore": 1,
+            "selected": false,
+            "previous": false
+          },
+          {
+            "number": 5,
+            "tier": "A",
+            "count": 4,
+            "gap": 3,
+            "positions": [
+              {
+                "position": 1,
+                "count": 3,
+                "rank": 2
+              },
+              {
+                "position": 2,
+                "count": 1,
+                "rank": 7
+              }
+            ],
+            "positionScore": 4,
+            "selected": true,
+            "previous": false
+          },
+          {
+            "number": 6,
+            "tier": "S",
+            "count": 6,
+            "gap": 1,
+            "positions": [
+              {
+                "position": 1,
+                "count": 1,
+                "rank": 9
+              },
+              {
+                "position": 2,
+                "count": 5,
+                "rank": 1
+              }
+            ],
+            "positionScore": 5,
+            "selected": true,
+            "previous": false
+          },
+          {
+            "number": 7,
+            "tier": "B",
+            "count": 2,
+            "gap": 6,
+            "positions": [
+              {
+                "position": 1,
+                "count": 1,
+                "rank": 9
+              },
+              {
+                "position": 3,
+                "count": 1,
+                "rank": 7
+              }
+            ],
+            "positionScore": 0,
+            "selected": false,
+            "previous": false
+          },
+          {
+            "number": 8,
+            "tier": "S",
+            "count": 5,
+            "gap": 7,
+            "positions": [
+              {
+                "position": 1,
+                "count": 2,
+                "rank": 3
+              },
+              {
+                "position": 2,
+                "count": 2,
+                "rank": 3
+              },
+              {
+                "position": 4,
+                "count": 1,
+                "rank": 7
+              }
+            ],
+            "positionScore": 3,
+            "selected": true,
+            "previous": false
+          },
+          {
+            "number": 9,
+            "tier": "A",
+            "count": 3,
+            "gap": 6,
+            "positions": [
+              {
+                "position": 1,
+                "count": 1,
+                "rank": 9
+              },
+              {
+                "position": 2,
+                "count": 1,
+                "rank": 7
+              },
+              {
+                "position": 3,
+                "count": 1,
+                "rank": 7
+              }
+            ],
+            "positionScore": 0,
+            "selected": false,
+            "previous": false
+          },
+          {
+            "number": 10,
+            "tier": "S",
+            "count": 6,
+            "gap": 0,
+            "positions": [
+              {
+                "position": 1,
+                "count": 2,
+                "rank": 3
+              },
+              {
+                "position": 2,
+                "count": 4,
+                "rank": 2
+              }
+            ],
+            "positionScore": 4,
+            "selected": true,
+            "previous": true
+          },
+          {
+            "number": 11,
+            "tier": "A",
+            "count": 4,
+            "gap": 2,
+            "positions": [
+              {
+                "position": 1,
+                "count": 2,
+                "rank": 3
+              },
+              {
+                "position": 2,
+                "count": 1,
+                "rank": 7
+              },
+              {
+                "position": 3,
+                "count": 1,
+                "rank": 7
+              }
+            ],
+            "positionScore": 0,
+            "selected": true,
+            "previous": false
+          },
+          {
+            "number": 12,
+            "tier": "A",
+            "count": 3,
+            "gap": 1,
+            "positions": [
+              {
+                "position": 3,
+                "count": 3,
+                "rank": 1
+              }
+            ],
+            "positionScore": 5,
+            "selected": true,
+            "previous": false
+          },
+          {
+            "number": 13,
+            "tier": "A",
+            "count": 3,
+            "gap": 0,
+            "positions": [
+              {
+                "position": 2,
+                "count": 2,
+                "rank": 3
+              },
+              {
+                "position": 4,
+                "count": 1,
+                "rank": 7
+              }
+            ],
+            "positionScore": 2,
+            "selected": true,
+            "previous": true
+          },
+          {
+            "number": 14,
+            "tier": "A",
+            "count": 3,
+            "gap": 8,
+            "positions": [
+              {
+                "position": 2,
+                "count": 2,
+                "rank": 3
+              },
+              {
+                "position": 3,
+                "count": 1,
+                "rank": 7
+              }
+            ],
+            "positionScore": 1,
+            "selected": true,
+            "previous": false
+          },
+          {
+            "number": 15,
+            "tier": "S",
+            "count": 6,
+            "gap": 2,
+            "positions": [
+              {
+                "position": 1,
+                "count": 1,
+                "rank": 9
+              },
+              {
+                "position": 3,
+                "count": 3,
+                "rank": 1
+              },
+              {
+                "position": 4,
+                "count": 1,
+                "rank": 7
+              },
+              {
+                "position": 5,
+                "count": 1,
+                "rank": 9
+              }
+            ],
+            "positionScore": 4,
+            "selected": true,
+            "previous": false
+          },
+          {
+            "number": 16,
+            "tier": "S",
+            "count": 6,
+            "gap": 2,
+            "positions": [
+              {
+                "position": 1,
+                "count": 1,
+                "rank": 9
+              },
+              {
+                "position": 3,
+                "count": 3,
+                "rank": 1
+              },
+              {
+                "position": 4,
+                "count": 2,
+                "rank": 4
+              }
+            ],
+            "positionScore": 5,
+            "selected": true,
+            "previous": false
+          },
+          {
+            "number": 17,
+            "tier": "S",
+            "count": 5,
+            "gap": 5,
+            "positions": [
+              {
+                "position": 2,
+                "count": 1,
+                "rank": 7
+              },
+              {
+                "position": 3,
+                "count": 2,
+                "rank": 5
+              },
+              {
+                "position": 4,
+                "count": 1,
+                "rank": 7
+              },
+              {
+                "position": 6,
+                "count": 1,
+                "rank": 8
+              }
+            ],
+            "positionScore": 1,
+            "selected": true,
+            "previous": false
+          },
+          {
+            "number": 18,
+            "tier": "S",
+            "count": 6,
+            "gap": 6,
+            "positions": [
+              {
+                "position": 2,
+                "count": 1,
+                "rank": 7
+              },
+              {
+                "position": 4,
+                "count": 4,
+                "rank": 1
+              },
+              {
+                "position": 5,
+                "count": 1,
+                "rank": 9
+              }
+            ],
+            "positionScore": 5,
+            "selected": true,
+            "previous": false
+          },
+          {
+            "number": 19,
+            "tier": "A",
+            "count": 4,
+            "gap": 14,
+            "positions": [
+              {
+                "position": 4,
+                "count": 2,
+                "rank": 4
+              },
+              {
+                "position": 5,
+                "count": 1,
+                "rank": 9
+              },
+              {
+                "position": 7,
+                "count": 1,
+                "rank": 6
+              }
+            ],
+            "positionScore": 1,
+            "selected": true,
+            "previous": false
+          },
+          {
+            "number": 20,
+            "tier": "S",
+            "count": 6,
+            "gap": 6,
+            "positions": [
+              {
+                "position": 3,
+                "count": 1,
+                "rank": 7
+              },
+              {
+                "position": 4,
+                "count": 1,
+                "rank": 7
+              },
+              {
+                "position": 5,
+                "count": 3,
+                "rank": 2
+              },
+              {
+                "position": 6,
+                "count": 1,
+                "rank": 8
+              }
+            ],
+            "positionScore": 4,
+            "selected": true,
+            "previous": false
+          },
+          {
+            "number": 21,
+            "tier": "A",
+            "count": 4,
+            "gap": 0,
+            "positions": [
+              {
+                "position": 2,
+                "count": 2,
+                "rank": 3
+              },
+              {
+                "position": 3,
+                "count": 1,
+                "rank": 7
+              },
+              {
+                "position": 5,
+                "count": 1,
+                "rank": 9
+              }
+            ],
+            "positionScore": 0,
+            "selected": false,
+            "previous": true
+          },
+          {
+            "number": 22,
+            "tier": "S",
+            "count": 9,
+            "gap": 3,
+            "positions": [
+              {
+                "position": 2,
+                "count": 1,
+                "rank": 7
+              },
+              {
+                "position": 3,
+                "count": 3,
+                "rank": 1
+              },
+              {
+                "position": 4,
+                "count": 1,
+                "rank": 7
+              },
+              {
+                "position": 5,
+                "count": 2,
+                "rank": 3
+              },
+              {
+                "position": 6,
+                "count": 2,
+                "rank": 4
+              }
+            ],
+            "positionScore": 7,
+            "selected": true,
+            "previous": false
+          },
+          {
+            "number": 23,
+            "tier": "S",
+            "count": 7,
+            "gap": 1,
+            "positions": [
+              {
+                "position": 3,
+                "count": 2,
+                "rank": 5
+              },
+              {
+                "position": 4,
+                "count": 3,
+                "rank": 2
+              },
+              {
+                "position": 5,
+                "count": 2,
+                "rank": 3
+              }
+            ],
+            "positionScore": 6,
+            "selected": true,
+            "previous": false
+          },
+          {
+            "number": 24,
+            "tier": "S",
+            "count": 9,
+            "gap": 0,
+            "positions": [
+              {
+                "position": 3,
+                "count": 1,
+                "rank": 7
+              },
+              {
+                "position": 4,
+                "count": 3,
+                "rank": 2
+              },
+              {
+                "position": 5,
+                "count": 2,
+                "rank": 3
+              },
+              {
+                "position": 6,
+                "count": 3,
+                "rank": 1
+              }
+            ],
+            "positionScore": 9,
+            "selected": true,
+            "previous": true
+          },
+          {
+            "number": 25,
+            "tier": "S",
+            "count": 5,
+            "gap": 5,
+            "positions": [
+              {
+                "position": 3,
+                "count": 1,
+                "rank": 7
+              },
+              {
+                "position": 4,
+                "count": 1,
+                "rank": 7
+              },
+              {
+                "position": 5,
+                "count": 2,
+                "rank": 3
+              },
+              {
+                "position": 7,
+                "count": 1,
+                "rank": 6
+              }
+            ],
+            "positionScore": 0,
+            "selected": true,
+            "previous": false
+          },
+          {
+            "number": 26,
+            "tier": "A",
+            "count": 3,
+            "gap": 4,
+            "positions": [
+              {
+                "position": 4,
+                "count": 2,
+                "rank": 4
+              },
+              {
+                "position": 6,
+                "count": 1,
+                "rank": 8
+              }
+            ],
+            "positionScore": 0,
+            "selected": false,
+            "previous": false
+          },
+          {
+            "number": 27,
+            "tier": "A",
+            "count": 3,
+            "gap": 7,
+            "positions": [
+              {
+                "position": 5,
+                "count": 1,
+                "rank": 9
+              },
+              {
+                "position": 6,
+                "count": 1,
+                "rank": 8
+              },
+              {
+                "position": 7,
+                "count": 1,
+                "rank": 6
+              }
+            ],
+            "positionScore": 0,
+            "selected": false,
+            "previous": false
+          },
+          {
+            "number": 28,
+            "tier": "S",
+            "count": 7,
+            "gap": 0,
+            "positions": [
+              {
+                "position": 4,
+                "count": 1,
+                "rank": 7
+              },
+              {
+                "position": 5,
+                "count": 4,
+                "rank": 1
+              },
+              {
+                "position": 6,
+                "count": 2,
+                "rank": 4
+              }
+            ],
+            "positionScore": 6,
+            "selected": true,
+            "previous": true
+          },
+          {
+            "number": 29,
+            "tier": "A",
+            "count": 3,
+            "gap": 0,
+            "positions": [
+              {
+                "position": 6,
+                "count": 3,
+                "rank": 1
+              }
+            ],
+            "positionScore": 4,
+            "selected": true,
+            "previous": true
+          },
+          {
+            "number": 30,
+            "tier": "A",
+            "count": 3,
+            "gap": 4,
+            "positions": [
+              {
+                "position": 5,
+                "count": 2,
+                "rank": 3
+              },
+              {
+                "position": 6,
+                "count": 1,
+                "rank": 8
+              }
+            ],
+            "positionScore": 0,
+            "selected": false,
+            "previous": false
+          },
+          {
+            "number": 31,
+            "tier": "S",
+            "count": 5,
+            "gap": 4,
+            "positions": [
+              {
+                "position": 6,
+                "count": 2,
+                "rank": 4
+              },
+              {
+                "position": 7,
+                "count": 3,
+                "rank": 4
+              }
+            ],
+            "positionScore": 2,
+            "selected": true,
+            "previous": false
+          },
+          {
+            "number": 32,
+            "tier": "A",
+            "count": 4,
+            "gap": 1,
+            "positions": [
+              {
+                "position": 5,
+                "count": 2,
+                "rank": 3
+              },
+              {
+                "position": 6,
+                "count": 2,
+                "rank": 4
+              }
+            ],
+            "positionScore": 0,
+            "selected": false,
+            "previous": false
+          },
+          {
+            "number": 33,
+            "tier": "A",
+            "count": 3,
+            "gap": 5,
+            "positions": [
+              {
+                "position": 6,
+                "count": 3,
+                "rank": 1
+              }
+            ],
+            "positionScore": 3,
+            "selected": true,
+            "previous": false
+          },
+          {
+            "number": 34,
+            "tier": "S",
+            "count": 5,
+            "gap": 0,
+            "positions": [
+              {
+                "position": 6,
+                "count": 1,
+                "rank": 8
+              },
+              {
+                "position": 7,
+                "count": 4,
+                "rank": 3
+              }
+            ],
+            "positionScore": 3,
+            "selected": true,
+            "previous": true
+          },
+          {
+            "number": 35,
+            "tier": "S",
+            "count": 6,
+            "gap": 5,
+            "positions": [
+              {
+                "position": 6,
+                "count": 1,
+                "rank": 8
+              },
+              {
+                "position": 7,
+                "count": 5,
+                "rank": 2
+              }
+            ],
+            "positionScore": 4,
+            "selected": true,
+            "previous": false
+          },
+          {
+            "number": 36,
+            "tier": "S",
+            "count": 7,
+            "gap": 1,
+            "positions": [
+              {
+                "position": 7,
+                "count": 7,
+                "rank": 1
+              }
+            ],
+            "positionScore": 5,
+            "selected": true,
+            "previous": false
+          },
+          {
+            "number": 37,
+            "tier": "B",
+            "count": 2,
+            "gap": 7,
+            "positions": [
+              {
+                "position": 7,
+                "count": 2,
+                "rank": 5
+              }
+            ],
+            "positionScore": 1,
+            "selected": false,
+            "previous": false
+          }
+        ],
+        "selectionVersion": "sa-position-v2"
+      },
+      "numbers3": {
+        "top": [
+          {
+            "position": 1,
+            "top": [
+              {
+                "digit": 1,
+                "count": 5,
+                "rate": 20.8,
+                "score": 3,
+                "signals": [
+                  "S",
+                  "風車盤"
+                ]
+              },
+              {
+                "digit": 5,
+                "count": 4,
+                "rate": 16.7,
+                "score": 1.522,
+                "signals": [
+                  "A",
+                  "引っ張り"
+                ]
+              },
+              {
+                "digit": 7,
+                "count": 3,
+                "rate": 12.5,
+                "score": 1.522,
+                "signals": [
+                  "A",
+                  "引っ張り"
+                ]
+              },
+              {
+                "digit": 4,
+                "count": 2,
+                "rate": 8.3,
+                "score": 1.522,
+                "signals": [
+                  "引っ張り",
+                  "風車盤"
+                ]
+              },
+              {
+                "digit": 0,
+                "count": 2,
+                "rate": 8.3,
+                "score": 1,
+                "signals": [
+                  "風車盤"
+                ]
+              }
+            ]
+          },
+          {
+            "position": 2,
+            "top": [
+              {
+                "digit": 8,
+                "count": 4,
+                "rate": 16.7,
+                "score": 2,
+                "signals": [
+                  "A",
+                  "風車盤"
+                ]
+              },
+              {
+                "digit": 1,
+                "count": 3,
+                "rate": 12.5,
+                "score": 2,
+                "signals": [
+                  "A",
+                  "風車盤"
+                ]
+              },
+              {
+                "digit": 5,
+                "count": 3,
+                "rate": 12.5,
+                "score": 1.522,
+                "signals": [
+                  "A",
+                  "引っ張り"
+                ]
+              },
+              {
+                "digit": 7,
+                "count": 1,
+                "rate": 4.2,
+                "score": 1.522,
+                "signals": [
+                  "引っ張り",
+                  "風車盤"
+                ]
+              },
+              {
+                "digit": 0,
+                "count": 3,
+                "rate": 12.5,
+                "score": 1,
+                "signals": [
+                  "A"
+                ]
+              }
+            ]
+          },
+          {
+            "position": 3,
+            "top": [
+              {
+                "digit": 5,
+                "count": 5,
+                "rate": 20.8,
+                "score": 2.5220000000000002,
+                "signals": [
+                  "S",
+                  "引っ張り"
+                ]
+              },
+              {
+                "digit": 9,
+                "count": 4,
+                "rate": 16.7,
+                "score": 2,
+                "signals": [
+                  "A",
+                  "風車盤"
+                ]
+              },
+              {
+                "digit": 2,
+                "count": 3,
+                "rate": 12.5,
+                "score": 2,
+                "signals": [
+                  "A",
+                  "風車盤"
+                ]
+              },
+              {
+                "digit": 8,
+                "count": 3,
+                "rate": 12.5,
+                "score": 2,
+                "signals": [
+                  "A",
+                  "風車盤"
+                ]
+              },
+              {
+                "digit": 6,
+                "count": 4,
+                "rate": 16.7,
+                "score": 1,
+                "signals": [
+                  "A"
+                ]
+              }
+            ]
+          }
+        ],
+        "ranking": [
+          {
+            "position": 1,
+            "top": [
+              {
+                "digit": 1,
+                "count": 5,
+                "rate": 20.8,
+                "score": 3,
+                "signals": [
+                  "S",
+                  "風車盤"
+                ]
+              },
+              {
+                "digit": 5,
+                "count": 4,
+                "rate": 16.7,
+                "score": 1.522,
+                "signals": [
+                  "A",
+                  "引っ張り"
+                ]
+              },
+              {
+                "digit": 7,
+                "count": 3,
+                "rate": 12.5,
+                "score": 1.522,
+                "signals": [
+                  "A",
+                  "引っ張り"
+                ]
+              },
+              {
+                "digit": 4,
+                "count": 2,
+                "rate": 8.3,
+                "score": 1.522,
+                "signals": [
+                  "引っ張り",
+                  "風車盤"
+                ]
+              },
+              {
+                "digit": 0,
+                "count": 2,
+                "rate": 8.3,
+                "score": 1,
+                "signals": [
+                  "風車盤"
+                ]
+              },
+              {
+                "digit": 2,
+                "count": 2,
+                "rate": 8.3,
+                "score": 1,
+                "signals": [
+                  "風車盤"
+                ]
+              },
+              {
+                "digit": 6,
+                "count": 2,
+                "rate": 8.3,
+                "score": 0,
+                "signals": []
+              },
+              {
+                "digit": 8,
+                "count": 2,
+                "rate": 8.3,
+                "score": 0,
+                "signals": []
+              },
+              {
+                "digit": 3,
+                "count": 1,
+                "rate": 4.2,
+                "score": 0,
+                "signals": []
+              },
+              {
+                "digit": 9,
+                "count": 1,
+                "rate": 4.2,
+                "score": 0,
+                "signals": []
+              }
+            ]
+          },
+          {
+            "position": 2,
+            "top": [
+              {
+                "digit": 8,
+                "count": 4,
+                "rate": 16.7,
+                "score": 2,
+                "signals": [
+                  "A",
+                  "風車盤"
+                ]
+              },
+              {
+                "digit": 1,
+                "count": 3,
+                "rate": 12.5,
+                "score": 2,
+                "signals": [
+                  "A",
+                  "風車盤"
+                ]
+              },
+              {
+                "digit": 5,
+                "count": 3,
+                "rate": 12.5,
+                "score": 1.522,
+                "signals": [
+                  "A",
+                  "引っ張り"
+                ]
+              },
+              {
+                "digit": 7,
+                "count": 1,
+                "rate": 4.2,
+                "score": 1.522,
+                "signals": [
+                  "引っ張り",
+                  "風車盤"
+                ]
+              },
+              {
+                "digit": 0,
+                "count": 3,
+                "rate": 12.5,
+                "score": 1,
+                "signals": [
+                  "A"
+                ]
+              },
+              {
+                "digit": 2,
+                "count": 3,
+                "rate": 12.5,
+                "score": 1,
+                "signals": [
+                  "A"
+                ]
+              },
+              {
+                "digit": 6,
+                "count": 3,
+                "rate": 12.5,
+                "score": 1,
+                "signals": [
+                  "A"
+                ]
+              },
+              {
+                "digit": 9,
+                "count": 0,
+                "rate": 0,
+                "score": 1,
+                "signals": [
+                  "風車盤"
+                ]
+              },
+              {
+                "digit": 4,
+                "count": 2,
+                "rate": 8.3,
+                "score": 0.522,
+                "signals": [
+                  "引っ張り"
+                ]
+              },
+              {
+                "digit": 3,
+                "count": 2,
+                "rate": 8.3,
+                "score": 0,
+                "signals": []
+              }
+            ]
+          },
+          {
+            "position": 3,
+            "top": [
+              {
+                "digit": 5,
+                "count": 5,
+                "rate": 20.8,
+                "score": 2.5220000000000002,
+                "signals": [
+                  "S",
+                  "引っ張り"
+                ]
+              },
+              {
+                "digit": 9,
+                "count": 4,
+                "rate": 16.7,
+                "score": 2,
+                "signals": [
+                  "A",
+                  "風車盤"
+                ]
+              },
+              {
+                "digit": 2,
+                "count": 3,
+                "rate": 12.5,
+                "score": 2,
+                "signals": [
+                  "A",
+                  "風車盤"
+                ]
+              },
+              {
+                "digit": 8,
+                "count": 3,
+                "rate": 12.5,
+                "score": 2,
+                "signals": [
+                  "A",
+                  "風車盤"
+                ]
+              },
+              {
+                "digit": 6,
+                "count": 4,
+                "rate": 16.7,
+                "score": 1,
+                "signals": [
+                  "A"
+                ]
+              },
+              {
+                "digit": 0,
+                "count": 2,
+                "rate": 8.3,
+                "score": 1,
+                "signals": [
+                  "風車盤"
+                ]
+              },
+              {
+                "digit": 7,
+                "count": 1,
+                "rate": 4.2,
+                "score": 0.522,
+                "signals": [
+                  "引っ張り"
+                ]
+              },
+              {
+                "digit": 4,
+                "count": 0,
+                "rate": 0,
+                "score": 0.522,
+                "signals": [
+                  "引っ張り"
+                ]
+              },
+              {
+                "digit": 1,
+                "count": 1,
+                "rate": 4.2,
+                "score": 0,
+                "signals": []
+              },
+              {
+                "digit": 3,
+                "count": 1,
+                "rate": 4.2,
+                "score": 0,
+                "signals": []
+              }
+            ]
+          }
+        ],
+        "gaps": [
+          {
+            "0": 6,
+            "1": 5,
+            "2": 1,
+            "3": 12,
+            "4": 4,
+            "5": 2,
+            "6": 10,
+            "7": 0,
+            "8": 8,
+            "9": 3
+          },
+          {
+            "0": 7,
+            "1": 1,
+            "2": 12,
+            "3": 4,
+            "4": 0,
+            "5": 2,
+            "6": 8,
+            "7": 5,
+            "8": 16,
+            "9": 27
+          },
+          {
+            "0": 3,
+            "1": 4,
+            "2": 2,
+            "3": 22,
+            "4": 27,
+            "5": 0,
+            "6": 10,
+            "7": 16,
+            "8": 11,
+            "9": 8
+          }
+        ],
+        "tickets": [
+          [
+            8,
+            5
+          ],
+          [
+            1,
+            5
+          ],
+          [
+            5,
+            9
+          ],
+          [
+            7,
+            2
+          ],
+          [
+            8,
+            8
+          ],
+          [
+            1,
+            9
+          ],
+          [
+            5,
+            5
+          ],
+          [
+            7,
+            8
+          ],
+          [
+            8,
+            2
+          ],
+          [
+            0,
+            5
+          ]
+        ]
+      },
+      "numbers4": {
+        "top": [
+          {
+            "position": 1,
+            "top": [
+              {
+                "digit": 8,
+                "count": 4,
+                "rate": 16.7,
+                "score": 2,
+                "signals": [
+                  "A",
+                  "風車盤"
+                ]
+              },
+              {
+                "digit": 6,
+                "count": 3,
+                "rate": 12.5,
+                "score": 2,
+                "signals": [
+                  "A",
+                  "風車盤"
+                ]
+              },
+              {
+                "digit": 1,
+                "count": 4,
+                "rate": 16.7,
+                "score": 1.696,
+                "signals": [
+                  "A",
+                  "引っ張り"
+                ]
+              },
+              {
+                "digit": 0,
+                "count": 3,
+                "rate": 12.5,
+                "score": 1.696,
+                "signals": [
+                  "A",
+                  "引っ張り"
+                ]
+              },
+              {
+                "digit": 4,
+                "count": 2,
+                "rate": 8.3,
+                "score": 1,
+                "signals": [
+                  "風車盤"
+                ]
+              }
+            ]
+          },
+          {
+            "position": 2,
+            "top": [
+              {
+                "digit": 7,
+                "count": 4,
+                "rate": 16.7,
+                "score": 2,
+                "signals": [
+                  "A",
+                  "風車盤"
+                ]
+              },
+              {
+                "digit": 3,
+                "count": 4,
+                "rate": 16.7,
+                "score": 1.696,
+                "signals": [
+                  "A",
+                  "引っ張り"
+                ]
+              },
+              {
+                "digit": 0,
+                "count": 1,
+                "rate": 4.2,
+                "score": 1.696,
+                "signals": [
+                  "引っ張り",
+                  "風車盤"
+                ]
+              },
+              {
+                "digit": 4,
+                "count": 3,
+                "rate": 12.5,
+                "score": 1,
+                "signals": [
+                  "A"
+                ]
+              },
+              {
+                "digit": 9,
+                "count": 3,
+                "rate": 12.5,
+                "score": 1,
+                "signals": [
+                  "A"
+                ]
+              }
+            ]
+          },
+          {
+            "position": 3,
+            "top": [
+              {
+                "digit": 0,
+                "count": 6,
+                "rate": 25,
+                "score": 2.6959999999999997,
+                "signals": [
+                  "S",
+                  "引っ張り"
+                ]
+              },
+              {
+                "digit": 4,
+                "count": 3,
+                "rate": 12.5,
+                "score": 2,
+                "signals": [
+                  "A",
+                  "風車盤"
+                ]
+              },
+              {
+                "digit": 5,
+                "count": 3,
+                "rate": 12.5,
+                "score": 2,
+                "signals": [
+                  "A",
+                  "風車盤"
+                ]
+              },
+              {
+                "digit": 3,
+                "count": 0,
+                "rate": 0,
+                "score": 1.696,
+                "signals": [
+                  "引っ張り",
+                  "風車盤"
+                ]
+              },
+              {
+                "digit": 2,
+                "count": 3,
+                "rate": 12.5,
+                "score": 1,
+                "signals": [
+                  "A"
+                ]
+              }
+            ]
+          },
+          {
+            "position": 4,
+            "top": [
+              {
+                "digit": 0,
+                "count": 6,
+                "rate": 25,
+                "score": 3.6959999999999997,
+                "signals": [
+                  "S",
+                  "引っ張り",
+                  "風車盤"
+                ]
+              },
+              {
+                "digit": 9,
+                "count": 4,
+                "rate": 16.7,
+                "score": 1,
+                "signals": [
+                  "A"
+                ]
+              },
+              {
+                "digit": 4,
+                "count": 3,
+                "rate": 12.5,
+                "score": 1,
+                "signals": [
+                  "A"
+                ]
+              },
+              {
+                "digit": 5,
+                "count": 3,
+                "rate": 12.5,
+                "score": 1,
+                "signals": [
+                  "A"
+                ]
+              },
+              {
+                "digit": 6,
+                "count": 2,
+                "rate": 8.3,
+                "score": 1,
+                "signals": [
+                  "風車盤"
+                ]
+              }
+            ]
+          }
+        ],
+        "ranking": [
+          {
+            "position": 1,
+            "top": [
+              {
+                "digit": 8,
+                "count": 4,
+                "rate": 16.7,
+                "score": 2,
+                "signals": [
+                  "A",
+                  "風車盤"
+                ]
+              },
+              {
+                "digit": 6,
+                "count": 3,
+                "rate": 12.5,
+                "score": 2,
+                "signals": [
+                  "A",
+                  "風車盤"
+                ]
+              },
+              {
+                "digit": 1,
+                "count": 4,
+                "rate": 16.7,
+                "score": 1.696,
+                "signals": [
+                  "A",
+                  "引っ張り"
+                ]
+              },
+              {
+                "digit": 0,
+                "count": 3,
+                "rate": 12.5,
+                "score": 1.696,
+                "signals": [
+                  "A",
+                  "引っ張り"
+                ]
+              },
+              {
+                "digit": 4,
+                "count": 2,
+                "rate": 8.3,
+                "score": 1,
+                "signals": [
+                  "風車盤"
+                ]
+              },
+              {
+                "digit": 5,
+                "count": 2,
+                "rate": 8.3,
+                "score": 1,
+                "signals": [
+                  "風車盤"
+                ]
+              },
+              {
+                "digit": 3,
+                "count": 1,
+                "rate": 4.2,
+                "score": 0.696,
+                "signals": [
+                  "引っ張り"
+                ]
+              },
+              {
+                "digit": 2,
+                "count": 2,
+                "rate": 8.3,
+                "score": 0,
+                "signals": []
+              },
+              {
+                "digit": 9,
+                "count": 2,
+                "rate": 8.3,
+                "score": 0,
+                "signals": []
+              },
+              {
+                "digit": 7,
+                "count": 1,
+                "rate": 4.2,
+                "score": 0,
+                "signals": []
+              }
+            ]
+          },
+          {
+            "position": 2,
+            "top": [
+              {
+                "digit": 7,
+                "count": 4,
+                "rate": 16.7,
+                "score": 2,
+                "signals": [
+                  "A",
+                  "風車盤"
+                ]
+              },
+              {
+                "digit": 3,
+                "count": 4,
+                "rate": 16.7,
+                "score": 1.696,
+                "signals": [
+                  "A",
+                  "引っ張り"
+                ]
+              },
+              {
+                "digit": 0,
+                "count": 1,
+                "rate": 4.2,
+                "score": 1.696,
+                "signals": [
+                  "引っ張り",
+                  "風車盤"
+                ]
+              },
+              {
+                "digit": 4,
+                "count": 3,
+                "rate": 12.5,
+                "score": 1,
+                "signals": [
+                  "A"
+                ]
+              },
+              {
+                "digit": 9,
+                "count": 3,
+                "rate": 12.5,
+                "score": 1,
+                "signals": [
+                  "A"
+                ]
+              },
+              {
+                "digit": 8,
+                "count": 2,
+                "rate": 8.3,
+                "score": 1,
+                "signals": [
+                  "風車盤"
+                ]
+              },
+              {
+                "digit": 6,
+                "count": 1,
+                "rate": 4.2,
+                "score": 1,
+                "signals": [
+                  "風車盤"
+                ]
+              },
+              {
+                "digit": 1,
+                "count": 2,
+                "rate": 8.3,
+                "score": 0.696,
+                "signals": [
+                  "引っ張り"
+                ]
+              },
+              {
+                "digit": 2,
+                "count": 2,
+                "rate": 8.3,
+                "score": 0,
+                "signals": []
+              },
+              {
+                "digit": 5,
+                "count": 2,
+                "rate": 8.3,
+                "score": 0,
+                "signals": []
+              }
+            ]
+          },
+          {
+            "position": 3,
+            "top": [
+              {
+                "digit": 0,
+                "count": 6,
+                "rate": 25,
+                "score": 2.6959999999999997,
+                "signals": [
+                  "S",
+                  "引っ張り"
+                ]
+              },
+              {
+                "digit": 4,
+                "count": 3,
+                "rate": 12.5,
+                "score": 2,
+                "signals": [
+                  "A",
+                  "風車盤"
+                ]
+              },
+              {
+                "digit": 5,
+                "count": 3,
+                "rate": 12.5,
+                "score": 2,
+                "signals": [
+                  "A",
+                  "風車盤"
+                ]
+              },
+              {
+                "digit": 3,
+                "count": 0,
+                "rate": 0,
+                "score": 1.696,
+                "signals": [
+                  "引っ張り",
+                  "風車盤"
+                ]
+              },
+              {
+                "digit": 2,
+                "count": 3,
+                "rate": 12.5,
+                "score": 1,
+                "signals": [
+                  "A"
+                ]
+              },
+              {
+                "digit": 9,
+                "count": 3,
+                "rate": 12.5,
+                "score": 1,
+                "signals": [
+                  "A"
+                ]
+              },
+              {
+                "digit": 7,
+                "count": 1,
+                "rate": 4.2,
+                "score": 1,
+                "signals": [
+                  "風車盤"
+                ]
+              },
+              {
+                "digit": 1,
+                "count": 1,
+                "rate": 4.2,
+                "score": 0.696,
+                "signals": [
+                  "引っ張り"
+                ]
+              },
+              {
+                "digit": 6,
+                "count": 2,
+                "rate": 8.3,
+                "score": 0,
+                "signals": []
+              },
+              {
+                "digit": 8,
+                "count": 2,
+                "rate": 8.3,
+                "score": 0,
+                "signals": []
+              }
+            ]
+          },
+          {
+            "position": 4,
+            "top": [
+              {
+                "digit": 0,
+                "count": 6,
+                "rate": 25,
+                "score": 3.6959999999999997,
+                "signals": [
+                  "S",
+                  "引っ張り",
+                  "風車盤"
+                ]
+              },
+              {
+                "digit": 9,
+                "count": 4,
+                "rate": 16.7,
+                "score": 1,
+                "signals": [
+                  "A"
+                ]
+              },
+              {
+                "digit": 4,
+                "count": 3,
+                "rate": 12.5,
+                "score": 1,
+                "signals": [
+                  "A"
+                ]
+              },
+              {
+                "digit": 5,
+                "count": 3,
+                "rate": 12.5,
+                "score": 1,
+                "signals": [
+                  "A"
+                ]
+              },
+              {
+                "digit": 6,
+                "count": 2,
+                "rate": 8.3,
+                "score": 1,
+                "signals": [
+                  "風車盤"
+                ]
+              },
+              {
+                "digit": 7,
+                "count": 2,
+                "rate": 8.3,
+                "score": 1,
+                "signals": [
+                  "風車盤"
+                ]
+              },
+              {
+                "digit": 8,
+                "count": 0,
+                "rate": 0,
+                "score": 1,
+                "signals": [
+                  "風車盤"
+                ]
+              },
+              {
+                "digit": 3,
+                "count": 2,
+                "rate": 8.3,
+                "score": 0.696,
+                "signals": [
+                  "引っ張り"
+                ]
+              },
+              {
+                "digit": 1,
+                "count": 1,
+                "rate": 4.2,
+                "score": 0.696,
+                "signals": [
+                  "引っ張り"
+                ]
+              },
+              {
+                "digit": 2,
+                "count": 1,
+                "rate": 4.2,
+                "score": 0,
+                "signals": []
+              }
+            ]
+          }
+        ],
+        "gaps": [
+          {
+            "0": 6,
+            "1": 0,
+            "2": 3,
+            "3": 5,
+            "4": 14,
+            "5": 12,
+            "6": 7,
+            "7": 9,
+            "8": 10,
+            "9": 16
+          },
+          {
+            "0": 2,
+            "1": 6,
+            "2": 7,
+            "3": 0,
+            "4": 1,
+            "5": 4,
+            "6": 12,
+            "7": 15,
+            "8": 13,
+            "9": 16
+          },
+          {
+            "0": 0,
+            "1": 20,
+            "2": 4,
+            "3": 24,
+            "4": 3,
+            "5": 1,
+            "6": 10,
+            "7": 7,
+            "8": 6,
+            "9": 13
+          },
+          {
+            "0": 6,
+            "1": 17,
+            "2": 18,
+            "3": 0,
+            "4": 4,
+            "5": 2,
+            "6": 20,
+            "7": 5,
+            "8": 33,
+            "9": 1
+          }
+        ],
+        "tickets": [
+          [
+            8,
+            7,
+            0,
+            0
+          ],
+          [
+            6,
+            3,
+            0,
+            0
+          ],
+          [
+            1,
+            0,
+            4,
+            0
+          ],
+          [
+            0,
+            7,
+            5,
+            0
+          ],
+          [
+            8,
+            3,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            4,
+            0
+          ],
+          [
+            1,
+            7,
+            3,
+            9
+          ],
+          [
+            0,
+            4,
+            5,
+            4
+          ],
+          [
+            8,
+            9,
+            0,
+            5
+          ],
+          [
+            4,
+            3,
+            3,
+            6
+          ]
+        ]
+      }
+    }
   }
 }
