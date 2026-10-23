@@ -46790,7 +46790,7 @@
     "date": "2026-10-26",
     "basisDate": "2026-10-23",
     "version": "24-transition-sa-position-v2",
-    "published": false,
+    "published": true,
     "games": {
       "loto6": {
         "selection": {
@@ -49761,6 +49761,8 @@
           ]
         ]
       }
-    }
+    },
+    "noteKey": "nfce3ebdee779",
+    "source": "https://note.com/naobillion/n/nfce3ebdee779"
   }
 }
