@@ -62469,7 +62469,7 @@
     "date": "2026-11-03",
     "basisDate": "2026-11-02",
     "version": "24-transition-sa-position-v2",
-    "published": false,
+    "published": true,
     "games": {
       "miniloto": {
         "selection": {
@@ -65068,6 +65068,8 @@
           ]
         ]
       }
-    }
+    },
+    "noteKey": "n42433e15221b",
+    "source": "https://note.com/naobillion/n/n42433e15221b"
   }
 }
