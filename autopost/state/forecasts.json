@@ -103000,7 +103000,7 @@
     "date": "2026-11-25",
     "basisDate": "2026-11-24",
     "version": "24-transition-sa-position-v2",
-    "published": false,
+    "published": true,
     "games": {
       "numbers3": {
         "top": [
@@ -104240,6 +104240,8 @@
           ]
         ]
       }
-    }
+    },
+    "noteKey": "n81305ebd84bc",
+    "source": "https://note.com/naobillion/n/n81305ebd84bc"
   }
 }
