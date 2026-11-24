@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
-const band = n => n < 10 ? 1 : n < 20 ? 10 : n < 30 ? 20 : 30;
+const band = (n,game) => game==='miniloto' ? (n<10?1:n<20?10:20) : n < 10 ? 1 : n < 20 ? 10 : n < 30 ? 20 : 30;
 const counts = a => a.reduce((m,n)=>(m[n]=(m[n]||0)+1,m),{});
 const sorted = a => a.slice().sort((a,b)=>a-b);
 const box = a => sorted(a).join('-');
@@ -19,31 +19,31 @@ function loadDraws(game,date){
     carry:Number(r[2+n+b+2*tiers]||0),
   })).sort((a,b)=>a.round-b.round);
 }
-function transitions(draws,n){
+function transitions(draws,n,game){
   const recent=draws.slice(-24);
   if(recent.length<24)throw Error('遷移分析には24回のデータが必要です');
   return Array.from({length:n},(_,position)=>{
-    const current=band(sorted(recent.at(-1).numbers)[position]);
+    const current=band(sorted(recent.at(-1).numbers)[position],game);
     const hits={};let total=0;
-    for(let i=0;i<23;i++)if(band(sorted(recent[i].numbers)[position])===current){
-      const next=band(sorted(recent[i+1].numbers)[position]);hits[next]=(hits[next]||0)+1;total++;
+    for(let i=0;i<23;i++)if(band(sorted(recent[i].numbers)[position],game)===current){
+      const next=band(sorted(recent[i+1].numbers)[position],game);hits[next]=(hits[next]||0)+1;total++;
     }
     // User-approved fallback: if the final position has no conditional sample, select band 30.
     const fallback=total===0&&position===n-1&&n===6;
     return {position:position+1,current,total,...(fallback?{fallback:'user-approved-band-30'}:{}),rates:Object.fromEntries([1,10,20,30].map(b=>[b,total?(hits[b]||0)/total:fallback&&b===30?1:0]))};
   });
 }
-function facts(pick,draws){
+function facts(pick,draws,game){
   const a=sorted(pick),previous=draws.at(-1).numbers;
   const gaps=Object.fromEntries(a.map(n=>{const g=draws.slice().reverse().findIndex(d=>d.numbers.includes(n));return [n,g<0?draws.length:g];}));
   const tail=Object.values(counts(a.map(n=>n%10)));
   return {pull:a.filter(n=>previous.includes(n)),consecutive:a.slice(1).flatMap((n,i)=>n===a[i]+1?[[a[i],n]]:[]),
     triple:a.some(n=>a.includes(n+1)&&a.includes(n+2)),tails:Object.entries(counts(a.map(n=>n%10))).filter(([,c])=>c>=2).map(([t])=>a.filter(n=>n%10===+t)),
-    cold:a.filter(n=>gaps[n]>=10),gaps,pattern:a.map(band),sum:a.reduce((s,n)=>s+n,0),
+    cold:a.filter(n=>gaps[n]>=10),gaps,pattern:a.map(n=>band(n,game)),sum:a.reduce((s,n)=>s+n,0),
     zones:[a.filter(n=>n<=13).length,a.filter(n=>n>=14&&n<=28).length,a.filter(n=>n>=29).length],tailCounts:tail};
 }
-function validLoto(pick,draws){
-  const f=facts(pick,draws);
+function validLoto(pick,draws,game){
+  const f=facts(pick,draws,game);
   return new Set(pick).size===pick.length&&f.pull.length<=2&&!f.triple&&f.cold.length<=2&&
     f.tails.length<=1&&f.tailCounts.every(c=>c<=2)&&Object.values(counts(f.pattern)).every(c=>c<=3);
 }
@@ -61,10 +61,10 @@ function lotoForecast(game,draws){
   const selection=L.calcSelectedNumbers(converted,cfg,24);
   const freq=counts(draws.slice(-24).flatMap(d=>d.numbers));
   const sab=n=>(freq[n]||0)>=5?'S':(freq[n]||0)>=3?'A':'B';
-  const ts=transitions(draws,cfg.mainCount), ps=patterns(ts),wanted=new Map(ps.map(p=>[p.pattern.join('-'),[]]));
+  const ts=transitions(draws,cfg.mainCount,game), ps=patterns(ts),wanted=new Map(ps.map(p=>[p.pattern.join('-'),[]]));
   combinations([...selection.selected],cfg.mainCount,a=>{
-    const key=a.map(band).join('-');const list=wanted.get(key);if(!list||!validLoto(a,draws))return;
-    const labels=a.map(sab),f=facts(a,draws);
+    const key=a.map(n=>band(n,game)).join('-');const list=wanted.get(key);if(!list||!validLoto(a,draws,game))return;
+    const labels=a.map(sab),f=facts(a,draws,game);
     if(labels.filter(x=>x==='S').length>=5||labels.filter(x=>x==='A').length>=5||labels.filter(x=>x==='B').length>1)return;
     if(game==='loto6'&&!['3-2-1','1-3-2','2-1-3'].includes(f.zones.join('-')))return;
     const center=cfg.mainCount*(cfg.maxNumber+1)/2;
@@ -77,7 +77,7 @@ function lotoForecast(game,draws){
   for(const p of selectedPatterns){const list=wanted.get(p.pattern.join('-'));for(let i=0;i<2;i++){
     list.sort((a,b)=>(b.score-b.numbers.reduce((s,n)=>s+(usage[n]||0)*2,0))-(a.score-a.numbers.reduce((s,n)=>s+(usage[n]||0)*2,0))||a.numbers.join('-').localeCompare(b.numbers.join('-')));
     const chosen=list.shift().numbers;chosen.forEach(n=>usage[n]=(usage[n]||0)+1);
-    tickets.push({numbers:chosen,sab:chosen.map(sab).join(''),...facts(chosen,draws)});
+    tickets.push({numbers:chosen,sab:chosen.map(sab).join(''),...facts(chosen,draws,game)});
   }}
   const positional=L.calcDigitPositionTop5(converted,cfg,24,cfg.maxNumber);
   const top5=L.calcDigitPositionTop5(converted,cfg,24,5);
@@ -131,7 +131,7 @@ function candidateReview(game,saved,draw){
       out.push(`${n}は${selected.length}個の候補枠に入らず。選定方式はS/Aと位置別TOP5が主軸で、間隔・出現時期の偏りは減点していません。${peer?`採用された同分類の${peer.number}は位置評価${peer.positionScore}点・${peer.count}回。`:''}`);
     }
     if(outside.length)out.push('次回への確認点：候補外数字と採用境界の順位を比較し、位置別上位を落としていないか確認します。今回出た数字という理由だけで追加はしません。');
-    const actual=sorted(draw.numbers).map(band),pats=(saved.patterns||[]).map(p=>p.pattern||p);
+    const actual=sorted(draw.numbers).map(n=>band(n,game)),pats=(saved.patterns||[]).map(p=>p.pattern||p);
     const match=pats.findIndex(p=>p.join('-')===actual.join('-'));
     out.push(`実際のパターン：${actual.join('-')}。${pats.length?match>=0?`前回予想${match+1}番と完全一致。`:'前回5案に一致なし。':'前回パターン記録が不足。'}`);
     return out;

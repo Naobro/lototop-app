@@ -79,3 +79,8 @@ test('loto6 final position without transitions uses approved band 30',()=>{
  assert.equal(t[5].total,0);assert.equal(t[5].rates[30],1);assert.equal(t[5].fallback,'user-approved-band-30');
  const forecast=E.lotoForecast('loto6',draws);assert.equal(forecast.patterns.length,5);assert.equal(forecast.tickets.length,10);assert(forecast.tickets.every(p=>E.validLoto(p.numbers,draws)&&p.pattern[5]===30));
 });
+
+test('miniloto bands include 30 and 31 in group 20 without changing loto6',()=>{
+ const E=require('../engine');assert.equal(E.band(30,'miniloto'),20);assert.equal(E.band(31,'miniloto'),20);assert.equal(E.band(30,'loto6'),30);
+ const d=E.loadDraws('miniloto','2026-10-02'),p=E.lotoForecast('miniloto',d);assert.equal(p.patterns.length,5);assert(p.tickets.every(t=>!t.pattern.includes(30)&&E.validLoto(t.numbers,d,'miniloto')));
+});

@@ -28,7 +28,7 @@ for(const game of S.gamesToVerify(date)){
  const hits=result.details.flatMap((x,i)=>x.rank?[`🎉 ${circ(i)} ${NAMES[game]}・${x.rank}当選！${money(x.pay)}`]:[]);
  if(hits.length){const winning=paragraphs.pop();hits.forEach(x=>add(x,true));paragraphs.push(winning);}else add('的中なし');
  if(E.CONFIG[game]){
-  const actual=draw.numbers.slice().sort((a,b)=>a-b).map(E.band),patterns=(saved.patterns||[]).map(p=>p.pattern||p),matched=patterns.findIndex(p=>p.join('-')===actual.join('-'));
+  const actual=draw.numbers.slice().sort((a,b)=>a-b).map(n=>E.band(n,game)),patterns=(saved.patterns||[]).map(p=>p.pattern||p),matched=patterns.findIndex(p=>p.join('-')===actual.join('-'));
   if(matched>=0)add(`🎯 パターン${circ(matched)}も完全一致！`,true);
   if(saved.selection)add([`厳選数字：${saved.selection.selected.map(n=>draw.numbers.includes(n)?`**${n}**`:draw.bonus.includes(n)?`${n}（B）`:n).join(', ')}`,`削除数字：${saved.selection.cut.join(', ')}`]);
   add(E.candidateReview(game,saved,draw).filter(x=>!x.startsWith('実際のパターン：')));
@@ -63,7 +63,7 @@ for(const game of S.gamesToVerify(target)){
  const pred=generated.games[game]||(E.CONFIG[game]?E.lotoForecast(game,draws):E.numbersForecast(game,draws));generated.games[game]=pred;
  if(E.CONFIG[game]){
   add(`🎖 ${NAMES[game]} 厳選数字・削除数字`,true);
-  add([`厳選数字：${pred.selection.selected.length}個`,...[1,10,20,30].map(b=>`${b}の位：${pred.selection.selected.filter(n=>E.band(n)===b).join(', ')}`),`削除数字：${pred.selection.cut.join(', ')}`]);
+  add([`厳選数字：${pred.selection.selected.length}個`,...(game==='miniloto'?[1,10,20]:[1,10,20,30]).map(b=>`${b}の位：${pred.selection.selected.filter(n=>E.band(n,game)===b).join(', ')}`),`削除数字：${pred.selection.cut.join(', ')}`]);
   add(`🔮 ${NAMES[game]} パターン予想`,true);add(pred.patterns.map((p,i)=>`${circ(i)} ${p.pattern.join('-')}`));
   add(`🎯 ${NAMES[game]} 厳選予想10口`,true);
   pred.tickets.forEach((p,i)=>add([`${circ(i)} ${p.numbers.map(pad).join('-')}`,`${p.pattern.join('-')} ｜ ${p.sab} ｜ ZONE ${p.zones.join('-')} ｜ 引っ張り ${p.pull.map(pad).join(',')||'なし'} ｜ 連続 ${p.consecutive.map(x=>x.map(pad).join('-')).join(',')||'なし'} ｜ 末尾 ${p.tails.map(x=>x.map(pad).join('-')).join(',')||'なし'} ｜ 10回以上 ${p.cold.map(n=>`${pad(n)}(${p.gaps[n]}回未出現)`).join(',')||'なし'} ｜ 合計 ${p.sum}`]));
