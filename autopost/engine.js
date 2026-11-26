@@ -30,6 +30,10 @@ function transitions(draws,n,game){
     }
     // User-approved fallback: if the final position has no conditional sample, select band 30.
     const fallback=total===0&&position===n-1&&n===6;
+    if(total===0&&n===6&&position===1){
+      const frequency=counts(recent.map(d=>band(sorted(d.numbers)[position],game)));
+      return {position:position+1,current,total,fallback:'user-approved-position-frequency-24',sampleSize:24,rates:Object.fromEntries([1,10,20,30].map(b=>[b,(frequency[b]||0)/24]))};
+    }
     return {position:position+1,current,total,...(fallback?{fallback:'user-approved-band-30'}:{}),rates:Object.fromEntries([1,10,20,30].map(b=>[b,total?(hits[b]||0)/total:fallback&&b===30?1:0]))};
   });
 }
